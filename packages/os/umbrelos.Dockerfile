@@ -190,6 +190,36 @@ COPY packages/os/overlay-pi /
 
 
 #########################################################################
+# umbrelos-base-container build stage (Docker Desktop, Docker Engine)
+#########################################################################
+
+# Runs umbrelOS as a privileged systemd container instead of a booted OS, e.g.
+# on Docker Desktop for macOS and Windows. The container shares the host's
+# kernel, so the kernel, firmware, microcode, ZFS and NVIDIA driver packages of
+# umbrelos-base would never be used. Skipping them keeps the image small and the
+# build fast enough for a laptop. Select it with --build-arg BASE_VARIANT=-container.
+FROM debian:${DEBIAN_VERSION}-${DEBIAN_IMAGE_SNAPSHOT_DATE} AS umbrelos-base-container
+
+ARG APT_SNAPSHOT_DATE
+
+COPY packages/os/build-steps /build-steps
+
+RUN /build-steps/initialize.sh "${APT_SNAPSHOT_DATE}"
+
+# The port publisher forwards app ports from the container runtime's host to
+# this container with socat. It runs from this same image so nothing else has
+# to be built or pulled.
+RUN apt-get install --yes socat
+
+# Cleanup build steps.
+RUN rm -rf /build-steps
+
+# Copy container-specific filesystem overlay
+COPY packages/os/overlay-container /
+RUN systemctl enable umbrel-container-data.service
+
+
+#########################################################################
 # watchman build stage (amd64 and arm64)
 #########################################################################
 
@@ -303,6 +333,7 @@ FROM umbrelos-base${BASE_VARIANT} AS umbrelos
 
 # We need to duplicate this such that we can also use the argument below.
 ARG TARGETARCH
+ARG BASE_VARIANT
 ARG DOCKER_VERSION
 ARG DOCKER_INSTALL_SCRIPT_COMMIT
 ARG NVIDIA_CUDA_SUPPORT
@@ -457,8 +488,9 @@ RUN set -eu; \
 
 # Install the Realtek RTL8127 10GbE driver on amd64 systems. Build against the
 # kernels in the image rather than the kernel running the Docker builder.
+# Container images have no kernel of their own to build against.
 RUN set -e; \
-    if [ "${TARGETARCH}" = "amd64" ]; then \
+    if [ "${TARGETARCH}" = "amd64" ] && [ "${BASE_VARIANT}" != "-container" ]; then \
         curl -fsSL "https://github.com/openwrt/rtl8127/archive/${RTL8127_COMMIT}.tar.gz" -o /tmp/rtl8127.tar.gz && \
         echo "${RTL8127_SHA256}  /tmp/rtl8127.tar.gz" | sha256sum -c - && \
         mkdir -p /tmp/rtl8127 && \
@@ -526,8 +558,9 @@ RUN rm /tmp/install-docker.sh
 # Install the NVIDIA Container Toolkit directly from pinned, checksummed
 # packages. The toolkit exposes the matching CUDA and Vulkan driver userspace
 # to containers; application runtimes remain in the application container.
+# Container images ship no NVIDIA driver userspace for the toolkit to expose.
 RUN set -e; \
-    if [ "${TARGETARCH}" = "amd64" ] && [ "${NVIDIA_CUDA_SUPPORT}" = "true" ]; then \
+    if [ "${TARGETARCH}" = "amd64" ] && [ "${NVIDIA_CUDA_SUPPORT}" = "true" ] && [ "${BASE_VARIANT}" != "-container" ]; then \
         nvidia_toolkit_url="https://nvidia.github.io/libnvidia-container/stable/deb/amd64"; \
         curl -fsSL "${nvidia_toolkit_url}/libnvidia-container1_${NVIDIA_CONTAINER_TOOLKIT_VERSION}_amd64.deb" -o /tmp/libnvidia-container1.deb; \
         curl -fsSL "${nvidia_toolkit_url}/libnvidia-container-tools_${NVIDIA_CONTAINER_TOOLKIT_VERSION}_amd64.deb" -o /tmp/libnvidia-container-tools.deb; \
@@ -595,7 +628,7 @@ COPY packages/os/overlay /
 # Debian's split NVIDIA packages. Legacy mode uses libnvidia-container's
 # complete dependency discovery.
 RUN set -e; \
-    if [ "${TARGETARCH}" = "amd64" ] && [ "${NVIDIA_CUDA_SUPPORT}" = "true" ]; then \
+    if [ "${TARGETARCH}" = "amd64" ] && [ "${NVIDIA_CUDA_SUPPORT}" = "true" ] && [ "${BASE_VARIANT}" != "-container" ]; then \
         nvidia-ctk runtime configure --runtime=docker; \
         nvidia-ctk config --in-place \
             --set nvidia-container-runtime.mode=legacy; \
@@ -605,8 +638,9 @@ RUN set -e; \
 # during early boot coldplug and /dev/disk/by-umbrel-id exists before the
 # mount script runs. Pi images ship two kernels (Pi 4 and Pi 5) and
 # update-initramfs only regenerates the highest version by default, so
-# regenerate every installed kernel's initramfs.
-RUN update-initramfs -u -k all
+# regenerate every installed kernel's initramfs. Container images boot no
+# kernel or initramfs of their own.
+RUN if [ "${BASE_VARIANT}" != "-container" ]; then update-initramfs -u -k all; fi
 
 # Move persistant locations to /data to be bind mounted over the OS.
 # /data will exist on a seperate partition that survives OS updates.

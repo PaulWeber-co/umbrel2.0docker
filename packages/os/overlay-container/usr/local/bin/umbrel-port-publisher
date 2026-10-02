@@ -1,0 +1,181 @@
+#!/bin/bash
+
+# Publish the ports of a containerized umbrelOS on the container runtime's host.
+#
+# Docker Desktop (macOS, Windows) can't route to container IPs, so a browser on
+# the host only reaches ports that were published when a container was created.
+# umbrelOS opens a new port for every app it installs, so a fixed list can't
+# cover them. This runs next to the umbrel container with access to the Docker
+# socket and keeps one tiny socat forwarder container per public port:
+#
+#   host:8080 -> forwarder (-p 8080:8080) -> umbrel:8080 -> LAN ingress -> app
+#
+# Forwarders are owned by this process: they are created and removed as apps
+# come and go, and removed when the publisher stops. A port that is already in
+# use on the host only fails its own forwarder, never the umbrel container.
+
+set -euo pipefail
+
+UMBREL_CONTAINER="${UMBREL_CONTAINER:-umbrel}"
+PUBLISH_ADDRESS="${UMBREL_PUBLISH_ADDRESS:-0.0.0.0}"
+EXCLUDED_PORTS=" $(echo "${UMBREL_PUBLISH_EXCLUDE-22}" | tr ',' ' ') "
+INTERVAL="${UMBREL_PUBLISH_INTERVAL:-5}"
+RETRY_FAILED_AFTER=60
+
+INSTANCE_LABEL="umbrel.port-publisher.instance"
+PORT_LABEL="umbrel.port-publisher.port"
+TARGET_LABEL="umbrel.port-publisher.target"
+
+declare -A failed_at=()
+last_status=""
+
+log() {
+    echo "[port-publisher] $*"
+}
+
+# Log a status line only when it changes so the log stays readable.
+status() {
+    if [[ "$*" != "${last_status}" ]]
+    then
+        log "$*"
+        last_status="$*"
+    fi
+}
+
+forwarder_name() {
+    echo "${UMBREL_CONTAINER}-port-${1}"
+}
+
+list_forwarders() {
+    docker ps --all --quiet --filter "label=${INSTANCE_LABEL}=${UMBREL_CONTAINER}"
+}
+
+remove_all_forwarders() {
+    local forwarders
+    forwarders="$(list_forwarders || true)"
+    if [[ -n "${forwarders}" ]]
+    then
+        log "Removing forwarders"
+        # shellcheck disable=SC2086
+        docker rm --force ${forwarders} > /dev/null || true
+    fi
+}
+
+shutdown() {
+    remove_all_forwarders
+    exit 0
+}
+
+trap shutdown TERM INT
+
+# Forwarders run from the umbrel container's own image, which ships socat.
+# Name based DNS only works on user-defined networks, so fall back to the IP
+# on the default bridge network.
+inspect_umbrel() {
+    umbrel_network="$(docker inspect --format '{{range $name, $_ := .NetworkSettings.Networks}}{{$name}}{{"\n"}}{{end}}' "${UMBREL_CONTAINER}" | head -n 1)" || return 1
+    image="$(docker inspect --format '{{.Image}}' "${UMBREL_CONTAINER}")" || return 1
+    case "${umbrel_network}" in
+        bridge) target="$(docker inspect --format '{{.NetworkSettings.Networks.bridge.IPAddress}}' "${UMBREL_CONTAINER}")" || return 1 ;;
+        host) target="127.0.0.1" ;;
+        *) target="${UMBREL_CONTAINER}" ;;
+    esac
+    [[ -n "${umbrel_network}" ]] && [[ -n "${image}" ]] && [[ -n "${target}" ]]
+}
+
+create_forwarder() {
+    local port="${1}"
+    local name
+    name="$(forwarder_name "${port}")"
+
+    local network_options=(--network "${umbrel_network}")
+    [[ "${umbrel_network}" = "host" ]] && network_options=(--network host)
+
+    if docker run \
+        --detach \
+        --name "${name}" \
+        --label "${INSTANCE_LABEL}=${UMBREL_CONTAINER}" \
+        --label "${PORT_LABEL}=${port}" \
+        --label "${TARGET_LABEL}=${target}" \
+        "${network_options[@]}" \
+        --publish "${PUBLISH_ADDRESS}:${port}:${port}" \
+        --cap-drop ALL \
+        --cap-add NET_BIND_SERVICE \
+        --security-opt no-new-privileges \
+        --read-only \
+        --memory 64m \
+        --entrypoint socat \
+        "${image}" \
+        "TCP-LISTEN:${port},fork,reuseaddr,backlog=128" "TCP:${target}:${port}" > /dev/null 2> /tmp/port-publisher-error
+    then
+        log "Forwarding port ${port}"
+        unset "failed_at[${port}]"
+    else
+        log "Could not publish port ${port}, it is probably already in use on the host. Retrying in ${RETRY_FAILED_AFTER}s: $(tr '\n' ' ' < /tmp/port-publisher-error)"
+        docker rm --force "${name}" > /dev/null 2>&1 || true
+        failed_at["${port}"]="$(date +%s)"
+    fi
+}
+
+reconcile() {
+    local desired
+    if ! desired="$(docker exec "${UMBREL_CONTAINER}" umbrel-list-public-ports 2> /dev/null)"
+    then
+        status "Waiting for umbrelOS to finish starting..."
+        return
+    fi
+    if ! inspect_umbrel
+    then
+        status "Could not inspect container '${UMBREL_CONTAINER}'"
+        return
+    fi
+
+    declare -A wanted=()
+    local port
+    for port in ${desired}
+    do
+        [[ "${EXCLUDED_PORTS}" = *" ${port} "* ]] && continue
+        wanted["${port}"]=1
+    done
+
+    # Drop forwarders that are no longer wanted, stopped, or point at an outdated
+    # image or address (e.g. after the umbrel container was recreated).
+    local id
+    declare -A existing=()
+    for id in $(list_forwarders)
+    do
+        local details
+        details="$(docker inspect --format "{{index .Config.Labels \"${PORT_LABEL}\"}} {{index .Config.Labels \"${TARGET_LABEL}\"}} {{.Image}} {{.State.Running}}" "${id}" 2> /dev/null || true)"
+        read -r port forwarder_target forwarder_image running <<< "${details}"
+        if [[ -z "${port}" ]] || [[ -z "${wanted[${port}]:-}" ]] || [[ "${running}" != "true" ]] || [[ "${forwarder_target}" != "${target}" ]] || [[ "${forwarder_image}" != "${image}" ]]
+        then
+            [[ -n "${port}" ]] && [[ -z "${wanted[${port}]:-}" ]] && log "Stopped forwarding port ${port}"
+            docker rm --force "${id}" > /dev/null 2>&1 || true
+            continue
+        fi
+        existing["${port}"]=1
+    done
+
+    local now
+    now="$(date +%s)"
+    for port in "${!wanted[@]}"
+    do
+        [[ -n "${existing[${port}]:-}" ]] && continue
+        if [[ -n "${failed_at[${port}]:-}" ]] && (( now - failed_at[${port}] < RETRY_FAILED_AFTER ))
+        then
+            continue
+        fi
+        create_forwarder "${port}"
+    done
+
+    status "Publishing ${#wanted[@]} app port(s) on ${PUBLISH_ADDRESS}"
+}
+
+log "Publishing umbrelOS ports of container '${UMBREL_CONTAINER}' on ${PUBLISH_ADDRESS} (excluded:${EXCLUDED_PORTS})"
+
+while true
+do
+    reconcile || log "Reconcile failed, retrying"
+    # Sleep in the background so the TERM trap runs immediately.
+    sleep "${INTERVAL}" &
+    wait $! || true
+done

@@ -1,0 +1,17 @@
+[Unit]
+Description=Prepare umbrelOS data directories for container runtimes
+# On a physical install the data partition is prepared by the OS image. In a
+# container /data is a plain volume, so make sure every bind mount source in
+# /etc/fstab exists before systemd mounts them.
+DefaultDependencies=no
+Before=local-fs-pre.target
+Wants=local-fs-pre.target
+ConditionVirtualization=container
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/umbrel-container/umbrel-container-data
+
+[Install]
+WantedBy=local-fs-pre.target
