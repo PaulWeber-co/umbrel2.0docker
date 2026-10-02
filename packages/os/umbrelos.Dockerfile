@@ -622,6 +622,27 @@ WORKDIR /
 # Copy in filesystem overlay
 COPY packages/os/overlay /
 
+# Git on Windows (core.symlinks=false) stores symlinks as regular files whose
+# content is the link target. Fix them after copying the overlay so that systemd
+# unit enablement symlinks (and any others) work correctly inside the container.
+RUN find / -xdev -maxdepth 5 -path '/proc' -prune -o -path '/sys' -prune -o \
+    -path '/data' -prune -o -path '/images' -prune -o \
+    -type f -size -200c -print0 2>/dev/null | \
+    while IFS= read -r -d '' f; do \
+        target="$(cat "$f" 2>/dev/null)" || continue; \
+        case "$target" in \
+            ../*|./*) \
+                if [ "$(echo "$target" | wc -l)" -eq 1 ] && \
+                   [ "$(echo "$target" | wc -c)" -eq "$(wc -c < "$f")" ]; then \
+                    dir="$(dirname "$f")"; \
+                    if [ -e "$dir/$target" ] || [ -e "$dir/$(echo "$target" | sed 's|^\.\./||')" ]; then \
+                        rm -f "$f" && ln -s "$target" "$f" && \
+                        echo "Fixed symlink: $f -> $target"; \
+                    fi; \
+                fi ;; \
+        esac; \
+    done || true
+
 # The common overlay is shared with arm64 builds, so add the NVIDIA runtime
 # after copying it and only when the runtime binary exists on amd64. Toolkit
 # 1.19.1 auto-selects JIT CDI, which does not inject private dependencies from
