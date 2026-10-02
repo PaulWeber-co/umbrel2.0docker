@@ -68,6 +68,16 @@ Head to **[umbrel.com/downloads](https://umbrel.com/downloads)** for the latest 
 > [!NOTE]
 > umbrelOS is a standalone operating system that installs directly onto your device. It can't be installed on top of an existing Linux distribution.
 
+### Run in a container
+
+To try umbrelOS on a computer you already use, run it in Docker Desktop (macOS, Windows) or Docker Engine (Linux):
+
+```sh
+docker compose up --detach --build
+```
+
+Then open http://localhost. See [DOCKER.md](DOCKER.md) for settings, updates and the features that need real hardware.
+
 ## Building apps for umbrelOS
 
 If you're interested in building an app for umbrelOS or packaging an existing one, please refer to the [Umbrel App Framework documentation](https://github.com/getumbrel/umbrel-apps/blob/master/README.md).
