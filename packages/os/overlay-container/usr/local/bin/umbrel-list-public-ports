@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# Print the TCP ports umbrelOS serves to the LAN, one per line.
+#
+# Container runtimes like Docker Desktop don't route container IPs to the host,
+# so every port a browser needs has to be published. Ports change as apps are
+# installed, so the port publisher (containers/port-publisher) runs this inside
+# the container to learn what to forward.
+#
+# A port is public when either:
+#   - an nftables rule DNATs or redirects inbound traffic for it (LAN ingress
+#     app ports, Umbrel Machines port forwards), or
+#   - something listens on it on all interfaces (e.g. apps that publish their
+#     ports directly through Docker, Samba).
+# Hidden LAN ingress listeners are redirect targets, so they are left out.
+#
+# Exits 3 without output until LAN ingress is up, so callers can tell "no
+# ports" apart from "umbreld hasn't started yet".
+
+set -euo pipefail
+
+NFT_TABLE="umbrel_lan_ingress"
+
+# Ports the umbrel container publishes itself or that only make sense on a
+# real LAN (NetBIOS, WS-Discovery).
+IGNORED_PORTS=(80 443 2000 139 5357)
+
+if ! nft list table inet "${NFT_TABLE}" > /dev/null 2>&1
+then
+    exit 3
+fi
+
+ruleset="$(nft --json list ruleset)"
+
+# "public hidden" pairs, hidden is empty for DNAT rules.
+nat_rules="$(jq --raw-output '
+    .nftables[]
+    | .rule? // empty
+    | select(any(.expr[]; has("redirect") or has("dnat")))
+    # Skip loopback-only rules such as the container runtime embedded DNS.
+    | select(any(.expr[]; .match?.left.payload?.field == "daddr" and (.match.right | tostring | startswith("127."))) | not)
+    | [
+        (.expr[] | .match? // empty
+            | select((.left.payload?.protocol == "tcp") and (.left.payload?.field == "dport") and (.op == "=="))
+            | .right | numbers),
+        (.expr[] | .redirect?.port // empty)
+      ]
+    | select(length > 0)
+    | map(tostring) | join(" ")
+' <<< "${ruleset}")"
+
+declare -A public_ports=()
+declare -A hidden_ports=()
+
+while read -r public hidden
+do
+    [[ -n "${public}" ]] && public_ports["${public}"]=1
+    [[ -n "${hidden:-}" ]] && hidden_ports["${hidden}"]=1
+done <<< "${nat_rules}"
+
+# Wildcard TCP listeners: 0.0.0.0:port, *:port and [::]:port.
+while read -r local_address
+do
+    port="${local_address##*:}"
+    [[ "${port}" =~ ^[0-9]+$ ]] && public_ports["${port}"]=1
+done < <(ss --no-header --listening --numeric --tcp | awk '{print $4}' | grep --extended-regexp '^(0\.0\.0\.0|\*|\[::\]):[0-9]+$' || true)
+
+for port in "${IGNORED_PORTS[@]}"
+do
+    unset "public_ports[${port}]"
+done
+
+for port in "${!public_ports[@]}"
+do
+    [[ -n "${hidden_ports[${port}]:-}" ]] && continue
+    echo "${port}"
+done | sort --numeric-sort

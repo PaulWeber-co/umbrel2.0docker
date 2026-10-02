@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# Bind mount sources from /etc/fstab. A named Docker volume is seeded from the
+# image's /data on first use, but a bind mounted host directory or a volume
+# created by an older image can be missing some of them.
+DIRECTORIES=(
+    /data/umbrel-os/var/log
+    /data/umbrel-os/var/lib/docker
+    /data/umbrel-os/var/lib/systemd/timesync
+    /data/umbrel-os/home
+    /data/umbrel-os/kopia
+)
+
+for directory in "${DIRECTORIES[@]}"
+do
+    mkdir -p "${directory}"
+done
+
+# The runtime user's home holds the umbreld data directory.
+if [[ ! -d /data/umbrel-os/home/umbrel ]]
+then
+    mkdir -p /data/umbrel-os/home/umbrel
+    chown umbrel:umbrel /data/umbrel-os/home/umbrel
+fi

@@ -1,0 +1,76 @@
+# umbrelOS in a container, for Docker Desktop (macOS, Windows) and Docker Engine (Linux).
+#
+#   docker compose up --detach --build
+#
+# Then open http://localhost. See DOCKER.md for details, settings
+# and the umbrelOS features that need real hardware.
+
+name: umbrel
+
+x-image: &image umbrelos:container
+
+services:
+  umbrel:
+    build:
+      context: .
+      dockerfile: packages/os/umbrelos.Dockerfile
+      args:
+        BASE_VARIANT: -container
+    image: *image
+    container_name: umbrel
+    hostname: umbrel
+    # umbrelOS boots systemd, which runs umbreld, its own Docker daemon for apps,
+    # LAN ingress (nftables), Samba and libvirt. All of that needs a privileged
+    # container, the same way the umbrel-dev environment runs.
+    privileged: true
+    cgroup: private
+    command: /sbin/init
+    # systemd shuts down cleanly on SIGRTMIN+3 (halt). Give umbreld time to stop
+    # every app before Docker kills the container.
+    stop_signal: SIGRTMIN+3
+    stop_grace_period: 5m
+    tty: true
+    restart: unless-stopped
+    volumes:
+      # All umbrelOS state (account, apps, app data, files, Docker images) lives in
+      # /data, like the data partition of a physical install. Recreating the
+      # container from a newer image is the container equivalent of an OS update.
+      - umbrel-data:/data
+    tmpfs:
+      - /run
+      - /run/lock
+    ports:
+      # Dashboard (HTTP and HTTPS) and app sign-in. App ports are published on
+      # demand by the port-publisher service below.
+      - ${UMBREL_PUBLISH_ADDRESS:-0.0.0.0}:${UMBREL_HTTP_PORT:-80}:80
+      - ${UMBREL_PUBLISH_ADDRESS:-0.0.0.0}:${UMBREL_HTTPS_PORT:-443}:443
+      - ${UMBREL_PUBLISH_ADDRESS:-0.0.0.0}:2000:2000
+    healthcheck:
+      test: ["CMD-SHELL", "systemctl is-active --quiet docker umbrel && curl --silent --fail --output /dev/null http://localhost"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5m
+      retries: 3
+    labels:
+      # Make the instance reachable at http://umbrel.local on OrbStack.
+      dev.orbstack.domains: umbrel.local
+      dev.orbstack.http-port: "80"
+
+  port-publisher:
+    image: *image
+    container_name: umbrel-port-publisher
+    depends_on:
+      - umbrel
+    entrypoint: /usr/local/bin/umbrel-port-publisher
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 1m
+    environment:
+      UMBREL_CONTAINER: umbrel
+      UMBREL_PUBLISH_ADDRESS: ${UMBREL_PUBLISH_ADDRESS:-0.0.0.0}
+      UMBREL_PUBLISH_EXCLUDE: ${UMBREL_PUBLISH_EXCLUDE:-22}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  umbrel-data:
