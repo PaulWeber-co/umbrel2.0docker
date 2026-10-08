@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+
+# Tests for fetch-steamos-image against a small local fixture served over
+# file://, so no 3 GB download is needed. Run: scripts/gaming-vm/fetch-steamos-image.test
+
+# Indenting multi-line output reads clearer with sed than with expansions.
+# shellcheck disable=SC2001
+
+set -euo pipefail
+
+script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fetch="${script_directory}/fetch-steamos-image"
+work_directory="$(mktemp -d)"
+trap 'rm -rf "${work_directory}"' EXIT
+
+failures=0
+
+# A tiny stand-in for Valve's recovery image.
+fixture="${work_directory}/fixture"
+mkdir -p "${fixture}"
+head -c 200000 /dev/urandom > "${fixture}/recovery.img"
+raw_sha256="$(sha256sum "${fixture}/recovery.img" | cut -d' ' -f1)"
+raw_size="$(stat -c %s "${fixture}/recovery.img")"
+bzip2 -k "${fixture}/recovery.img"
+compressed_sha256="$(sha256sum "${fixture}/recovery.img.bz2" | cut -d' ' -f1)"
+compressed_size="$(stat -c %s "${fixture}/recovery.img.bz2")"
+
+run_fetch() {
+    local output_directory="${1}"
+    shift
+    mkdir -p "${output_directory}"
+    set +e
+    output="$(STEAMOS_IMAGE_URL="${url:-file://${fixture}/recovery.img.bz2}" \
+        STEAMOS_IMAGE_NAME=steamos-test \
+        STEAMOS_IMAGE_SHA256="${compressed_hash:-${compressed_sha256}}" \
+        STEAMOS_IMAGE_SIZE="${compressed_size}" \
+        STEAMOS_IMAGE_RAW_SHA256="${raw_hash:-${raw_sha256}}" \
+        STEAMOS_IMAGE_RAW_SIZE="${raw_size}" \
+        "${fetch}" --output-dir "${output_directory}" "$@" 2>&1)"
+    status=$?
+    set -e
+}
+
+expect() {
+    local name="${1}"
+    shift
+    if ! "$@"
+    then
+        echo "FAIL ${name}"
+        sed 's/^/    /' <<< "${output}"
+        failures=$((failures + 1))
+    fi
+}
+
+contains() {
+    grep -qF -- "${1}" <<< "${output}"
+}
+
+same_file() {
+    cmp -s "${1}" "${2}"
+}
+
+no_leftovers() {
+    ! compgen -G "${1}/*.partial" > /dev/null
+}
+
+# Downloads, verifies both checksums, unpacks and cleans up.
+directory="${work_directory}/happy"
+run_fetch "${directory}"
+expect "happy path exits 0" test "${status}" -eq 0
+expect "happy path writes the raw image" same_file "${directory}/steamos-test.img" "${fixture}/recovery.img"
+expect "happy path removes the compressed download" test ! -e "${directory}/steamos-test.img.bz2"
+expect "happy path leaves no partial files" no_leftovers "${directory}"
+expect "happy path explains the next step" contains "Machines"
+
+# Keeps the compressed download when asked to.
+directory="${work_directory}/keep"
+run_fetch "${directory}" --keep-compressed
+expect "keep exits 0" test "${status}" -eq 0
+expect "keep retains the download" same_file "${directory}/steamos-test.img.bz2" "${fixture}/recovery.img.bz2"
+
+# Refuses a download whose checksum does not match the pinned one.
+directory="${work_directory}/bad-download"
+compressed_hash="$(printf '0%.0s' {1..64})" run_fetch "${directory}"
+expect "bad download fails" test "${status}" -ne 0
+expect "bad download explains" contains "checksum mismatch"
+expect "bad download leaves no image" test ! -e "${directory}/steamos-test.img"
+expect "bad download leaves no partial files" no_leftovers "${directory}"
+
+# Refuses an unpacked image whose checksum does not match the pinned one.
+directory="${work_directory}/bad-image"
+raw_hash="$(printf '0%.0s' {1..64})" run_fetch "${directory}"
+expect "bad image fails" test "${status}" -ne 0
+expect "bad image leaves no image" test ! -e "${directory}/steamos-test.img"
+expect "bad image leaves no partial files" no_leftovers "${directory}"
+
+# Resumes an interrupted download instead of starting over.
+directory="${work_directory}/resume"
+mkdir -p "${directory}"
+head -c 1000 "${fixture}/recovery.img.bz2" > "${directory}/steamos-test.img.bz2.partial"
+run_fetch "${directory}"
+expect "resume exits 0" test "${status}" -eq 0
+expect "resume writes the raw image" same_file "${directory}/steamos-test.img" "${fixture}/recovery.img"
+
+# Does nothing when a verified image is already there.
+url="file://${work_directory}/does-not-exist.bz2" run_fetch "${directory}"
+expect "existing image exits 0" test "${status}" -eq 0
+expect "existing image is reported" contains "already present"
+
+# Refuses to start without enough free space.
+directory="${work_directory}/space"
+STEAMOS_FREE_BYTES_OVERRIDE=10 run_fetch "${directory}"
+expect "no space fails" test "${status}" -ne 0
+expect "no space explains" contains "not enough free space"
+
+if [[ "${failures}" -gt 0 ]]
+then
+    echo "${failures} assertion(s) failed"
+    exit 1
+fi
+echo "All fetch-steamos-image tests passed"

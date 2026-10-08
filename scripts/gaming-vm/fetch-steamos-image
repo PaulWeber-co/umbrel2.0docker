@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+
+# Downloads Valve's official SteamOS recovery image, verifies it against pinned
+# SHA-256 checksums and unpacks it to a raw .img.
+#
+# Valve's image is not redistributed through this repository: it is 3.4 GB
+# (over GitHub LFS's 2 GB per-file limit on free accounts) and proprietary.
+# Pinning the checksum here gives the same guarantee as committing the file.
+#
+# On umbrelOS run it in Settings -> Advanced -> Terminal -> umbrelOS. The image
+# then lands in Files under Home/Downloads. Valve publishes no checksums; the
+# pinned ones were computed from the download on 2026-10-08.
+#
+# Usage: fetch-steamos-image [--output-dir DIRECTORY] [--keep-compressed]
+#
+# A newer image can be pinned without editing this file by setting all of
+# STEAMOS_IMAGE_URL, STEAMOS_IMAGE_NAME, STEAMOS_IMAGE_SHA256,
+# STEAMOS_IMAGE_SIZE, STEAMOS_IMAGE_RAW_SHA256 and STEAMOS_IMAGE_RAW_SIZE.
+
+set -euo pipefail
+
+url="${STEAMOS_IMAGE_URL:-https://steamdeck-images.steamos.cloud/recovery/steamdeck-oobe-repair-20260707.10-3.8.14.img.bz2}"
+name="${STEAMOS_IMAGE_NAME:-steamos-recovery-3.8.14}"
+compressed_sha256="${STEAMOS_IMAGE_SHA256:-4254ee02ec34ae8add9aceef1881a2ce675a9d0176171df92e0eaa1bf014c594}"
+compressed_size="${STEAMOS_IMAGE_SIZE:-3357999306}"
+raw_sha256="${STEAMOS_IMAGE_RAW_SHA256:-f9aa0fa2dd618febf28a5e2a583d1e2b5a8ca3f1205be965da584602ac962f40}"
+raw_size="${STEAMOS_IMAGE_RAW_SIZE:-8120172544}"
+
+umbrel_downloads="/home/umbrel/umbrel/home/Downloads"
+output_directory=""
+keep_compressed=false
+
+fail() {
+    echo "error: ${1}" >&2
+    exit 1
+}
+
+while [[ $# -gt 0 ]]
+do
+    case "${1}" in
+        --output-dir)
+            [[ $# -ge 2 ]] || fail "--output-dir needs a directory"
+            output_directory="${2}"
+            shift 2
+            ;;
+        --keep-compressed)
+            keep_compressed=true
+            shift
+            ;;
+        -h|--help)
+            sed -n '3,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+            exit 0
+            ;;
+        *)
+            fail "unknown argument '${1}' (see --help)"
+            ;;
+    esac
+done
+
+if [[ -z "${output_directory}" ]]
+then
+    if [[ -d "${umbrel_downloads}" ]]
+    then
+        output_directory="${umbrel_downloads}"
+    else
+        output_directory="${PWD}"
+    fi
+fi
+[[ -d "${output_directory}" ]] || fail "output directory '${output_directory}' does not exist"
+
+for tool in curl sha256sum stat df
+do
+    command -v "${tool}" > /dev/null || fail "'${tool}' is required"
+done
+if command -v lbzip2 > /dev/null
+then
+    decompress=(lbzip2 --decompress --stdout)
+elif command -v bzip2 > /dev/null
+then
+    decompress=(bzip2 --decompress --stdout)
+else
+    fail "'bzip2' is required to unpack the image"
+fi
+
+image="${output_directory}/${name}.img"
+download="${image}.bz2"
+
+matches() {
+    local file="${1}" size="${2}" sha256="${3}"
+    [[ -f "${file}" ]] &&
+        [[ "$(stat -c %s "${file}")" == "${size}" ]] &&
+        [[ "$(sha256sum "${file}" | cut -d' ' -f1)" == "${sha256}" ]]
+}
+
+# Files are owned by root when this runs from the umbrelOS terminal. Hand them
+# to the owner of the output directory so Files can rename and delete them.
+adopt() {
+    if [[ "$(id -u)" -eq 0 ]]
+    then
+        chown --reference="${output_directory}" "$@"
+    fi
+}
+
+if [[ -e "${image}" ]]
+then
+    echo "Checking the existing ${image}..."
+    if matches "${image}" "${raw_size}" "${raw_sha256}"
+    then
+        echo "The verified image is already present: ${image}"
+        exit 0
+    fi
+    fail "${image} exists but does not match the pinned checksum; move it away and run again"
+fi
+
+free_bytes="${STEAMOS_FREE_BYTES_OVERRIDE:-$(df --output=avail -B1 "${output_directory}" | tail -1 | tr -d ' ')}"
+needed_bytes=$((compressed_size + raw_size))
+if [[ -e "${download}" ]] || [[ -e "${download}.partial" ]]
+then
+    needed_bytes="${raw_size}"
+fi
+if [[ "${free_bytes}" -lt "${needed_bytes}" ]]
+then
+    fail "not enough free space in ${output_directory}: need $((needed_bytes / 1000000)) MB, have $((free_bytes / 1000000)) MB"
+fi
+
+if ! matches "${download}" "${compressed_size}" "${compressed_sha256}"
+then
+    rm -f "${download}"
+    echo "Downloading ${url}"
+    echo "($((compressed_size / 1000000)) MB, resumes if interrupted)"
+    curl --fail --location --retry 5 --retry-delay 5 --continue-at - \
+        --output "${download}.partial" "${url}"
+    echo "Verifying the download..."
+    if ! matches "${download}.partial" "${compressed_size}" "${compressed_sha256}"
+    then
+        rm -f "${download}.partial"
+        fail "checksum mismatch for the download; it was deleted, run again to retry"
+    fi
+    mv "${download}.partial" "${download}"
+fi
+
+echo "Unpacking to ${image} ($((raw_size / 1000000)) MB)..."
+rm -f "${image}.partial"
+if ! "${decompress[@]}" "${download}" > "${image}.partial"
+then
+    rm -f "${image}.partial"
+    fail "unpacking failed"
+fi
+echo "Verifying the image..."
+if ! matches "${image}.partial" "${raw_size}" "${raw_sha256}"
+then
+    rm -f "${image}.partial"
+    fail "checksum mismatch for the unpacked image; it was deleted"
+fi
+mv "${image}.partial" "${image}"
+adopt "${image}"
+
+if [[ "${keep_compressed}" == true ]]
+then
+    adopt "${download}"
+else
+    rm -f "${download}"
+fi
+
+cat << EOF
+
+Done: ${image}
+
+This is Valve's SteamOS recovery disk. Next steps are in
+docs/superpowers/specs/2026-10-08-steamos-gpu-passthrough-design.md: Machines
+must attach it as a second boot disk next to an NVMe target disk, which stock
+umbrelOS does not support yet, so do not create a Machine from it directly.
+EOF
