@@ -1,0 +1,264 @@
+#!/usr/bin/env bash
+
+# Read-only check whether this computer can hand its integrated GPU (and with
+# it the HDMI port) to a virtual machine. Run it on the mini PC itself, either
+# in the umbrelOS terminal (Settings -> Advanced -> Terminal -> umbrelOS) or
+# from any live Linux USB stick, ideally before the return window closes.
+#
+# It changes nothing. Exit status 0 means no blocking problem was found.
+#
+# SYSFS_ROOT, PROCFS_ROOT and DEV_ROOT exist so the tests can point the script
+# at fake trees; leave them unset on real hardware.
+
+set -euo pipefail
+
+sysfs="${SYSFS_ROOT:-/sys}"
+procfs="${PROCFS_ROOT:-/proc}"
+devfs="${DEV_ROOT:-/dev}"
+
+blockers=0
+warnings=0
+
+section() {
+    printf '\n== %s\n' "${1}"
+}
+
+info() {
+    printf '   %s\n' "${1}"
+}
+
+ok() {
+    printf '   ok    %s\n' "${1}"
+}
+
+warn() {
+    printf '   WARN  %s\n' "${1}"
+    warnings=$((warnings + 1))
+}
+
+block() {
+    printf '   FAIL  %s\n' "${1}"
+    blockers=$((blockers + 1))
+}
+
+read_file() {
+    cat "${1}" 2> /dev/null || true
+}
+
+pci_id() {
+    local device="${1}"
+    printf '%s:%s' "$(read_file "${device}/vendor" | sed 's/^0x//')" "$(read_file "${device}/device" | sed 's/^0x//')"
+}
+
+pci_driver() {
+    local device="${1}"
+    if [[ -L "${device}/driver" ]]
+    then
+        basename "$(readlink "${device}/driver")"
+    else
+        echo "none"
+    fi
+}
+
+pci_group() {
+    local device="${1}"
+    if [[ -L "${device}/iommu_group" ]]
+    then
+        basename "$(readlink "${device}/iommu_group")"
+    fi
+}
+
+# Bus, device and slot without the function, e.g. 0000:c5:00 for 0000:c5:00.1.
+pci_slot() {
+    echo "${1%.*}"
+}
+
+check_cpu() {
+    section "CPU and virtualization"
+    local vendor model threads cores memory_kib
+    vendor="$(awk -F': ' '/^vendor_id/ { print $2; exit }' "${procfs}/cpuinfo")"
+    model="$(awk -F': ' '/^model name/ { print $2; exit }' "${procfs}/cpuinfo")"
+    threads="$(grep -c '^processor' "${procfs}/cpuinfo")"
+    cores="$(cat "${sysfs}"/devices/system/cpu/cpu[0-9]*/topology/core_id 2> /dev/null | sort -un | wc -l)"
+    memory_kib="$(awk '/^MemTotal/ { print $2 }' "${procfs}/meminfo")"
+    info "${model} (${vendor}), ${cores} cores / ${threads} threads, $((memory_kib / 1024 / 1024)) GiB RAM"
+
+    if grep -qwE 'vmx|svm' "${procfs}/cpuinfo"
+    then
+        ok "hardware virtualization (VT-x/AMD-V) is available"
+    else
+        block "hardware virtualization is off: enable SVM (AMD) or VT-x (Intel) in the BIOS"
+    fi
+
+    if [[ -e "${devfs}/kvm" ]]
+    then
+        ok "/dev/kvm exists"
+    else
+        block "/dev/kvm is missing: KVM cannot accelerate virtual machines"
+    fi
+}
+
+check_iommu() {
+    section "IOMMU"
+    local cmdline units
+    cmdline="$(read_file "${procfs}/cmdline")"
+    info "kernel command line: ${cmdline}"
+    units="$(find "${sysfs}/class/iommu" -mindepth 1 -maxdepth 1 2> /dev/null | wc -l)"
+    if [[ "${units}" -gt 0 ]]
+    then
+        ok "IOMMU is active (${units} unit(s))"
+    else
+        block "IOMMU is not enabled: turn on IOMMU / AMD-Vi / VT-d in the BIOS"
+    fi
+    kernel_cmdline="${cmdline}"
+}
+
+# Prints every member of an IOMMU group that would have to go to the VM with
+# the GPU but must not: anything outside the GPU's own slot except bridges.
+group_intruders() {
+    local group="${1}" gpu_slot="${2}" member class
+    for member in "${sysfs}/kernel/iommu_groups/${group}/devices/"*
+    do
+        member="$(basename "${member}")"
+        [[ "$(pci_slot "${member}")" == "${gpu_slot}" ]] && continue
+        class="$(read_file "${sysfs}/bus/pci/devices/${member}/class")"
+        [[ "${class}" == 0x0604* ]] && continue
+        echo "${member}"
+    done
+}
+
+check_gpu() {
+    local device address class id driver boot_vga group slot intruders function_device function_address
+    gpu_found=0
+    for device in "${sysfs}"/bus/pci/devices/*
+    do
+        class="$(read_file "${device}/class")"
+        [[ "${class}" == 0x03* ]] || continue
+        gpu_found=1
+        address="$(basename "${device}")"
+        id="$(pci_id "${device}")"
+        driver="$(pci_driver "${device}")"
+        boot_vga="$(read_file "${device}/boot_vga")"
+        group="$(pci_group "${device}")"
+        slot="$(pci_slot "${address}")"
+
+        section "GPU ${address}"
+        info "${address} [${id}] driver=${driver} boot_vga=${boot_vga:-0} iommu_group=${group:-none}"
+
+        if [[ -z "${group}" ]]
+        then
+            if [[ "${id}" == 8086:* ]] && ! grep -qw 'intel_iommu=on' <<< "${kernel_cmdline}"
+            then
+                block "no IOMMU group: Debian kernels keep Intel iGPUs out of the IOMMU unless the kernel command line has intel_iommu=on (needs a custom umbrelOS build, see the design doc)"
+            else
+                block "no IOMMU group: this GPU cannot be assigned to a VM"
+            fi
+            continue
+        fi
+
+        intruders="$(group_intruders "${group}" "${slot}")"
+        if [[ -z "${intruders}" ]]
+        then
+            ok "IOMMU group ${group} is isolated (only this GPU's functions and bridges)"
+        else
+            block "IOMMU group ${group} also contains $(echo "${intruders}" | paste -sd ' ' -): they would have to be passed through as well"
+        fi
+
+        for function_device in "${sysfs}/bus/pci/devices/${slot}".*
+        do
+            function_address="$(basename "${function_device}")"
+            [[ "${function_address}" == "${address}" ]] && continue
+            info "companion function ${function_address} [$(pci_id "${function_device}")] class=$(read_file "${function_device}/class") driver=$(pci_driver "${function_device}") (pass it through too, e.g. HDMI audio)"
+        done
+
+        if [[ -e "${device}/reset_method" ]]
+        then
+            if [[ -s "${device}/reset_method" ]]
+            then
+                ok "reset methods: $(read_file "${device}/reset_method")"
+            else
+                warn "no reset method: after the VM stops the GPU may stay unusable until the host reboots (typical AMD iGPU reset bug)"
+            fi
+        fi
+
+        if [[ "${id}" == 1002:* ]]
+        then
+            if [[ -e "${sysfs}/firmware/acpi/tables/VFCT" ]]
+            then
+                ok "VBIOS source: ACPI VFCT table present (dump it as the VM's ROM file)"
+            else
+                warn "no ACPI VFCT table: the VBIOS must be extracted from the vendor's BIOS update instead"
+            fi
+        fi
+
+        if [[ "${id}" == 8086:* ]]
+        then
+            warn "Intel iGPU: HDMI output in a VM needs an IGD option ROM matching device ${id#8086:} and is only reported to work on some generations"
+        fi
+
+        if [[ "${driver}" != "vfio-pci" ]]
+        then
+            info "currently used by the host (${driver}); apps using /dev/dri lose hardware acceleration while the VM owns the GPU"
+        fi
+    done
+
+    if [[ "${gpu_found}" -eq 0 ]]
+    then
+        section "GPU"
+        block "no display controller found"
+    fi
+}
+
+# Suggests giving the VM the upper half of the physical cores, with all of
+# their hyper-threads, so umbrelOS keeps whole cores for itself.
+suggest_cpu_split() {
+    section "CPU split suggestion"
+    local cpu core
+    declare -A threads_by_core=()
+    for cpu in "${sysfs}"/devices/system/cpu/cpu[0-9]*
+    do
+        [[ -e "${cpu}/topology/core_id" ]] || continue
+        core="$(read_file "${cpu}/topology/physical_package_id"):$(read_file "${cpu}/topology/core_id")"
+        threads_by_core["${core}"]+="${cpu##*cpu} "
+    done
+
+    local -a cores
+    mapfile -t cores < <(printf '%s\n' "${!threads_by_core[@]}" | sort -t: -k1,1n -k2,2n)
+    local total="${#cores[@]}" half=$(( ${#cores[@]} / 2 )) index host_threads="" vm_threads=""
+    if [[ "${total}" -lt 2 ]]
+    then
+        warn "only ${total} core(s): not enough to share between umbrelOS and a gaming VM"
+        return
+    fi
+    for ((index = 0; index < total; index++))
+    do
+        if [[ "${index}" -lt $((total - half)) ]]
+        then
+            host_threads+="${threads_by_core[${cores[index]}]}"
+        else
+            vm_threads+="${threads_by_core[${cores[index]}]}"
+        fi
+    done
+    info "host cpus: $(tr ' ' '\n' <<< "${host_threads}" | sed '/^$/d' | sort -n | paste -sd, -)"
+    info "VM cpus:   $(tr ' ' '\n' <<< "${vm_threads}" | sed '/^$/d' | sort -n | paste -sd, -)"
+}
+
+echo "umbrelOS gaming VM passthrough preflight (read-only)"
+
+kernel_cmdline=""
+check_cpu
+check_iommu
+check_gpu
+suggest_cpu_split
+
+echo
+if [[ "${blockers}" -gt 0 ]]
+then
+    echo "RESULT: NOT READY (${blockers} blocking problem(s), ${warnings} warning(s))"
+    exit 1
+elif [[ "${warnings}" -gt 0 ]]
+then
+    echo "RESULT: READY WITH WARNINGS (${warnings} warning(s))"
+else
+    echo "RESULT: READY"
+fi

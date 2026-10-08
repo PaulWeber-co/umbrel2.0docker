@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+
+# Tests for passthrough-preflight against fake sysfs/procfs/dev trees that
+# model the mini PCs we care about. Run: scripts/gaming-vm/passthrough-preflight.test
+
+# Indenting multi-line output reads clearer with sed than with expansions.
+# shellcheck disable=SC2001
+
+set -euo pipefail
+
+script_directory="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+preflight="${script_directory}/passthrough-preflight"
+work_directory="$(mktemp -d)"
+trap 'rm -rf "${work_directory}"' EXIT
+
+failures=0
+
+# Fake machine builders
+
+new_machine() {
+    local root="${work_directory}/${1}"
+    mkdir -p "${root}/sys/bus/pci/devices" "${root}/sys/bus/pci/drivers" "${root}/sys/kernel/iommu_groups" \
+        "${root}/sys/class/iommu" "${root}/sys/firmware/acpi/tables" "${root}/sys/devices/system/cpu" \
+        "${root}/proc" "${root}/dev"
+    echo "${root}"
+}
+
+add_cpu() {
+    local root="${1}" vendor="${2}" model="${3}" flag="${4}" cores="${5}"
+    local threads=$((cores * 2)) cpu core
+    for ((cpu = 0; cpu < threads; cpu++))
+    do
+        core=$((cpu % cores))
+        mkdir -p "${root}/sys/devices/system/cpu/cpu${cpu}/topology"
+        echo 0 > "${root}/sys/devices/system/cpu/cpu${cpu}/topology/physical_package_id"
+        echo "${core}" > "${root}/sys/devices/system/cpu/cpu${cpu}/topology/core_id"
+        printf 'processor\t: %s\nvendor_id\t: %s\nmodel name\t: %s\nflags\t\t: fpu %s lm\n\n' \
+            "${cpu}" "${vendor}" "${model}" "${flag}" >> "${root}/proc/cpuinfo"
+    done
+    echo "MemTotal:       32768000 kB" > "${root}/proc/meminfo"
+}
+
+add_pci() {
+    local root="${1}" address="${2}" class="${3}" vendor="${4}" device="${5}" driver="${6}" group="${7}"
+    local path="${root}/sys/bus/pci/devices/${address}"
+    mkdir -p "${path}"
+    echo "${class}" > "${path}/class"
+    echo "${vendor}" > "${path}/vendor"
+    echo "${device}" > "${path}/device"
+    if [[ -n "${driver}" ]]
+    then
+        mkdir -p "${root}/sys/bus/pci/drivers/${driver}"
+        ln -s "../../../bus/pci/drivers/${driver}" "${path}/driver"
+    fi
+    if [[ -n "${group}" ]]
+    then
+        mkdir -p "${root}/sys/kernel/iommu_groups/${group}/devices"
+        touch "${root}/sys/kernel/iommu_groups/${group}/devices/${address}"
+        ln -s "../../../kernel/iommu_groups/${group}" "${path}/iommu_group"
+    fi
+}
+
+amd_780m() {
+    local root
+    root="$(new_machine "${1}")"
+    add_cpu "${root}" AuthenticAMD "AMD Ryzen 7 8845HS w/ Radeon 780M Graphics" svm 8
+    echo "BOOT_IMAGE=/vmlinuz console=tty1" > "${root}/proc/cmdline"
+    touch "${root}/sys/class/iommu/ivhd0" "${root}/sys/firmware/acpi/tables/VFCT" "${root}/dev/kvm"
+    add_pci "${root}" 0000:c5:00.0 0x030000 0x1002 0x1900 amdgpu 12
+    echo 1 > "${root}/sys/bus/pci/devices/0000:c5:00.0/boot_vga"
+    touch "${root}/sys/bus/pci/devices/0000:c5:00.0/reset_method"
+    add_pci "${root}" 0000:c5:00.1 0x040300 0x1002 0x1640 snd_hda_intel 12
+    add_pci "${root}" 0000:00:08.1 0x060400 0x1022 0x14eb pcieport 12
+    echo "${root}"
+}
+
+intel_igpu_excluded() {
+    local root
+    root="$(new_machine "${1}")"
+    add_cpu "${root}" GenuineIntel "Intel(R) N100" vmx 4
+    echo "BOOT_IMAGE=/vmlinuz console=tty1" > "${root}/proc/cmdline"
+    touch "${root}/sys/class/iommu/dmar0" "${root}/dev/kvm"
+    # INTEL_IOMMU_DEFAULT_ON_INTGPU_OFF leaves the iGPU without an IOMMU group.
+    add_pci "${root}" 0000:00:02.0 0x030000 0x8086 0x46d1 i915 ""
+    echo 1 > "${root}/sys/bus/pci/devices/0000:00:02.0/boot_vga"
+    add_pci "${root}" 0000:00:1f.3 0x040380 0x8086 0x54c8 snd_hda_intel 9
+    echo "${root}"
+}
+
+# Assertions
+
+run_preflight() {
+    local root="${1}"
+    set +e
+    output="$(SYSFS_ROOT="${root}/sys" PROCFS_ROOT="${root}/proc" DEV_ROOT="${root}/dev" "${preflight}" 2>&1)"
+    status=$?
+    set -e
+}
+
+expect_status() {
+    if [[ "${status}" -ne "${2}" ]]
+    then
+        echo "FAIL ${1}: expected exit ${2}, got ${status}"
+        sed 's/^/    /' <<< "${output}"
+        failures=$((failures + 1))
+    fi
+}
+
+expect_output() {
+    if ! grep -qF -- "${2}" <<< "${output}"
+    then
+        echo "FAIL ${1}: expected output to contain '${2}'"
+        sed 's/^/    /' <<< "${output}"
+        failures=$((failures + 1))
+    fi
+}
+
+# Cases
+
+root="$(amd_780m amd)"
+run_preflight "${root}"
+expect_status "amd 780m is ready" 0
+expect_output "amd 780m names the GPU" "0000:c5:00.0 [1002:1900] driver=amdgpu boot_vga=1 iommu_group=12"
+expect_output "amd 780m accepts bridge and own functions in group" "isolated"
+expect_output "amd 780m finds the HDMI audio function" "0000:c5:00.1 [1002:1640]"
+expect_output "amd 780m warns about the reset bug" "no reset method"
+expect_output "amd 780m finds the VBIOS source" "ACPI VFCT table present"
+expect_output "amd 780m splits cores" "VM cpus:   4,5,6,7,12,13,14,15"
+expect_output "amd 780m keeps host cores" "host cpus: 0,1,2,3,8,9,10,11"
+expect_output "amd 780m verdict" "RESULT: READY WITH WARNINGS"
+
+root="$(intel_igpu_excluded intel)"
+run_preflight "${root}"
+expect_status "intel igpu without group is not ready" 1
+expect_output "intel explains the missing group" "no IOMMU group"
+expect_output "intel names the kernel parameter" "intel_iommu=on"
+expect_output "intel verdict" "RESULT: NOT READY"
+
+root="$(amd_780m shared-group)"
+add_pci "${root}" 0000:c6:00.3 0x0c0330 0x1022 0x15b9 xhci_hcd 12
+run_preflight "${root}"
+expect_status "shared group is not ready" 1
+expect_output "shared group names the intruder" "0000:c6:00.3"
+
+root="$(amd_780m no-iommu)"
+rm "${root}/sys/class/iommu/ivhd0"
+run_preflight "${root}"
+expect_status "missing iommu is not ready" 1
+expect_output "missing iommu explains the BIOS switch" "IOMMU is not enabled"
+
+root="$(amd_780m no-kvm)"
+rm "${root}/dev/kvm"
+run_preflight "${root}"
+expect_status "missing kvm is not ready" 1
+expect_output "missing kvm is reported" "/dev/kvm"
+
+if [[ "${failures}" -gt 0 ]]
+then
+    echo "${failures} assertion(s) failed"
+    exit 1
+fi
+echo "All passthrough-preflight tests passed"
