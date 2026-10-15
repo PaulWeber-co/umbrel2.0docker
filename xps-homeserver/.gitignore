@@ -1,0 +1,8 @@
+# Secrets and personal settings never go into git
+.env
+
+# Build output and download caches
+installer/out/
+installer/cache/
+*.iso
+*.qcow2

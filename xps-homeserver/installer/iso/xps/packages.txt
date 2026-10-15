@@ -1,0 +1,42 @@
+# Installed from the offline repository on the stick at the end of the
+# installation, before the XPS has any network. Everything else comes later
+# over Wi-Fi.
+
+# Newest kernel and its headers, so DKMS can build wl right away
+linux-image-amd64
+linux-headers-amd64
+
+# Broadcom DW1560 (BCM4352) Wi-Fi driver, built by DKMS for every kernel
+broadcom-sta-dkms
+dkms
+# Lets DKMS sign the module instead of warning about a missing key
+openssl
+
+# Wi-Fi and network
+network-manager
+wpasupplicant
+wireless-regdb
+iw
+rfkill
+avahi-daemon
+libnss-mdns
+systemd-timesyncd
+
+# Remote administration from the Mac
+openssh-server
+sudo
+python3
+python3-apt
+ca-certificates
+curl
+
+# Firmware: Intel CPU microcode, Skylake graphics, audio DSP
+intel-microcode
+firmware-intel-graphics
+firmware-sof-signed
+
+# Handy on the console
+less
+nano
+htop
+bash-completion
