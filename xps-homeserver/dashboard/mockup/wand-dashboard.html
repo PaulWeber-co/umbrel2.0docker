@@ -1,0 +1,1012 @@
+<title>Wand-Dashboard Entwürfe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@300;400;500;600&family=Onest:wght@200;300;400;500;600&family=Red+Hat+Display:wght@200;300;400;500&family=Red+Hat+Text:wght@400;500&display=swap">
+<style>
+/* Layout: one fixed 1920×1080 stage (the XPS display), scaled to fit the window, with the mockup controls underneath. */
+:root {
+  --page: #0b0d10;
+  --panel: #15191e;
+  --ink: #e9edf0;
+  --muted: #9aa4ad;
+  --line: rgba(233, 237, 240, .14);
+  --accent: #a6d8ff;
+  --warn: #ffc36b;
+  --ok: #7fe0b0;
+  --f-a: 'Onest', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+  --f-b: 'Red Hat Display', 'Avenir Next', system-ui, sans-serif;
+  --f-b-text: 'Red Hat Text', 'Avenir Next', system-ui, sans-serif;
+  --f-c: 'IBM Plex Sans Condensed', 'Arial Narrow', system-ui, sans-serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --glow: 120 140 200;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--f-a);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px;
+}
+
+/* ---------- page chrome: the scaled display and the mockup controls ---------- */
+.screen { flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.frame {
+  position: relative;
+  width: calc(1920px * var(--s, .4));
+  height: calc(1080px * var(--s, .4));
+  border-radius: calc(30px * var(--s, .4) + 4px);
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, .07), 0 30px 80px -30px rgba(0, 0, 0, .9);
+}
+.stage {
+  position: absolute; left: 0; top: 0;
+  width: 1920px; height: 1080px;
+  transform: scale(var(--s, .4)); transform-origin: 0 0;
+  overflow: hidden; color: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+.controls { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; justify-content: center; }
+.group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.group-label { font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.seg { display: inline-flex; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 24px; padding: 3px; }
+.seg button, .tbtn {
+  appearance: none; border: 0; background: transparent; color: var(--ink);
+  font: 500 14px/1 var(--f-a); padding: 0 15px; min-height: 40px; border-radius: 20px; cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--page); }
+.tbtn { background: var(--panel); border: 1px solid var(--line); min-height: 44px; border-radius: 22px; }
+.tbtn[aria-pressed="true"] { background: var(--accent); border-color: transparent; color: #071521; }
+.seg button:focus-visible, .tbtn:focus-visible, .stage button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.note { margin: 0; width: 100%; text-align: center; font-size: 13px; color: var(--muted); text-wrap: balance; }
+.note b { color: var(--ink); font-weight: 500; }
+
+.ic { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ---------- shared stage layers ---------- */
+.bg, .bg video, .layer { position: absolute; inset: 0; }
+.bg { transition: opacity 1.4s ease; }
+.bg video { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.8s ease; }
+.bg video.on { opacity: 1; }
+.glow { opacity: 0; transition: opacity 1.4s ease; background: radial-gradient(50% 70% at 17% 66%, rgb(var(--glow) / .62), rgb(var(--glow) / 0) 72%); mix-blend-mode: screen; }
+.tint { opacity: 0; transition: opacity 1.4s ease, background-color 1.4s ease; background-color: rgb(var(--glow) / .22); mix-blend-mode: soft-light; }
+.stage[data-music="1"] .glow, .stage[data-music="1"] .tint { opacity: 1; }
+.stage[data-design="b"] .glow { background: radial-gradient(70% 55% at 12% 100%, rgb(var(--glow) / .7), rgb(var(--glow) / 0) 70%); }
+.stage[data-design="c"] .glow { background: radial-gradient(40% 70% at 50% 45%, rgb(var(--glow) / .55), rgb(var(--glow) / 0) 70%); }
+/* Evening: warmer colors, less blue light */
+.warm { background: rgb(255 146 52 / .2); mix-blend-mode: multiply; opacity: 0; transition: opacity 2.5s ease; pointer-events: none; z-index: 30; }
+.stage[data-scene="abend"] .warm { opacity: 1; }
+
+.design { position: absolute; inset: 0; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .6s ease, visibility 0s linear .6s; }
+.stage[data-design="a"] .d-a, .stage[data-design="b"] .d-b, .stage[data-design="c"] .d-c { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .6s ease; }
+.stage[data-scene="nacht"] .design { opacity: 0; visibility: hidden; }
+
+.t { position: absolute; box-sizing: border-box; transition: opacity .45s ease .1s, visibility 0s; }
+.t.gone { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .3s ease, visibility 0s linear .3s; }
+.player { position: absolute; opacity: 0; visibility: hidden; transform: translateY(24px); transition: opacity .6s ease, transform .8s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .8s; }
+.stage[data-music="1"] .player { opacity: 1; visibility: visible; transform: none; transition: opacity .7s ease .25s, transform .9s cubic-bezier(.2, .8, .2, 1) .2s; }
+.cover { display: block; object-fit: cover; background: #222; }
+.bar { position: relative; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .25); overflow: hidden; }
+.bar > i { position: absolute; inset: 0; background: #fff; border-radius: inherit; transform-origin: 0 50%; transform: scaleX(0); }
+.times { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+
+/* ---------- edit mode ---------- */
+.stage .t .x {
+  position: absolute; top: 12px; right: 12px; width: 48px; height: 48px; border-radius: 24px; border: 0;
+  display: none; align-items: center; justify-content: center; font-size: 24px; color: #111;
+  background: rgba(255, 255, 255, .92); cursor: pointer; z-index: 3;
+}
+.stage[data-edit="1"] .t .x { display: flex; }
+.stage .t .x .ic { stroke-width: 2.2; }
+.stage[data-edit="1"] .design .t:not(.gone) { animation: wiggle 1s ease-in-out infinite; cursor: grab; touch-action: none; }
+.stage[data-edit="1"] .design .t:nth-child(2n):not(.gone) { animation-delay: -.5s; }
+.stage[data-edit="1"] .design .t:nth-child(3n):not(.gone) { animation-delay: -.25s; }
+.t.dragging { animation: none !important; z-index: 20; cursor: grabbing; opacity: .92; }
+.t.target { outline: 3px solid rgba(255, 255, 255, .9); outline-offset: 6px; }
+@keyframes wiggle { 0%, 100% { rotate: -.35deg; } 50% { rotate: .35deg; } }
+.editbar {
+  position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%);
+  display: none; align-items: center; gap: 14px; padding: 10px 10px 10px 26px; border-radius: 40px;
+  background: rgba(12, 14, 18, .78); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  font: 400 22px/1.2 var(--f-a); color: #fff; z-index: 25; white-space: nowrap;
+}
+.stage[data-edit="1"] .editbar { display: flex; }
+.editbar button { min-height: 56px; padding: 0 24px; border-radius: 28px; border: 0; font: 500 21px/1 var(--f-a); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+.eb-add { display: flex; gap: 8px; }
+.eb-add button { background: rgba(255, 255, 255, .16); color: #fff; }
+.eb-done { background: #fff; color: #111; }
+
+/* ---------- night view: clock only, very dark ---------- */
+.night {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  background: #000; color: #ff9f5f; opacity: 0; visibility: hidden; transition: opacity 1.2s ease, visibility 0s linear 1.2s; z-index: 40;
+}
+.stage[data-scene="nacht"] .night { opacity: 1; visibility: visible; transition: opacity 1.2s ease; }
+.n-time { font-size: 300px; font-weight: 200; line-height: .9; letter-spacing: -.04em; opacity: .55; font-variant-numeric: tabular-nums; }
+.n-date { font-size: 34px; opacity: .32; }
+.n-music { display: none; align-items: center; gap: 12px; font-size: 28px; opacity: .3; margin-top: 30px; }
+.stage[data-music="1"] .n-music { display: flex; }
+.stage[data-design="a"] .night { font-family: var(--f-a); }
+.stage[data-design="b"] .night { font-family: var(--f-b); }
+.stage[data-design="c"] .night { font-family: var(--f-c); }
+
+/* =====================================================================
+   A · Glas: liquid-glass tiles in the spirit of umbrelOS 2.0
+   ===================================================================== */
+.d-a { font-family: var(--f-a); }
+.d-a .scrim { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(4, 10, 16, .38) 0%, rgba(4, 10, 16, 0) 42%), linear-gradient(0deg, rgba(4, 10, 16, .2), rgba(4, 10, 16, 0) 45%); }
+.a-head { position: absolute; left: 96px; top: 74px; width: 640px; text-shadow: 0 2px 30px rgba(0, 0, 0, .28); }
+.a-greet { font-size: 36px; font-weight: 400; opacity: .94; }
+.a-time { font-size: 190px; font-weight: 200; letter-spacing: -.05em; line-height: .9; margin: 14px 0 12px -10px; font-variant-numeric: tabular-nums; }
+.a-date { font-size: 36px; font-weight: 400; opacity: .86; }
+.d-a .t {
+  border-radius: 38px; padding: 28px 30px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .3) 0%, rgba(255, 255, 255, .1) 38%, rgba(255, 255, 255, .06) 62%, rgba(255, 255, 255, .14) 100%), rgba(18, 28, 38, .14);
+  backdrop-filter: blur(28px) saturate(170%); -webkit-backdrop-filter: blur(28px) saturate(170%);
+  border: 1px solid rgba(255, 255, 255, .34);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, .55), inset 0 -1px 0 rgba(255, 255, 255, .12), 0 24px 60px -28px rgba(0, 10, 20, .55);
+  text-shadow: 0 1px 14px rgba(0, 0, 0, .2);
+}
+.d-a .t::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(130% 70% at 0% 0%, rgba(255, 255, 255, .28), rgba(255, 255, 255, 0) 48%), radial-gradient(90% 60% at 100% 100%, rgba(255, 255, 255, .12), rgba(255, 255, 255, 0) 55%); }
+.d-a .t > * { position: relative; }
+.a-lbl { display: flex; align-items: center; gap: 10px; font-size: 21px; font-weight: 500; opacity: .9; }
+.a-lbl .ic { font-size: 26px; }
+.a-lbl em { margin-left: auto; font-style: normal; font-weight: 400; opacity: .75; font-size: 19px; }
+.a-big { font-size: 80px; font-weight: 300; letter-spacing: -.035em; line-height: 1; font-variant-numeric: tabular-nums; }
+.a-big small { font-size: 34px; letter-spacing: 0; font-weight: 400; margin-left: 6px; }
+.a-sub { font-size: 21px; line-height: 1.35; opacity: .88; }
+.a-foot { margin-top: auto; font-size: 19px; opacity: .8; }
+.a-pill { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 20px; font-size: 19px; font-weight: 500; background: rgba(255, 190, 90, .26); color: #fff3df; border: 1px solid rgba(255, 210, 140, .4); }
+.a-wx { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.a-wx-now { display: flex; gap: 22px; align-items: center; }
+.a-hours { list-style: none; margin: auto 0 0; padding: 0; display: flex; justify-content: space-between; }
+.a-hours li { display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 18px; }
+.a-hours li .ic { font-size: 30px; }
+.a-hours li b { font-weight: 500; font-size: 22px; font-variant-numeric: tabular-nums; }
+.stage[data-music="1"] .a-hours { display: none; }
+.a-events { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.a-events li { display: grid; grid-template-columns: 74px 1fr auto; column-gap: 14px; align-items: baseline; font-size: 23px; line-height: 1.25; white-space: nowrap; }
+.a-events time { font-variant-numeric: tabular-nums; opacity: .78; font-size: 21px; }
+.a-events em { font-style: normal; font-size: 19px; opacity: .72; }
+.a-todos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.d-a .a-todos { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 22px; }
+.todo { all: unset; box-sizing: border-box; display: flex; gap: 12px; align-items: flex-start; width: 100%; padding: 8px 0; font-size: 21px; line-height: 1.25; cursor: pointer; }
+.todo .box { flex: none; width: 26px; height: 26px; margin-top: 1px; border-radius: 13px; border: 2px solid rgba(255, 255, 255, .8); display: inline-flex; align-items: center; justify-content: center; }
+.todo .box .ic { font-size: 18px; stroke-width: 2.4; opacity: 0; }
+.todo[aria-pressed="true"] { opacity: .5; text-decoration: line-through; }
+.todo[aria-pressed="true"] .box { background: #fff; color: #222; }
+.todo[aria-pressed="true"] .box .ic { opacity: 1; }
+.a-gauges { display: flex; gap: 26px; align-items: center; }
+.gauge { position: relative; width: 116px; height: 116px; flex: none; }
+.gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.gauge circle { fill: none; stroke-width: 9; stroke-linecap: round; }
+.gauge .trk { stroke: rgba(255, 255, 255, .22); }
+.gauge .val { stroke: #fff; }
+.gauge b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 25px; font-variant-numeric: tabular-nums; }
+.gauge span { position: absolute; left: 0; right: 0; bottom: -2px; text-align: center; font-size: 15px; opacity: .8; display: none; }
+.a-gauge-l { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 17px; }
+.a-gauge-l span { opacity: .8; }
+.a-disk { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; font-size: 19px; }
+.a-disk span:first-child { opacity: .8; }
+.a-switch { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 22px; background: rgba(255, 255, 255, .14); font-size: 21px; cursor: pointer; }
+.a-switch .ic { font-size: 26px; }
+.a-switch .knob { margin-left: auto; width: 46px; height: 28px; border-radius: 14px; background: rgba(255, 255, 255, .3); position: relative; transition: background .3s; }
+.a-switch .knob::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 11px; background: #fff; transition: transform .3s; }
+.a-switch[aria-pressed="true"] { background: rgba(255, 230, 170, .3); }
+.a-switch[aria-pressed="true"] .knob { background: #ffd27a; }
+.a-switch[aria-pressed="true"] .knob::after { transform: translateX(18px); }
+.a-row { display: flex; align-items: center; gap: 12px; font-size: 21px; padding-left: 4px; white-space: nowrap; }
+.a-row .ic { font-size: 24px; opacity: .85; }
+.a-row em { margin-left: auto; font-style: normal; opacity: .72; font-size: 19px; }
+.a-big.long { font-size: 56px; letter-spacing: -.02em; }
+.a-ph { font-size: 42px; font-weight: 300; opacity: .7; letter-spacing: -.01em; }
+
+.a-player { left: 96px; top: 480px; width: 1180px; height: 520px; display: flex; gap: 56px; align-items: flex-end; }
+.a-cover-wrap { position: relative; width: 440px; height: 440px; flex: none; }
+.a-player .cover { width: 440px; height: 440px; border-radius: 30px; box-shadow: 0 40px 90px -30px rgb(var(--glow) / .9), 0 0 0 1px rgba(255, 255, 255, .25); }
+.a-pinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; text-shadow: 0 2px 30px rgba(0, 0, 0, .3); }
+.eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 22px; opacity: .85; margin-bottom: 10px; }
+.eyebrow .ic { font-size: 26px; }
+.a-ptitle { font-size: 76px; font-weight: 500; letter-spacing: -.03em; line-height: 1.02; text-wrap: balance; }
+.a-partist { font-size: 38px; font-weight: 400; opacity: .92; }
+.a-palbum { font-size: 26px; opacity: .7; }
+.a-prog { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; font-size: 21px; }
+.a-prog .bar { height: 8px; border-radius: 4px; }
+
+/* =====================================================================
+   B · Panorama: cinematic, the picture first, one quiet line of facts
+   ===================================================================== */
+.d-b { font-family: var(--f-b-text); }
+.b-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .32) 0%, rgba(0, 0, 0, 0) 30%, rgba(0, 0, 0, 0) 58%, rgba(0, 0, 0, .58) 100%); }
+.b-head { position: absolute; left: 112px; top: 56px; text-shadow: 0 2px 40px rgba(0, 0, 0, .3); }
+.b-time { font-family: var(--f-b); font-size: 230px; font-weight: 200; letter-spacing: -.035em; line-height: 1; font-variant-numeric: tabular-nums; margin-left: -8px; }
+.b-meta { font-size: 32px; font-weight: 400; opacity: .92; display: flex; gap: 14px; }
+.b-meta .sep { opacity: .5; }
+.b-place { position: absolute; right: 112px; top: 74px; font-size: 18px; letter-spacing: .2em; text-transform: uppercase; opacity: .78; text-shadow: 0 1px 12px rgba(0, 0, 0, .4); }
+.d-b .t { padding: 6px 28px 0; border-left: 1px solid rgba(255, 255, 255, .28); display: flex; flex-direction: column; gap: 8px; text-shadow: 0 1px 18px rgba(0, 0, 0, .35); transition: opacity .5s ease, transform .6s cubic-bezier(.2, .8, .2, 1), visibility 0s; }
+.d-b .t.first { border-left-color: transparent; padding-left: 0; }
+.stage[data-music="1"] .d-b .t { opacity: 0; transform: translateY(40px); visibility: hidden; transition: opacity .4s ease, transform .6s ease, visibility 0s linear .6s; }
+.b-lbl { font-size: 16px; letter-spacing: .16em; text-transform: uppercase; opacity: .78; font-weight: 500; }
+.b-val { font-family: var(--f-b); font-size: 58px; font-weight: 300; letter-spacing: -.02em; line-height: 1.05; display: flex; align-items: center; gap: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.b-val .ic { font-size: 46px; stroke-width: 1.3; }
+.b-val.text { font-size: 36px; font-weight: 400; letter-spacing: 0; white-space: normal; line-height: 1.15; min-height: 61px; display: flex; align-items: flex-end; }
+.b-sub { font-size: 21px; opacity: .86; line-height: 1.3; }
+.b-sub.warn { color: var(--warn); opacity: 1; }
+.b-rot { position: relative; height: 140px; }
+.b-rot > div { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px; opacity: 0; transition: opacity 1s ease; }
+.b-rot > div.on { opacity: 1; }
+.b-player { left: 112px; top: 686px; width: 1696px; height: 330px; }
+.b-player .cover { position: absolute; left: 0; bottom: 64px; width: 250px; height: 250px; border-radius: 6px; box-shadow: 0 30px 80px -24px rgb(var(--glow) / .9); }
+.b-pinfo { position: absolute; left: 300px; bottom: 64px; right: 0; display: flex; flex-direction: column; gap: 6px; text-shadow: 0 2px 30px rgba(0, 0, 0, .35); }
+.b-eyebrow { font-size: 18px; letter-spacing: .18em; text-transform: uppercase; opacity: .8; display: flex; align-items: center; gap: 10px; }
+.b-eyebrow .ic { font-size: 22px; }
+.b-ptitle { font-family: var(--f-b); font-size: 96px; font-weight: 300; letter-spacing: -.03em; line-height: 1.05; }
+.b-partist { font-size: 34px; opacity: .9; }
+.b-prog { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 80px 1fr 80px; gap: 22px; align-items: center; font-size: 20px; font-variant-numeric: tabular-nums; }
+.b-prog span:last-child { text-align: right; }
+.b-prog .bar { height: 3px; background: rgba(255, 255, 255, .3); }
+
+/* =====================================================================
+   C · Leitstand: smoked glass, denser, live numbers from the server
+   ===================================================================== */
+.d-c { font-family: var(--f-c); }
+.d-c .scrim { position: absolute; inset: 0; background: radial-gradient(120% 90% at 50% 40%, rgba(5, 8, 12, .28), rgba(5, 8, 12, .7)); }
+.c-head { position: absolute; left: 64px; top: 46px; width: 536px; }
+.c-time { display: flex; align-items: baseline; gap: 6px; font-size: 156px; font-weight: 300; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.c-time .sec { font-family: var(--f-mono); font-size: 40px; letter-spacing: 0; opacity: .55; }
+.c-greet { font-size: 34px; font-weight: 400; margin-top: 10px; }
+.c-date { font-size: 26px; opacity: .7; margin-top: 4px; }
+.d-c .t {
+  border-radius: 16px; padding: 26px 28px; overflow: hidden; display: flex; flex-direction: column; gap: 14px;
+  background: rgba(10, 13, 18, .58); backdrop-filter: blur(18px) saturate(120%); -webkit-backdrop-filter: blur(18px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, .09); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+.c-h { display: flex; align-items: center; gap: 10px; font-family: var(--f-mono); font-size: 16px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255, 255, 255, .62); }
+.c-h::before { content: ""; width: 8px; height: 8px; border-radius: 4px; background: var(--c-accent, #9fd4ff); }
+.c-h em { margin-left: auto; font-style: normal; letter-spacing: .04em; text-transform: none; }
+.c-big { font-size: 128px; font-weight: 300; letter-spacing: -.03em; line-height: .95; font-variant-numeric: tabular-nums; }
+.c-big small { font-size: 40px; font-weight: 400; letter-spacing: 0; margin-left: 8px; opacity: .8; }
+.c-kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 22px; align-content: center; }
+.c-kv dt { opacity: .6; }
+.c-kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+.c-wx-top { display: flex; gap: 40px; align-items: center; }
+.c-chart { width: 100%; height: 170px; display: block; overflow: visible; }
+.c-chart text { fill: rgba(255, 255, 255, .6); font: 15px var(--f-mono); }
+.c-chart .grid { stroke: rgba(255, 255, 255, .08); }
+.c-chart .rain { fill: rgba(130, 190, 255, .45); }
+.c-chart .temp { fill: none; stroke: #fff; stroke-width: 2.5; stroke-linejoin: round; }
+.c-chart .now { fill: #fff; }
+.c-sub { font-size: 22px; opacity: .85; }
+.c-sub.warn { color: var(--warn); opacity: 1; }
+.c-cmp { display: grid; grid-template-columns: 90px 1fr 84px; gap: 12px 16px; align-items: center; font-size: 20px; }
+.c-cmp .lane { height: 14px; border-radius: 7px; background: rgba(255, 255, 255, .1); position: relative; overflow: hidden; }
+.c-cmp .lane i { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(255, 255, 255, .75); border-radius: 7px; }
+.c-cmp .lane i.delay { background: var(--warn); }
+.c-cmp span:nth-child(3n) { text-align: right; font-family: var(--f-mono); font-size: 18px; }
+.c-alt { display: flex; align-items: center; gap: 14px; font-size: 22px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, .1); }
+.c-alt .ic { font-size: 28px; opacity: .8; }
+.c-alt em { margin-left: auto; font-style: normal; font-family: var(--f-mono); font-size: 18px; opacity: .7; }
+.c-cpu { display: flex; align-items: flex-end; gap: 22px; }
+.c-cpu .c-num { font-size: 64px; font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; width: 150px; }
+.c-cpu .c-num small { font-size: 22px; opacity: .6; display: block; margin-bottom: 6px; font-family: var(--f-mono); letter-spacing: .08em; }
+.spark { flex: 1; height: 86px; display: block; }
+.spark .line { fill: none; stroke: var(--c-accent, #9fd4ff); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.spark .area { fill: var(--c-accent, #9fd4ff); opacity: .16; }
+.c-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 26px; }
+.c-stat { display: flex; flex-direction: column; gap: 6px; }
+.c-stat .k { font-family: var(--f-mono); font-size: 14px; letter-spacing: .1em; text-transform: uppercase; opacity: .55; }
+.c-stat .v { font-size: 26px; font-variant-numeric: tabular-nums; }
+.c-stat .bar { height: 5px; }
+.c-apps { list-style: none; margin: 0; padding: 12px 0 0; border-top: 1px solid rgba(255, 255, 255, .1); display: grid; grid-template-columns: 1fr 1fr; gap: 10px 26px; font-size: 20px; }
+.c-apps li { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.c-apps li::before { content: ""; width: 8px; height: 8px; border-radius: 4px; background: var(--ok); flex: none; }
+.c-apps li.more::before { background: rgba(255, 255, 255, .3); }
+.c-apps li.more { opacity: .65; }
+.c-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.c-list li { display: grid; grid-template-columns: 76px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, .07); font-size: 23px; line-height: 1.2; }
+.c-list li:last-child { border-bottom: 0; }
+.c-list time { font-family: var(--f-mono); font-size: 19px; opacity: .7; padding-top: 3px; }
+.c-list em { display: block; font-style: normal; font-size: 18px; opacity: .6; margin-top: 3px; }
+.d-c .todo { font-size: 22px; padding: 9px 0; }
+.d-c .todo .box { border-radius: 4px; width: 22px; height: 22px; border-width: 1.5px; }
+.c-switches { display: flex; flex-direction: column; gap: 8px; }
+.c-sw { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 12px; height: 46px; font-size: 22px; cursor: pointer; }
+.c-sw .ic { font-size: 24px; opacity: .8; }
+.c-sw .state { margin-left: auto; font-family: var(--f-mono); font-size: 16px; letter-spacing: .1em; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, .25); opacity: .7; }
+.c-sw[aria-pressed="true"] .state { background: var(--c-accent, #9fd4ff); color: #0a0d12; border-color: transparent; opacity: 1; }
+.c-line { display: flex; align-items: center; gap: 12px; height: 46px; font-size: 22px; }
+.c-line .ic { font-size: 24px; opacity: .8; }
+.c-line em { font-style: normal; opacity: .6; font-size: 19px; }
+.d-c .t.c-mini { padding: 18px 24px; gap: 4px; justify-content: center; }
+.c-mini .c-h::before { display: none; }
+.c-mini .v { font-size: 38px; font-weight: 300; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.c-mini .v.ph { font-size: 28px; opacity: .6; }
+.c-player { padding: 40px !important; }
+.c-player .cover { width: 556px; height: 556px; border-radius: 10px; box-shadow: 0 30px 80px -30px rgb(var(--glow) / .8); }
+.c-ptitle { font-size: 60px; font-weight: 500; letter-spacing: -.02em; line-height: 1.05; margin-top: 12px; }
+.c-partist { font-size: 30px; opacity: .78; }
+.c-player .times { font-family: var(--f-mono); font-size: 18px; opacity: .75; margin-top: 10px; }
+.c-player .bar { margin-top: 18px; height: 4px; }
+.c-player .bar > i { background: var(--c-accent, #9fd4ff); }
+.stage[data-music="1"] .d-c .full-only { display: none; }
+.stage[data-music="1"] .d-c [data-id="wetter"] .c-big { font-size: 96px; }
+.stage[data-music="1"] .d-c [data-id="weg"] .c-big { font-size: 80px; }
+.d-c .t.c-player { opacity: 0; visibility: hidden; }
+.stage[data-music="1"] .d-c .t.c-player { opacity: 1; visibility: visible; transition: opacity .6s ease .3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stage *, .stage *::before, .stage *::after { transition-duration: .01ms !important; animation: none !important; }
+}
+</style>
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M2.5 12h2M19.5 12h2M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 19h10.5a4.5 4.5 0 0 0 .4-8.98A6.5 6.5 0 0 0 5.4 11.2 4 4 0 0 0 7 19z"/></symbol>
+    <symbol id="i-cloudsun" viewBox="0 0 24 24"><path d="M8.5 2.8v1.6M3.4 5l1.1 1.1M1.8 10.3h1.6M13.6 5l-1.1 1.1"/><path d="M5.2 12.6a3.6 3.6 0 1 1 6.6-3.3"/><path d="M9.5 20.5h8a3.8 3.8 0 0 0 .3-7.6 5.3 5.3 0 0 0-10.1 1.6 3 3 0 0 0 1.8 6z"/></symbol>
+    <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7 15h10.5a4.5 4.5 0 0 0 .4-8.98A6.5 6.5 0 0 0 5.4 7.2 4 4 0 0 0 7 15z"/><path d="M8.5 18l-1 3M12.5 18l-1 3M16.5 18l-1 3"/></symbol>
+    <symbol id="i-car" viewBox="0 0 24 24"><path d="M4.5 17h15v-4.6l-1.9-4.8A2 2 0 0 0 15.7 6.3H8.3a2 2 0 0 0-1.9 1.3L4.5 12.4z"/><path d="M4.5 12.4h15M7.5 14.8h1.5M15 14.8h1.5M6.3 17v2.2M17.7 17v2.2"/></symbol>
+    <symbol id="i-train" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="14" rx="3"/><path d="M6 11h12M9 21l1.5-4M15 21l-1.5-4M9 14h.5M14.5 14h.5"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10"/><path d="M3.8 6l1.2 1.2 2-2.4M3.8 12l1.2 1.2 2-2.4"/><path d="M4.5 18h1.5"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/></symbol>
+    <symbol id="i-temp" viewBox="0 0 24 24"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/></symbol>
+    <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5.2-5.2L7 19.5"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.3 1 2.2h5.2c0-.9.4-1.7 1-2.2A6 6 0 0 0 12 3z"/></symbol>
+    <symbol id="i-washer" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><circle cx="12" cy="13" r="4.5"/><path d="M7.5 6.5h2"/></symbol>
+    <symbol id="i-note" viewBox="0 0 24 24"><path d="M9 18V5.5l11-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-airplay" viewBox="0 0 24 24"><path d="M6 17H4.5A1.5 1.5 0 0 1 3 15.5v-10A1.5 1.5 0 0 1 4.5 4h15A1.5 1.5 0 0 1 21 5.5v10a1.5 1.5 0 0 1-1.5 1.5H18"/><path d="M12 14l5 6H7z"/></symbol>
+  </defs>
+</svg>
+
+<main class="screen" id="screen">
+  <div class="frame">
+    <div class="stage" id="stage" data-design="a" data-scene="morgen" data-music="0" data-edit="0">
+      <div class="bg" id="bg">
+        <video id="v1" muted playsinline loop preload="auto" aria-hidden="true"></video>
+        <video id="v2" muted playsinline loop preload="auto" aria-hidden="true"></video>
+        <div class="layer tint"></div>
+        <div class="layer glow"></div>
+      </div>
+
+      <!-- ===================== A · Glas ===================== -->
+      <section class="design d-a" aria-label="Entwurf A, Glas">
+        <div class="scrim"></div>
+        <header class="a-head">
+          <div class="a-greet js-greet">Guten Morgen, Paul</div>
+          <div class="a-time js-time">07:42</div>
+          <div class="a-date js-date">Donnerstag, 15. Oktober</div>
+        </header>
+
+        <article class="t" data-id="wetter">
+          <div class="a-lbl"><svg class="ic"><use href="#i-cloudsun"/></svg>Wetter<em>Hamburg</em></div>
+          <div class="a-wx">
+            <div class="a-wx-now">
+              <div class="a-big">14°</div>
+              <div class="a-sub">Wolkig, ab 17 Uhr Regen<br>max. 16° · min. 9°</div>
+            </div>
+            <ol class="a-hours">
+              <li><span>10 Uhr</span><svg class="ic"><use href="#i-cloudsun"/></svg><b>13°</b></li>
+              <li><span>12 Uhr</span><svg class="ic"><use href="#i-cloudsun"/></svg><b>15°</b></li>
+              <li><span>14 Uhr</span><svg class="ic"><use href="#i-cloud"/></svg><b>16°</b></li>
+              <li><span>16 Uhr</span><svg class="ic"><use href="#i-cloud"/></svg><b>15°</b></li>
+              <li><span>18 Uhr</span><svg class="ic"><use href="#i-rain"/></svg><b>13°</b></li>
+            </ol>
+          </div>
+        </article>
+
+        <article class="t" data-id="weg">
+          <div class="a-lbl"><svg class="ic"><use href="#i-car"/></svg>Ins Büro</div>
+          <div class="a-big">24<small>min</small></div>
+          <div class="a-pill">+6 min Verkehr</div>
+          <div class="a-foot">Mit HVV 31 min, ab 07:58</div>
+        </article>
+
+        <article class="t" data-id="fotos">
+          <div class="a-lbl"><svg class="ic"><use href="#i-photo"/></svg>Fotos</div>
+          <div class="a-big long">18.432</div>
+          <div class="a-sub">1.204 Videos</div>
+          <div class="a-foot">+37 diese Woche</div>
+        </article>
+
+        <article class="t" data-id="kal">
+          <div class="a-lbl"><svg class="ic"><use href="#i-cal"/></svg>Heute<em>3 Termine</em></div>
+          <ul class="a-events">
+            <li><time>09:30</time><span>Team-Meeting</span><em>Büro, Raum 3</em></li>
+            <li><time>12:30</time><span>Zahnarzt</span><em></em></li>
+            <li><time>18:00</time><span>Sport</span><em>Halle</em></li>
+          </ul>
+          <div class="a-foot">Morgen 10:00 · Paket zur Post</div>
+        </article>
+
+        <article class="t" data-id="server">
+          <div class="a-lbl"><svg class="ic"><use href="#i-cpu"/></svg>XPS-Server<em>9 Apps · seit 23 Tagen an</em></div>
+          <div class="a-gauges">
+            <div class="a-gauge-l"><div class="gauge"><svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="42" pathLength="100"/><circle class="val js-cpu-ring" cx="50" cy="50" r="42" pathLength="100" stroke-dasharray="12 100"/></svg><b class="js-cpu">12 %</b></div><span>CPU</span></div>
+            <div class="a-gauge-l"><div class="gauge"><svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="42" pathLength="100"/><circle class="val" cx="50" cy="50" r="42" pathLength="100" stroke-dasharray="66 100"/></svg><b>5,1 GB</b></div><span>RAM von 7,7</span></div>
+            <div class="a-gauge-l"><div class="gauge"><svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="42" pathLength="100"/><circle class="val" cx="50" cy="50" r="42" pathLength="100" stroke-dasharray="48 100"/></svg><b>48°</b></div><span>Temperatur</span></div>
+          </div>
+          <div class="a-disk"><span>SSD</span><div class="bar"><i style="transform: scaleX(.6)"></i></div><span>142 von 238 GB</span></div>
+        </article>
+
+        <article class="t" data-id="todo">
+          <div class="a-lbl"><svg class="ic"><use href="#i-list"/></svg>Nicht vergessen</div>
+          <ul class="a-todos">
+            <li><button class="todo" type="button" aria-pressed="false"><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Paket abholen</button></li>
+            <li><button class="todo" type="button" aria-pressed="false"><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Pfandflaschen wegbringen</button></li>
+            <li><button class="todo" type="button" aria-pressed="true"><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Blumen gießen</button></li>
+            <li><button class="todo" type="button" aria-pressed="false"><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Steuererklärung abschicken</button></li>
+            <li><button class="todo" type="button" aria-pressed="false"><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Fahrrad aufpumpen</button></li>
+          </ul>
+        </article>
+
+        <article class="t" data-id="home">
+          <div class="a-lbl"><svg class="ic"><use href="#i-home"/></svg>Zuhause</div>
+          <button class="a-switch" type="button" aria-pressed="true"><svg class="ic"><use href="#i-bulb"/></svg><span>Wohnzimmer</span><i class="knob"></i></button>
+          <div class="a-row"><svg class="ic"><use href="#i-temp"/></svg><span>21,5° innen</span></div>
+          <div class="a-row"><svg class="ic"><use href="#i-washer"/></svg><span>Wäsche: 32 min</span></div>
+        </article>
+
+        <article class="t" data-id="dc">
+          <div class="a-lbl"><svg class="ic"><use href="#i-trend"/></svg>DynamicChicken</div>
+          <div class="a-ph">[Kennzahl]</div>
+          <div class="a-foot">Werte folgen, sobald die App angebunden ist</div>
+        </article>
+
+        <div class="player a-player" aria-label="Läuft gerade">
+          <div class="a-cover-wrap"><img class="cover js-cover" alt="" width="440" height="440"></div>
+          <div class="a-pinfo">
+            <div class="eyebrow"><svg class="ic"><use href="#i-airplay"/></svg>Läuft auf XPS Lautsprecher</div>
+            <div class="a-ptitle js-title">Weites Land</div>
+            <div class="a-partist js-artist">Beispiel-Künstlerin</div>
+            <div class="a-palbum js-album">Demo-Album</div>
+            <div class="a-prog"><div class="bar"><i class="js-bar"></i></div><div class="times"><span class="js-pos">0:48</span><span class="js-dur">3:42</span></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================== B · Panorama ===================== -->
+      <section class="design d-b" aria-label="Entwurf B, Panorama">
+        <div class="b-scrim"></div>
+        <header class="b-head">
+          <div class="b-time js-time">07:42</div>
+          <div class="b-meta"><span class="js-greet">Guten Morgen, Paul</span><span class="sep">·</span><span class="js-date">Donnerstag, 15. Oktober</span></div>
+        </header>
+        <div class="b-place js-place">Nebelwald</div>
+
+        <div class="t first" data-id="wetter">
+          <div class="b-lbl">Wetter · Hamburg</div>
+          <div class="b-val"><svg class="ic"><use href="#i-cloudsun"/></svg>14°</div>
+          <div class="b-sub">Regen ab 17 Uhr<br>max. 16° · min. 9°</div>
+        </div>
+        <div class="t" data-id="weg">
+          <div class="b-lbl">Ins Büro</div>
+          <div class="b-val">24 min</div>
+          <div class="b-sub warn">+6 min Verkehr</div>
+          <div class="b-sub">HVV 31 min, ab 07:58</div>
+        </div>
+        <div class="t" data-id="termin">
+          <div class="b-lbl">Nächster Termin</div>
+          <div class="b-val">09:30</div>
+          <div class="b-sub">Team-Meeting<br>danach 12:30 Zahnarzt</div>
+        </div>
+        <div class="t" data-id="todo">
+          <div class="b-lbl">Nicht vergessen</div>
+          <div class="b-val text">Paket abholen</div>
+          <div class="b-sub">und 3 weitere</div>
+        </div>
+        <div class="t" data-id="home">
+          <div class="b-lbl">Zuhause</div>
+          <div class="b-val">21,5°</div>
+          <div class="b-sub">Licht Wohnzimmer an<br>Wäsche: 32 min</div>
+        </div>
+        <div class="t" data-id="rot">
+          <div class="b-rot js-rot">
+            <div class="on"><div class="b-lbl">XPS-Server</div><div class="b-val js-cpu">12 %</div><div class="b-sub">CPU · 9 Apps laufen<br>48° · SSD 60 % voll</div></div>
+            <div><div class="b-lbl">Fotos</div><div class="b-val">18.432</div><div class="b-sub">+37 diese Woche<br>1.204 Videos</div></div>
+            <div><div class="b-lbl">DynamicChicken</div><div class="b-val text">[Kennzahl]</div><div class="b-sub">folgt, sobald die App angebunden ist</div></div>
+          </div>
+        </div>
+
+        <div class="player b-player" aria-label="Läuft gerade">
+          <img class="cover js-cover" alt="" width="250" height="250">
+          <div class="b-pinfo">
+            <div class="b-eyebrow"><svg class="ic"><use href="#i-airplay"/></svg>XPS Lautsprecher</div>
+            <div class="b-ptitle js-title">Weites Land</div>
+            <div class="b-partist"><span class="js-artist">Beispiel-Künstlerin</span> · <span class="js-album">Demo-Album</span></div>
+          </div>
+          <div class="b-prog"><span class="js-pos">0:48</span><div class="bar"><i class="js-bar"></i></div><span class="js-dur">3:42</span></div>
+        </div>
+      </section>
+
+      <!-- ===================== C · Leitstand ===================== -->
+      <section class="design d-c" aria-label="Entwurf C, Leitstand">
+        <div class="scrim"></div>
+        <header class="c-head">
+          <div class="c-time"><span class="js-time">07:42</span><span class="sec js-sec">:08</span></div>
+          <div class="c-greet js-greet">Guten Morgen, Paul</div>
+          <div class="c-date js-date">Donnerstag, 15. Oktober</div>
+        </header>
+
+        <article class="t" data-id="heute">
+          <div class="c-h">Heute<em>4 Termine</em></div>
+          <ol class="c-list">
+            <li><time>09:30</time><div>Team-Meeting<em>Büro, Raum 3</em></div></li>
+            <li><time>12:30</time><div>Zahnarzt</div></li>
+            <li><time>18:00</time><div>Sport<em>Halle</em></div></li>
+          </ol>
+          <div class="c-h" style="margin-top: 10px">Nicht vergessen</div>
+          <ul class="a-todos">
+            <li><button class="todo" type="button" aria-pressed="false"><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Paket abholen</button></li>
+            <li><button class="todo" type="button" aria-pressed="false"><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Pfandflaschen wegbringen</button></li>
+            <li><button class="todo" type="button" aria-pressed="true"><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Blumen gießen</button></li>
+            <li><button class="todo" type="button" aria-pressed="false"><span class="box"><svg class="ic"><use href="#i-check"/></svg></span>Steuererklärung abschicken</button></li>
+          </ul>
+        </article>
+
+        <article class="t" data-id="wetter">
+          <div class="c-h">Wetter<em>Hamburg · Open-Meteo</em></div>
+          <div class="c-wx-top">
+            <div class="c-big">14°</div>
+            <dl class="c-kv">
+              <dt>Himmel</dt><dd>wolkig</dd>
+              <dt>Gefühlt</dt><dd>12°</dd>
+              <dt class="full-only">Wind</dt><dd class="full-only">18 km/h aus West</dd>
+              <dt class="full-only">Regen</dt><dd class="full-only">ab 17 Uhr, bis 70 %</dd>
+            </dl>
+          </div>
+          <svg class="c-chart full-only js-chart" viewBox="0 0 580 170" aria-label="Temperatur und Regenwahrscheinlichkeit von 8 bis 19 Uhr" role="img"></svg>
+        </article>
+
+        <article class="t" data-id="weg">
+          <div class="c-h">Ins Büro<em>werktags 07:30–09:00</em></div>
+          <div class="c-big">24<small>min</small></div>
+          <div class="c-sub warn">6 min länger als sonst · Losfahren bis 07:55</div>
+          <div class="c-cmp full-only">
+            <span>Sonst</span><div class="lane"><i style="width: 60%"></i></div><span>18 min</span>
+            <span>Heute</span><div class="lane"><i class="delay" style="width: 80%"></i><i style="width: 60%"></i></div><span>24 min</span>
+          </div>
+          <div class="c-alt full-only"><svg class="ic"><use href="#i-train"/></svg>U3, dann Bus 25<em>31 min · ab 07:58</em></div>
+        </article>
+
+        <article class="t" data-id="server">
+          <div class="c-h">XPS-Server<em>seit 23 Tagen an</em></div>
+          <div class="c-cpu">
+            <div class="c-num"><small>CPU</small><span class="js-cpu">12 %</span></div>
+            <svg class="spark full-only" viewBox="0 0 59 100" preserveAspectRatio="none" aria-hidden="true"><path class="area js-spark-area"/><path class="line js-spark-line"/></svg>
+          </div>
+          <div class="c-stats">
+            <div class="c-stat"><span class="k">RAM</span><span class="v">5,1 / 7,7 GB</span><div class="bar full-only"><i style="transform: scaleX(.66)"></i></div></div>
+            <div class="c-stat"><span class="k">SSD</span><span class="v">142 / 238 GB</span><div class="bar full-only"><i style="transform: scaleX(.6)"></i></div></div>
+            <div class="c-stat"><span class="k">Temperatur</span><span class="v">48 °C</span></div>
+            <div class="c-stat"><span class="k">WLAN</span><span class="v js-net">↓ 2,1 MB/s · −58 dBm</span></div>
+          </div>
+          <ul class="c-apps full-only">
+            <li>Home Assistant</li>
+            <li>Immich</li>
+            <li>Paperclip</li>
+            <li class="more">6 weitere laufen</li>
+          </ul>
+        </article>
+
+        <article class="t" data-id="home">
+          <div class="c-h">Zuhause<em>Home Assistant</em></div>
+          <div class="c-switches">
+            <button class="c-sw" type="button" aria-pressed="true"><svg class="ic"><use href="#i-bulb"/></svg>Licht Wohnzimmer<span class="state">AN</span></button>
+            <button class="c-sw full-only" type="button" aria-pressed="false"><svg class="ic"><use href="#i-bulb"/></svg>Stehlampe<span class="state">AUS</span></button>
+            <div class="c-line"><svg class="ic"><use href="#i-temp"/></svg>21,5° <em>innen</em><span style="margin-left: auto"></span><svg class="ic"><use href="#i-washer"/></svg>32 min <em>Wäsche</em></div>
+          </div>
+        </article>
+
+        <article class="t c-mini" data-id="fotos">
+          <div class="c-h">Fotos</div><span class="v">18.432</span>
+        </article>
+        <article class="t c-mini" data-id="dc">
+          <div class="c-h">DynamicChicken</div><span class="v ph">[Kennzahl]</span>
+        </article>
+
+        <article class="t c-player" data-id="player" aria-label="Läuft gerade">
+          <div class="c-h">Läuft auf XPS Lautsprecher<em>AirPlay</em></div>
+          <img class="cover js-cover" alt="" width="556" height="556">
+          <div class="c-ptitle js-title">Weites Land</div>
+          <div class="c-partist"><span class="js-artist">Beispiel-Künstlerin</span> · <span class="js-album">Demo-Album</span></div>
+          <div class="bar"><i class="js-bar"></i></div>
+          <div class="times"><span class="js-pos">0:48</span><span class="js-dur">3:42</span></div>
+        </article>
+      </section>
+
+      <div class="night" aria-label="Nachtansicht">
+        <div class="n-time js-time">23:30</div>
+        <div class="n-date js-date">Donnerstag, 15. Oktober</div>
+        <div class="n-music"><svg class="ic"><use href="#i-note"/></svg><span class="js-title">Weites Land</span></div>
+      </div>
+
+      <div class="layer warm" aria-hidden="true"></div>
+
+      <div class="editbar" role="toolbar" aria-label="Widgets bearbeiten">
+        <span class="js-edit-hint">Ziehen zum Tauschen, × zum Entfernen</span>
+        <span class="eb-add js-add"></span>
+        <button class="eb-done" type="button" id="btnDone">Fertig</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<nav class="controls" aria-label="Entwurf steuern">
+  <div class="group">
+    <span class="group-label">Entwurf</span>
+    <div class="seg" id="segDesign">
+      <button type="button" data-v="a" aria-pressed="true">A · Glas</button>
+      <button type="button" data-v="b" aria-pressed="false">B · Panorama</button>
+      <button type="button" data-v="c" aria-pressed="false">C · Leitstand</button>
+    </div>
+  </div>
+  <div class="group">
+    <span class="group-label">Tageszeit</span>
+    <div class="seg" id="segScene">
+      <button type="button" data-v="morgen" aria-pressed="true">Morgen</button>
+      <button type="button" data-v="tag" aria-pressed="false">Tag</button>
+      <button type="button" data-v="abend" aria-pressed="false">Abend</button>
+      <button type="button" data-v="nacht" aria-pressed="false">Nacht</button>
+    </div>
+  </div>
+  <div class="group">
+    <button class="tbtn" type="button" id="btnMusic" aria-pressed="false">Musik abspielen</button>
+    <button class="tbtn" type="button" id="btnNext">Nächster Titel</button>
+    <button class="tbtn" type="button" id="btnEdit" aria-pressed="false">Bearbeiten</button>
+  </div>
+  <p class="note" id="note"></p>
+</nav>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const stage = $('#stage');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let scale = .4;
+
+  /* ---------- fit the 1920×1080 stage into the window ---------- */
+  const screen = $('#screen');
+  function fit() {
+    scale = Math.max(.1, Math.min(screen.clientWidth / 1920, screen.clientHeight / 1080));
+    document.documentElement.style.setProperty('--s', scale.toFixed(4));
+  }
+  new ResizeObserver(fit).observe(screen);
+  fit();
+
+  /* ---------- copy ---------- */
+  const NOTES = {
+    a: '<b>A · Glas</b>: Milchglas-Kacheln wie in umbrelOS 2.0, alles auf einen Blick. Am meisten Glas, also am meisten Arbeit für die Grafik.',
+    b: '<b>B · Panorama</b>: Wie ein Apple-Bildschirmschoner. Viel Bild, die Infos ruhig in einer Zeile. Braucht kaum Unschärfe-Effekte und läuft am leichtesten.',
+    c: '<b>C · Leitstand</b>: Dunkles Rauchglas, mehr Daten, Live-Werte vom Server. Gut lesbar auch abends.'
+  };
+  const NAMES = { wetter: 'Wetter', weg: 'Arbeitsweg', fotos: 'Fotos', kal: 'Kalender', server: 'Server', todo: 'To-dos', home: 'Zuhause', dc: 'DynamicChicken', termin: 'Termin', rot: 'Server & Fotos', heute: 'Heute' };
+  const PLACES = { morgen: 'Nebelwald am Morgen', tag: 'Küste von oben', tal: 'Flusstal in den Bergen', abend: 'Felsküste bei Sonnenuntergang', nacht: 'See in der Dämmerung' };
+  const SCENES = {
+    morgen: { clips: ['morgen'], at: [7, 42], greet: 'Guten Morgen', accent: '#9fe3d6' },
+    tag: { clips: ['tag', 'tal'], at: [13, 15], greet: 'Hallo', accent: '#a6d8ff' },
+    abend: { clips: ['abend'], at: [19, 48], greet: 'Guten Abend', accent: '#ffb878' },
+    nacht: { clips: ['nacht'], at: [23, 30], greet: 'Gute Nacht', accent: '#ff9f5f' }
+  };
+
+  /* ---------- layouts: [x, y, w, h] on the 1920×1080 display ---------- */
+  const stripRects = (ids) => Object.fromEntries(ids.map((id, i) => [id, [112 + i * 1696 / ids.length, 816, 1696 / ids.length, 190]]));
+  const LAYOUT = {
+    a: {
+      normal: { wetter: [760, 80, 520, 290], weg: [1304, 80, 248, 290], fotos: [1576, 80, 248, 290], kal: [760, 394, 520, 290], server: [1304, 394, 520, 290], todo: [760, 708, 520, 290], home: [1304, 708, 248, 290], dc: [1576, 708, 248, 290] },
+      music: { wetter: [1336, 80, 488, 290], weg: [1336, 394, 232, 290], home: [1592, 394, 232, 290], server: [1336, 708, 488, 290] }
+    },
+    b: {
+      normal: stripRects(['wetter', 'weg', 'termin', 'todo', 'home', 'rot']),
+      music: {}
+    },
+    c: {
+      normal: { heute: [64, 384, 536, 640], wetter: [632, 56, 636, 464], weg: [632, 552, 636, 472], server: [1300, 56, 556, 560], home: [1300, 648, 556, 244], fotos: [1300, 912, 262, 112], dc: [1594, 912, 262, 112] },
+      music: { heute: [64, 384, 536, 640], player: [632, 56, 636, 968], wetter: [1300, 56, 556, 190], weg: [1300, 270, 556, 210], server: [1300, 504, 556, 304], home: [1300, 832, 556, 190] }
+    }
+  };
+  // B keeps the strip slots when music hides them, so they glide back to the same place
+  LAYOUT.b.music = LAYOUT.b.normal;
+  const removed = { a: new Set(), b: new Set(), c: new Set() };
+
+  function layout(d, animate) {
+    const root = $('.d-' + d);
+    const tiles = $$('.t', root);
+    const before = new Map(tiles.map((t) => [t, t.getBoundingClientRect()]));
+    const mode = stage.dataset.music === '1' ? 'music' : 'normal';
+    tiles.forEach((t) => {
+      t.style.transform = '';
+      const r = removed[d].has(t.dataset.id) ? null : LAYOUT[d][mode][t.dataset.id];
+      if (r) {
+        Object.assign(t.style, { left: r[0] + 'px', top: r[1] + 'px', width: r[2] + 'px', height: r[3] + 'px' });
+        t.classList.remove('gone');
+      } else if (t.dataset.id !== 'player') {
+        t.classList.add('gone');
+      }
+    });
+    if (!animate || reduceMotion) return;
+    tiles.forEach((t) => {
+      if (t.classList.contains('gone')) return;
+      const a = before.get(t), b = t.getBoundingClientRect();
+      if (!a.width || !b.width) return;
+      const dx = (a.left - b.left) / scale, dy = (a.top - b.top) / scale;
+      const sx = a.width / b.width, sy = a.height / b.height;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1 && Math.abs(sx - 1) < .01 && Math.abs(sy - 1) < .01) return;
+      t.animate(
+        [{ transformOrigin: '0 0', transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` }, { transformOrigin: '0 0', transform: 'none' }],
+        { duration: 760, easing: 'cubic-bezier(.2, .8, .2, 1)' }
+      );
+    });
+  }
+
+  /* ---------- background video, two elements for crossfades ---------- */
+  const vids = [$('#v1'), $('#v2')];
+  let front = 0, scene = 'morgen', clipIdx = 0;
+  function playClip(name) {
+    const next = vids[1 - front], cur = vids[front];
+    next.muted = true;
+    next.poster = `media/${name}.jpg`;
+    next.src = `media/${name}.mp4`;
+    const show = () => {
+      next.classList.add('on');
+      cur.classList.remove('on');
+      front = 1 - front;
+      setTimeout(() => { if (!cur.classList.contains('on')) cur.pause(); }, 2000);
+    };
+    $$('.js-place').forEach((e) => (e.textContent = PLACES[name]));
+    if (reduceMotion) { next.load(); show(); return; }
+    next.play().then(show, show);
+  }
+  setInterval(() => {
+    const clips = SCENES[scene].clips;
+    if (clips.length > 1) { clipIdx = (clipIdx + 1) % clips.length; playClip(clips[clipIdx]); }
+  }, 23000);
+
+  /* ---------- clock: real time, or the scene's sample time ---------- */
+  let clockBase = 0, clockStart = performance.now();
+  const pad = (n) => String(n).padStart(2, '0');
+  const dateText = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Berlin' }).format(new Date());
+  function tick() {
+    const t = clockBase + (performance.now() - clockStart) / 1000;
+    const h = Math.floor(t / 3600) % 24, m = Math.floor(t / 60) % 60, s = Math.floor(t) % 60;
+    $$('.js-time').forEach((e) => (e.textContent = `${pad(h)}:${pad(m)}`));
+    $$('.js-sec').forEach((e) => (e.textContent = ':' + pad(s)));
+  }
+  setInterval(tick, 1000);
+  $$('.js-date').forEach((e) => (e.textContent = dateText));
+
+  function setScene(name, keepClock) {
+    scene = name;
+    clipIdx = 0;
+    stage.dataset.scene = name;
+    stage.style.setProperty('--c-accent', SCENES[name].accent);
+    playClip(SCENES[name].clips[0]);
+    if (!keepClock) { clockBase = SCENES[name].at[0] * 3600 + SCENES[name].at[1] * 60; clockStart = performance.now(); }
+    $$('.js-greet').forEach((e) => (e.textContent = `${SCENES[name].greet}, Paul`));
+    $$('#segScene button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === name)));
+    tick();
+  }
+
+  /* ---------- music: generated covers, glow from the cover's own colours ---------- */
+  function makeCover(p) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 600;
+    const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 600, 600);
+    g.addColorStop(0, p[0]); g.addColorStop(1, p[1]);
+    x.fillStyle = g; x.fillRect(0, 0, 600, 600);
+    [[150, 170, 300, p[2]], [470, 400, 330, p[3]], [300, 560, 220, p[4]]].forEach(([cx, cy, r, col]) => {
+      const rg = x.createRadialGradient(cx, cy, 0, cx, cy, r);
+      rg.addColorStop(0, col); rg.addColorStop(1, 'rgba(0,0,0,0)');
+      x.fillStyle = rg; x.fillRect(0, 0, 600, 600);
+    });
+    x.strokeStyle = 'rgba(255,255,255,.7)'; x.lineWidth = 2;
+    x.beginPath(); x.arc(300, 300, 150, Math.PI * 1.05, Math.PI * 1.95); x.stroke();
+    x.beginPath(); x.moveTo(70, 452); x.lineTo(530, 452); x.stroke();
+    const img = x.getImageData(0, 0, 600, 600), d = img.data;
+    for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - .5) * 16; d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+    x.putImageData(img, 0, 0);
+    // Dominant colour: average of a 24×24 thumbnail, weighted towards saturated pixels
+    const s = document.createElement('canvas'); s.width = s.height = 24;
+    const sx = s.getContext('2d'); sx.drawImage(c, 0, 0, 24, 24);
+    const px = sx.getImageData(0, 0, 24, 24).data;
+    let R = 0, G = 0, B = 0, W = 0;
+    for (let i = 0; i < px.length; i += 4) {
+      const mx = Math.max(px[i], px[i + 1], px[i + 2]), mn = Math.min(px[i], px[i + 1], px[i + 2]);
+      const w = (mx - mn) / 255 + .04;
+      R += px[i] * w; G += px[i + 1] * w; B += px[i + 2] * w; W += w;
+    }
+    return { url: c.toDataURL('image/jpeg', .9), rgb: brighten([R / W, G / W, B / W]) };
+  }
+  function brighten([r, g, b]) {
+    const mx = Math.max(r, g, b) || 1, k = 225 / mx;
+    return [r, g, b].map((v) => Math.round(Math.min(255, v * k)));
+  }
+  const TRACKS = [
+    { title: 'Weites Land', artist: 'Beispiel-Künstlerin', album: 'Demo-Album', dur: 222, start: 48, palette: ['#ff7a59', '#7b2d5b', '#ffc46b', '#c2386f', '#ffe2b0'] },
+    { title: 'Nachtfahrt', artist: 'Beispiel-Band', album: 'Demo-Single', dur: 255, start: 12, palette: ['#1b2a6b', '#0d6e7a', '#5ad1e6', '#6a4cff', '#b9f3ff'] }
+  ].map((t) => Object.assign(t, makeCover(t.palette)));
+  let ti = 0, tStart = 0, tPos0 = 0, raf = 0, lastSec = -1;
+  const fmt = (s) => `${Math.floor(s / 60)}:${pad(Math.floor(s % 60))}`;
+  function showTrack(i, fromStart) {
+    ti = i;
+    const tr = TRACKS[i];
+    $$('.js-title').forEach((e) => (e.textContent = tr.title));
+    $$('.js-artist').forEach((e) => (e.textContent = tr.artist));
+    $$('.js-album').forEach((e) => (e.textContent = tr.album));
+    $$('.js-dur').forEach((e) => (e.textContent = fmt(tr.dur)));
+    $$('.js-cover').forEach((e) => (e.src = tr.url));
+    stage.style.setProperty('--glow', tr.rgb.join(' '));
+    tPos0 = fromStart ? 0 : tr.start;
+    tStart = performance.now();
+    lastSec = -1;
+  }
+  function step() {
+    const tr = TRACKS[ti];
+    const p = tPos0 + (performance.now() - tStart) / 1000;
+    if (p >= tr.dur) { showTrack((ti + 1) % TRACKS.length, true); }
+    const frac = Math.min(1, p / tr.dur);
+    $$('.js-bar').forEach((b) => (b.style.transform = `scaleX(${frac})`));
+    const sec = Math.floor(p);
+    if (sec !== lastSec) { lastSec = sec; $$('.js-pos').forEach((e) => (e.textContent = fmt(p))); }
+    raf = requestAnimationFrame(step);
+  }
+  function setMusic(on) {
+    if (on && stage.dataset.edit === '1') setEdit(false);
+    stage.dataset.music = on ? '1' : '0';
+    $('#btnMusic').setAttribute('aria-pressed', String(on));
+    $('#btnMusic').textContent = on ? 'Musik stoppen' : 'Musik abspielen';
+    cancelAnimationFrame(raf);
+    if (on) { tStart = performance.now(); raf = requestAnimationFrame(step); }
+    ['a', 'b', 'c'].forEach((d) => layout(d, d === stage.dataset.design));
+  }
+  showTrack(0, false);
+
+  /* ---------- edit mode: remove, add back, drag to swap ---------- */
+  $$('.design .t').forEach((t) => {
+    if (t.dataset.id === 'player') return;
+    t.insertAdjacentHTML('beforeend', `<button class="x" type="button" aria-label="${NAMES[t.dataset.id]} entfernen"><svg class="ic"><use href="#i-x"/></svg></button>`);
+  });
+  function renderAddList() {
+    const d = stage.dataset.design;
+    $('.js-add').innerHTML = [...removed[d]].map((id) => `<button type="button" data-add="${id}"><svg class="ic"><use href="#i-plus"/></svg>${NAMES[id]}</button>`).join('');
+    $('.js-edit-hint').textContent = d === 'c' ? '× entfernt ein Widget, + holt es zurück' : 'Auf gleich große Kachel ziehen zum Tauschen, × zum Entfernen';
+  }
+  function setEdit(on) {
+    if (on && stage.dataset.music === '1') setMusic(false);
+    stage.dataset.edit = on ? '1' : '0';
+    $('#btnEdit').setAttribute('aria-pressed', String(on));
+    renderAddList();
+  }
+  stage.addEventListener('click', (e) => {
+    const x = e.target.closest('.x');
+    if (x) { const d = stage.dataset.design; removed[d].add(x.closest('.t').dataset.id); layout(d, true); renderAddList(); return; }
+    const add = e.target.closest('[data-add]');
+    if (add) { const d = stage.dataset.design; removed[d].delete(add.dataset.add); layout(d, true); renderAddList(); return; }
+    const toggle = e.target.closest('.todo, .a-switch, .c-sw');
+    if (toggle) {
+      const on = toggle.getAttribute('aria-pressed') !== 'true';
+      toggle.setAttribute('aria-pressed', String(on));
+      const st = toggle.querySelector('.state'); if (st) st.textContent = on ? 'AN' : 'AUS';
+    }
+  });
+  // Swapping keeps every tile at a size its content was designed for
+  const sameSize = (d, a, b) => LAYOUT[d].normal[a] && LAYOUT[d].normal[b] && LAYOUT[d].normal[a][2] === LAYOUT[d].normal[b][2] && LAYOUT[d].normal[a][3] === LAYOUT[d].normal[b][3];
+  let drag = null;
+  stage.addEventListener('pointerdown', (e) => {
+    const d = stage.dataset.design;
+    if (stage.dataset.edit !== '1' || d === 'c' || e.target.closest('button')) return;
+    const t = e.target.closest('.design .t');
+    if (!t) return;
+    drag = { t, d, x: e.clientX, y: e.clientY, over: null };
+    t.setPointerCapture(e.pointerId);
+    t.classList.add('dragging');
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    drag.t.style.transform = `translate(${(e.clientX - drag.x) / scale}px, ${(e.clientY - drag.y) / scale}px)`;
+    const over = document.elementsFromPoint(e.clientX, e.clientY)
+      .map((el) => el.closest && el.closest('.t'))
+      .find((el) => el && el !== drag.t && !el.classList.contains('gone') && el.parentElement === drag.t.parentElement && sameSize(drag.d, el.dataset.id, drag.t.dataset.id));
+    if (over !== drag.over) { drag.over && drag.over.classList.remove('target'); over && over.classList.add('target'); drag.over = over; }
+  });
+  const endDrag = () => {
+    if (!drag) return;
+    const { t, d, over } = drag;
+    drag = null;
+    t.classList.remove('dragging');
+    if (over) {
+      over.classList.remove('target');
+      const L = LAYOUT[d].normal, a = t.dataset.id, b = over.dataset.id;
+      [L[a], L[b]] = [L[b], L[a]];
+      if (d === 'b') { $$('.d-b .t').forEach((el) => el.classList.toggle('first', LAYOUT.b.normal[el.dataset.id] && LAYOUT.b.normal[el.dataset.id][0] === 112)); }
+    }
+    layout(d, true);
+  };
+  stage.addEventListener('pointerup', endDrag);
+  stage.addEventListener('pointercancel', endDrag);
+
+  /* ---------- live bits: CPU sparkline, rotating slot in B ---------- */
+  const cpu = Array.from({ length: 60 }, (_, i) => 10 + 6 * Math.sin(i / 5) + Math.random() * 4);
+  function drawSpark() {
+    const pts = cpu.map((v, i) => `${i},${100 - v * 2.2}`);
+    $('.js-spark-line').setAttribute('d', 'M' + pts.join(' L'));
+    $('.js-spark-area').setAttribute('d', 'M0,100 L' + pts.join(' L') + ' L59,100 Z');
+    const now = Math.round(cpu[cpu.length - 1]);
+    $$('.js-cpu').forEach((e) => (e.textContent = now + ' %'));
+    $$('.js-cpu-ring').forEach((e) => e.setAttribute('stroke-dasharray', `${now} 100`));
+  }
+  setInterval(() => {
+    const last = cpu[cpu.length - 1];
+    cpu.push(Math.max(4, Math.min(38, last + (Math.random() - .5) * 6 + (12 - last) * .08)));
+    cpu.shift();
+    drawSpark();
+  }, 1000);
+  drawSpark();
+  let rot = 0;
+  setInterval(() => {
+    const items = $$('.js-rot > div');
+    items[rot].classList.remove('on');
+    rot = (rot + 1) % items.length;
+    items[rot].classList.add('on');
+  }, 7000);
+
+  /* ---------- weather chart in C ---------- */
+  (function chart() {
+    const hours = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+    const temp = [10, 11, 13, 14, 15, 15, 16, 16, 15, 14, 13, 12];
+    const rain = [0, 0, 0, 5, 10, 10, 15, 25, 45, 70, 55, 30];
+    const W = 580, H = 170, top = 18, base = 140, step = (W - 30) / (hours.length - 1);
+    const X = (i) => 15 + i * step, Y = (t) => base - (t - 8) / 10 * (base - top);
+    let s = `<line class="grid" x1="0" x2="${W}" y1="${base}" y2="${base}"/>`;
+    rain.forEach((r, i) => { const h = r / 100 * 70; s += `<rect class="rain" x="${X(i) - 9}" y="${base - h}" width="18" height="${h}" rx="3"/>`; });
+    s += `<polyline class="temp" points="${temp.map((t, i) => `${X(i)},${Y(t)}`).join(' ')}"/>`;
+    s += `<circle class="now" cx="${X(0)}" cy="${Y(temp[0])}" r="6"/>`;
+    hours.forEach((h, i) => { if (i % 3 === 0) s += `<text x="${X(i)}" y="${H - 4}" text-anchor="middle">${h} Uhr</text>`; });
+    s += `<text x="${X(7)}" y="${Y(16) - 12}" text-anchor="middle">16°</text>`;
+    $('.js-chart').innerHTML = s;
+  })();
+
+  /* ---------- controls ---------- */
+  function setDesign(d) {
+    if (stage.dataset.edit === '1') setEdit(false);
+    stage.dataset.design = d;
+    $$('#segDesign button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === d)));
+    $('#note').innerHTML = NOTES[d] + ' Alle Zahlen sind Beispieldaten. Videos von Mixkit (lizenzfrei).';
+    layout(d, false);
+  }
+  $('#segDesign').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setDesign(b.dataset.v); });
+  $('#segScene').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setScene(b.dataset.v); });
+  $('#btnMusic').addEventListener('click', () => setMusic(stage.dataset.music !== '1'));
+  $('#btnNext').addEventListener('click', () => { showTrack((ti + 1) % TRACKS.length, true); if (stage.dataset.music !== '1') setMusic(true); });
+  $('#btnEdit').addEventListener('click', () => setEdit(stage.dataset.edit !== '1'));
+  $('#btnDone').addEventListener('click', () => setEdit(false));
+
+  /* ---------- start: real Berlin time picks the scene (night shows evening, so there is something to see) ---------- */
+  const parts = new Intl.DateTimeFormat('de-DE', { hour: 'numeric', minute: 'numeric', second: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Berlin' }).formatToParts(new Date());
+  const get = (type) => Number(parts.find((p) => p.type === type).value);
+  const hour = get('hour');
+  const startScene = hour >= 5 && hour < 10 ? 'morgen' : hour >= 10 && hour < 17 ? 'tag' : 'abend';
+  ['a', 'b', 'c'].forEach((d) => layout(d, false));
+  setDesign('a');
+  setScene(startScene, true);
+  clockBase = hour * 3600 + get('minute') * 60 + get('second');
+  clockStart = performance.now();
+  tick();
+})();
+</script>
