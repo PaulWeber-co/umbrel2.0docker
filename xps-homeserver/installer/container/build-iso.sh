@@ -111,10 +111,9 @@ write_grub_menu() {
 
 	XPS_KERNEL_EXTRA=""
 	if [ "${XPS_TEST_AUTOBOOT:-}" = 1 ]; then
-		# QEMU test: pick the entry on its own. Kernel messages also go to the
-		# serial port, but the installer stays on the screen (the last console):
-		# on a serial console it only offers English and would stop to ask.
-		XPS_KERNEL_EXTRA="console=ttyS0,115200n8 console=tty0"
+		# QEMU test: pick the entry on its own. No serial console: the installer
+		# would move there and, unable to show German, stop to ask for a language.
+		XPS_KERNEL_EXTRA=""
 		printf 'set default=0\nset timeout=3\n' >"$WORK/grub.entry"
 	else
 		: >"$WORK/grub.entry"
