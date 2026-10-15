@@ -23,6 +23,9 @@ TEST_SSID='Test WLAN; "mit" Sonderzeichen'
 TEST_PSK='p@ss w0rd $HOME `x` \n'
 
 mkdir -p "$T"
+# Unix socket paths are limited to 108 bytes, so the QEMU monitor lives in /tmp
+MON_DIR=$(mktemp -d /tmp/xps-qemu.XXXXXX)
+trap 'rm -rf "$MON_DIR"' EXIT
 
 find_ovmf() {
 	local dir
@@ -67,7 +70,7 @@ vm_args() {
 
 # Saves what the VM shows on its screen as a PNG, through the QEMU monitor.
 screenshot() {
-	python3 - "$T/monitor.sock" "screendump $1 -f png" <<-'PY' >/dev/null 2>&1 || true
+	python3 - "$MON_DIR/monitor.sock" "screendump $1 -f png" <<-'PY' >/dev/null 2>&1 || true
 		import socket, sys, time
 		s = socket.socket(socket.AF_UNIX)
 		s.connect(sys.argv[1])
@@ -87,7 +90,7 @@ install() {
 		-drive "if=none,id=stick,format=raw,readonly=on,file=$ISO" \
 		-device usb-storage,drive=stick,bootindex=1 \
 		-nic none -serial "file:$T/install-serial.log" -no-reboot \
-		-monitor "unix:$T/monitor.sock,server,nowait" &
+		-monitor "unix:$MON_DIR/monitor.sock,server,nowait" &
 	local vm=$! waited=0 limit="${XPS_TEST_INSTALL_TIMEOUT:-10800}"
 	# A question the preseed doesn't answer stops the installer silently, so
 	# keep a current screenshot to see where it stands.
@@ -119,7 +122,7 @@ boot_and_check() {
 	qemu-system-x86_64 "${VM_ARGS[@]}" -nic "user,model=virtio-net-pci,hostfwd=tcp:127.0.0.1:$SSH_PORT-:22" \
 		-serial "file:$T/boot-serial.log" &
 	local vm=$! tries=0
-	trap 'kill $vm 2>/dev/null || true' EXIT
+	trap 'kill $vm 2>/dev/null || true; rm -rf "$MON_DIR"' EXIT
 	until ssh_vm true 2>/dev/null; do
 		tries=$((tries + 1))
 		[ "$tries" -lt 180 ] || {
@@ -159,7 +162,7 @@ boot_and_check() {
 
 	ssh_vm sudo poweroff || true
 	wait "$vm" || true
-	trap - EXIT
+	trap 'rm -rf "$MON_DIR"' EXIT
 	if [ "$failed" != 0 ]; then
 		echo "==> Mindestens eine Prüfung ist fehlgeschlagen" >&2
 		exit 1
