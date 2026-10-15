@@ -6,3 +6,7 @@ installer/out/
 installer/cache/
 *.iso
 *.qcow2
+
+# Background videos are downloaded by dashboard/scripts/fetch-backgrounds.sh;
+# the Mixkit license allows using them, not redistributing the files.
+dashboard/**/media/

@@ -1,0 +1,9 @@
+# Background videos for the dashboard: <name> <Mixkit video id> <what it shows>
+# Free under the Mixkit Stock Video Free License (https://mixkit.co/license/),
+# which allows using them but not redistributing the files, so they are
+# downloaded instead of committed. The name says when the dashboard shows it.
+morgen 35078 Foggy pine forest, top aerial shot
+tag    31728 Calm sea reaching the beach, top aerial shot
+tal    15919 River valley with snowy mountains
+abend  8657  Sunset drone flyover of a rocky sea coast
+nacht  4998  Lake at dusk from the air
