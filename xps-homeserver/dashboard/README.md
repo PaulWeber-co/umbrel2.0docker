@@ -28,6 +28,12 @@ Ein AirPlay-Stream blendet automatisch den Musikmodus ein. Shairport Sync
 liefert Titel, Interpret, Album und Cover über UDP auf `127.0.0.1`; die
 Metadaten bleiben im Speicher des Dashboard-Prozesses.
 
+Der Kameradienst misst nur den Median eines 16×12-Graubilds im Arbeitsspeicher,
+passt damit die Backlight-Helligkeit an und verwirft das Bild sofort. Er läuft
+ohne Netzwerk in `xps-ambient.service`; nur Prozentwerte und der Nachtmodus
+werden in `/run/xps-ambient/ambient.json` abgelegt. Kamera, Schwellen und
+Backlight-Kurve stehen in `/etc/xps-homeserver/ambient.env`.
+
 ## Entwürfe
 
 `mockup/wand-dashboard.html` zeigt drei Design-Richtungen auf einer simulierten

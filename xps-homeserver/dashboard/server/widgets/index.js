@@ -8,5 +8,6 @@ import calendar from './calendar.js';
 import todo from './todo.js';
 import home from './home.js';
 import music from './music.js';
+import ambient from './ambient.js';
 
-export default [weather, server, commute, photos, calendar, todo, home, music];
+export default [weather, server, commute, photos, calendar, todo, home, music, ambient];

@@ -29,3 +29,8 @@
 .home-switch[aria-pressed="true"] .knob::after { transform: translateX(16px); }
 .home-state { cursor: default; }
 .home-state strong { margin-left: auto; font-weight: 500; opacity: .82; }
+.stage[data-night-mode="1"] .dash { filter: brightness(.38) saturate(.72); }
+.stage[data-night-mode="1"] .night { opacity: 1; visibility: visible; }
+.stage[data-night-mode="1"] .warm { opacity: 1; }
+.stage[data-night-mode="1"] .dash { opacity: 1; pointer-events: auto; }
+.stage[data-night-mode="1"][data-scene="nacht"] .dash { opacity: 0; pointer-events: none; }

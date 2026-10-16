@@ -68,6 +68,7 @@ commit=$(git_repo rev-parse HEAD)
 systemctl daemon-reload
 systemctl restart xps-dashboard.service 2>/dev/null || true
 systemctl try-restart xps-airplay.service 2>/dev/null || true
+systemctl try-restart xps-ambient.service 2>/dev/null || true
 old_image=$(read_image "$ENV_FILE")
 if [ -z "${XPS_UMBREL_IMAGE_REPOSITORY:-}" ] && [ -n "$old_image" ]; then
 	IMAGE_REPOSITORY=${old_image%:*}

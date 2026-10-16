@@ -57,6 +57,7 @@ export function loadConfig({ argv = process.argv.slice(2), env = process.env, en
     commuteOrigin: get('DASH_COMMUTE_ORIGIN'),
     commuteDestination: get('DASH_COMMUTE_DESTINATION'),
     immichUrl: get('DASH_IMMICH_URL'),
+    ambientFile: get('DASH_AMBIENT_FILE', '/run/xps-ambient/ambient.json'),
     dataDir: get('DASH_DATA_DIR', join(DASHBOARD_DIR, 'data')),
     mediaDir: get('DASH_MEDIA_DIR', join(DASHBOARD_DIR, 'web', 'media')),
   };

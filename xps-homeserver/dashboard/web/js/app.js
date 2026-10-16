@@ -6,6 +6,7 @@ import { createScenes, GREETINGS, sceneAt } from './scene.js';
 import { $, $$, esc, icon } from './util.js';
 import widgets from './widgets/index.js';
 import * as musicFeature from './features/music.js';
+import * as ambientFeature from './features/ambient.js';
 
 const stage = $('#stage');
 const state = { name: '', timezone: 'Europe/Berlin', widgets: {}, layout: { tiles: [], hidden: [] }, scale: 1 };
@@ -88,7 +89,7 @@ const featureContext = {
     rectsProvider = provider;
   },
 };
-const FEATURES = [musicFeature];
+const FEATURES = [musicFeature, ambientFeature];
 
 /* ---------- widget actions ----------
    A widget module only writes markup: <button data-action="toggle"

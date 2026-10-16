@@ -1,9 +1,9 @@
 # Architektur
 
-Stand: Phase 0 ist gebaut und in QEMU getestet. Phase 1, der Umbrel-Container
-aus Phase 2, Design A mit sieben Widgets, der Kiosk und AirPlay sind eingerichtet.
-Webcam-Regelung und Betriebsanleitung sind noch offen. WLAN, Display, Audio,
-Kamera und Backlight müssen am XPS praktisch verifiziert werden.
+Stand: Phase 0 ist gebaut und in QEMU getestet. Phase 1 bis 5 sind eingerichtet:
+Basissystem, Umbrel, sieben Widgets in Design A, Kiosk, AirPlay und
+Webcam-Regelung. Die Betriebsanleitung aus Phase 6 ist noch offen. WLAN,
+Display, Audio, Kamera und Backlight müssen am XPS praktisch verifiziert werden.
 
 ## Überblick
 
@@ -122,8 +122,9 @@ Registry-Passwort pullen kann.
 
 `xps-ambient` läuft als eigener Dienst mit `PrivateNetwork=yes`. Er hat damit
 keinerlei Netzwerkzugang, nicht einmal localhost. Er nimmt ein Bild im
-Arbeitsspeicher auf, berechnet die Helligkeit, verwirft das Bild und gibt nur
-die Zahl über eine Datei in `/run` weiter.
+Arbeitsspeicher auf, berechnet daraus den Median eines 16×12-Graubilds, verwirft
+die Pixel und schreibt nur Helligkeits-Prozentwerte sowie einen Nachtmodus-Schalter
+in eine JSON-Datei unter `/run`.
 
 ### AirPlay 2
 
@@ -139,4 +140,5 @@ Dashboard mit Titel, Interpret, Album und Cover. Die Stream-Erkennung läuft
   lesbares Paket eingerichtet werden.
 - Dashboard-Integrationen am XPS konfigurieren und physisch prüfen.
 - AirPlay-Audio am XPS prüfen.
-- Webcam-Regelung und Notfallplan fertigstellen.
+- Webcam-Regelung und Backlight am XPS prüfen.
+- Notfallplan fertigstellen.

@@ -65,9 +65,13 @@ install -d -o "$KIOSK_USER" -g "$(id -gn "$KIOSK_USER")" -m 700 /var/lib/xps-kio
 install -m 644 "$DEPLOY_ROOT/xps-homeserver/deploy/systemd/xps-dashboard.service" /etc/systemd/system/xps-dashboard.service
 install -m 644 "$DEPLOY_ROOT/xps-homeserver/deploy/systemd/xps-kiosk@.service" /etc/systemd/system/xps-kiosk@.service
 install -m 644 "$DEPLOY_ROOT/xps-homeserver/deploy/systemd/xps-airplay.service" /etc/systemd/system/xps-airplay.service
+install -m 644 "$DEPLOY_ROOT/xps-homeserver/deploy/systemd/xps-ambient.service" /etc/systemd/system/xps-ambient.service
+if [ ! -e "$CONFIG_DIR/ambient.env" ]; then
+	install -m 600 "$DEPLOY_ROOT/xps-homeserver/ambient.env.example" "$CONFIG_DIR/ambient.env"
+fi
 systemctl enable --now docker.service
 systemctl daemon-reload
-systemctl enable --now xps-dashboard.service "xps-kiosk@$KIOSK_USER.service" xps-airplay.service
+systemctl enable --now xps-dashboard.service "xps-kiosk@$KIOSK_USER.service" xps-airplay.service xps-ambient.service
 
 cat <<EOF
 Dashboard ist eingerichtet.
@@ -75,6 +79,7 @@ Dashboard ist eingerichtet.
   Konfiguration: $CONFIG_DIR/dashboard.env
   Dienststatus: systemctl status xps-dashboard xps-kiosk@$KIOSK_USER
   AirPlay: systemctl status xps-airplay
+  Webcam: systemctl status xps-ambient
 
 Änderungen am Konfigurationsfile werden nach einem Dashboard-Neustart geladen:
   sudo systemctl restart xps-dashboard

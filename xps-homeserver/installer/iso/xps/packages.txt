@@ -36,6 +36,7 @@ nodejs
 chromium
 cage
 seatd
+ffmpeg
 unattended-upgrades
 systemd-zram-generator
 
