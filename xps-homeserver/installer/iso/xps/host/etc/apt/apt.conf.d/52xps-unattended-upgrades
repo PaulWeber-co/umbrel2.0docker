@@ -1,0 +1,13 @@
+// Do not start a package transaction on battery. The XPS normally stays on
+// AC, but a battery pull or power outage must not interrupt a kernel update.
+Unattended-Upgrade::OnlyOnACPower "true";
+
+// Keep the current kernel and its fallback available until an operator checks
+// the new kernel and its Broadcom wl module.
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "false";
+Unattended-Upgrade::Remove-Unused-Dependencies "false";
+
+// A headless server must never reboot itself while the network driver or
+// services are being updated.
+Unattended-Upgrade::Automatic-Reboot "false";
+Unattended-Upgrade::SyslogEnable "true";

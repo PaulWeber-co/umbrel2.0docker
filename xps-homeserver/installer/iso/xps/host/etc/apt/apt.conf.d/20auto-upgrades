@@ -1,0 +1,5 @@
+// Check for updates every day and install only packages permitted by Debian's
+// unattended-upgrades origin policy (security updates by default).
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";

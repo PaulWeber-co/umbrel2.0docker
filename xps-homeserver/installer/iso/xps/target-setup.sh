@@ -16,6 +16,7 @@ main() {
 	. "$SRC/config.env"
 	install_packages
 	build_wifi_driver
+	install_host_configuration
 	configure_apt_sources
 	configure_wifi
 	configure_ssh
@@ -24,6 +25,18 @@ main() {
 	write_install_info
 	cleanup
 	step "Fertig"
+}
+
+install_host_configuration() {
+	step "Server-Betrieb, zram und Updates konfigurieren"
+	local source="$SRC/host/etc"
+	install -D -m 644 "$source/apt/apt.conf.d/20auto-upgrades" /etc/apt/apt.conf.d/20auto-upgrades
+	install -D -m 644 "$source/apt/apt.conf.d/52xps-unattended-upgrades" /etc/apt/apt.conf.d/52xps-unattended-upgrades
+	install -D -m 644 "$source/systemd/zram-generator.conf" /etc/systemd/zram-generator.conf
+	install -D -m 644 "$source/systemd/logind.conf.d/10-xps-lid.conf" /etc/systemd/logind.conf.d/10-xps-lid.conf
+	install -D -m 755 "$SRC/host/usr/local/sbin/xps-setup-tailscale" /usr/local/sbin/xps-setup-tailscale
+	install -D -m 755 "$SRC/host/etc/kernel/postinst.d/xps-wl-check" /etc/kernel/postinst.d/xps-wl-check
+	systemctl enable apt-daily.timer apt-daily-upgrade.timer
 }
 
 install_packages() {

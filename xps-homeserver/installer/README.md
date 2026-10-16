@@ -105,7 +105,28 @@ ssh paul@xps.local
 
 Damit ist Phase 0 fertig.
 
-## 6. Feste IP im Speedport
+## 6a. Grundsystem nach dem ersten Start
+
+Der Installer richtet den Serverbetrieb bereits ein: Debian-Sicherheitsupdates
+werden täglich geprüft und nur am Netzteil installiert. Der XPS startet nach
+einem Update nicht selbst neu, und ein Kernel-Update wird zurückgewiesen, falls
+DKMS den Broadcom-Treiber `wl` für den neuen Kernel nicht bereitgestellt hat.
+Der vorherige Kernel bleibt als Rückfallmöglichkeit erhalten. Zram nutzt
+komprimierten Arbeitsspeicher als Swap; das Zuklappen des Displays hält den
+Server wach. Die Akku-Ladeschwelle wird wie oben beschrieben einmalig im BIOS
+gesetzt.
+
+Tailscale ist optional. Wenn du den XPS zusätzlich von unterwegs erreichen
+möchtest, einmal per SSH starten und den angezeigten Link im Browser bestätigen:
+
+```sh
+sudo xps-setup-tailscale
+```
+
+Danach zeigt `tailscale status` die Verbindung. Es wird kein Auth-Key im Repo
+oder auf dem Installationsstick abgelegt.
+
+## 7. Feste IP im Speedport
 
 Damit der XPS immer dieselbe Adresse bekommt: Speedport-Oberfläche
 (`http://speedport.ip`) → *Heimnetz → Heimnetz (LAN) → Heimnetzwerk*, den XPS

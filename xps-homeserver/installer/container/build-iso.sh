@@ -82,6 +82,7 @@ build_repo() {
 write_config() {
 	step "Einstellungen für die Installation schreiben"
 	cp "$IN/iso/xps/"*.sh "$IN/iso/xps/packages.txt" "$IN/iso/xps/debian.sources" "$WORK/xps/"
+	cp -a "$IN/iso/xps/host" "$WORK/xps/host"
 
 	# Read by target-setup.sh inside the new system and deleted there afterwards.
 	{

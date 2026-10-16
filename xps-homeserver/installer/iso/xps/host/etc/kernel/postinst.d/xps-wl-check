@@ -1,0 +1,17 @@
+#!/bin/sh
+# Refuse to finish configuring a newly installed kernel unless DKMS provided
+# the Broadcom wl module. The previous kernel remains installed as fallback.
+set -eu
+
+kver=${1:-}
+if [ -z "$kver" ]; then
+	echo "xps-wl-check: Kernelversion fehlt" >&2
+	exit 1
+fi
+
+if ! modinfo -k "$kver" -n wl >/dev/null 2>&1; then
+	echo "xps-wl-check: wl fehlt für Kernel $kver; Kernel-Update wird abgebrochen" >&2
+	exit 1
+fi
+
+echo "xps-wl-check: wl ist für Kernel $kver verfügbar"

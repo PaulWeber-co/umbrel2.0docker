@@ -1,8 +1,9 @@
 # Architektur
 
-Stand: Phase 0 gebaut. Das Dashboard aus Phase 3 hat ein Grundgerüst in Design A
-mit Wetter- und Server-Widget; Grundsystem, Umbrel-Container, Kiosk, AirPlay,
-Webcam und Betriebsanleitung sind noch offen.
+Stand: Phase 0 ist gebaut und in QEMU getestet. Die Phase-1-Konfiguration ist
+im Installer eingebaut; der Dashboard-Grundaufbau in Design A enthält Wetter-
+und Server-Widget. Umbrel-Container, Kiosk, AirPlay, Webcam und
+Betriebsanleitung sind noch offen.
 
 ## Überblick
 
@@ -10,6 +11,9 @@ Webcam und Betriebsanleitung sind noch offen.
 Dell XPS 13 9350 · Debian 13 ohne Desktop · nur WLAN
 │
 ├── NetworkManager + Broadcom-Treiber wl (DKMS)
+├── unattended-upgrades .. Sicherheitsupdates am Netzteil, ohne Auto-Neustart
+├── zram .................. komprimierter Swap bis 4 GiB
+├── systemd-logind ........ Zuklappen schaltet den Server nicht aus
 ├── avahi: xps.local und umbrel.local
 │
 ├── Docker (Host)
@@ -76,6 +80,26 @@ Umbrel-Updates ab.
 | Wetter | Open-Meteo, ohne Schlüssel |
 | Songinfos und Cover | Metadaten von shairport-sync |
 | Raumhelligkeit | `xps-ambient`, nur eine Zahl |
+
+### Updates, Akku und Fernzugriff
+
+Der Installer aktiviert Debian `unattended-upgrades` für die von Debian
+freigegebenen Sicherheitsupdates. Paketlisten werden täglich erneuert,
+Installationen laufen nur am Netzteil und lösen keinen automatischen Neustart
+aus. Kernelpakete bleiben erhalten, damit ein vorheriger Kernel als Rückweg
+verfügbar ist. Ein Kernel-Postinst-Hook prüft nach DKMS, ob `wl` für den neuen
+Kernel vorhanden ist; ohne Modul schlägt die Paketkonfiguration fehl.
+
+Zram belegt höchstens die Hälfte des Arbeitsspeichers oder 4 GiB, je nachdem,
+welcher Wert kleiner ist. Ein systemd-logind-Drop-in ignoriert das Zuklappen,
+damit Display und Server weiterlaufen. Die Akku-Ladeschwelle (Start 50 %, Stop
+60 %) wird im Dell-BIOS gesetzt, weil diese Grenze unter Debian nicht zuverlässig
+verwaltet werden kann.
+
+Tailscale wird nach der Installation mit `sudo xps-setup-tailscale` eingerichtet.
+Das Skript installiert den offiziellen Debian-Paketquellen-Eintrag und startet
+den einmaligen Login im Terminal. Es speichert weder Auth-Key noch Geheimnis im
+Repository oder Installer-Stick.
 
 ### Webcam: Bilder können das Gerät technisch nicht verlassen
 
