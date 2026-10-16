@@ -101,6 +101,23 @@ Das Skript installiert den offiziellen Debian-Paketquellen-Eintrag und startet
 den einmaligen Login im Terminal. Es speichert weder Auth-Key noch Geheimnis im
 Repository oder Installer-Stick.
 
+### Umbrel-Container und Updates
+
+Der Host-Docker-Dienst und Docker Compose kommen aus Debian und werden offline
+vom Installer-Stick eingerichtet. GitHub Actions baut für jeden relevanten
+Push ein `linux/amd64`-Image mit `BASE_VARIANT=-container` und versieht es mit
+dem vollständigen Commit-SHA. Der XPS muss dadurch keine großen Umbrel-Images
+selbst bauen. Compose hält den persistenten Datenbereich `umbrel-data` getrennt
+vom Image und veröffentlicht die Umbrel-Ports sowie dynamische App-Ports.
+
+`scripts/update-umbrel.sh` aktualisiert zuerst den ausgecheckten Branch,
+lädt dessen unveränderliches SHA-Image und wartet auf den Healthcheck. Erst
+danach wird die aktive Image-Referenz gespeichert. Bei einem Fehler startet es
+das zuvor gespeicherte Image wieder; das Datenvolume wird dabei nicht entfernt.
+Das vorige Image bleibt lokal und kann so lange als Rückfall dienen. Der
+GitHub-Container muss öffentlich lesbar sein, damit der XPS ohne zusätzliches
+Registry-Passwort pullen kann.
+
 ### Webcam: Bilder können das Gerät technisch nicht verlassen
 
 `xps-ambient` läuft als eigener Dienst mit `PrivateNetwork=yes`. Er hat damit

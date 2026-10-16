@@ -19,8 +19,8 @@ Wie die Teile zusammenhängen und warum sie so gebaut sind:
 | --- | --- | --- |
 | 0 | [Installer-Stick](installer/README.md): Debian 13 mit WLAN-Treiber, ohne Netz installierbar | gebaut, in QEMU getestet |
 | 1 | Grundsystem: Updates, Treiber-Schutz bei Kernel-Updates, Server-Betrieb, Akku, zram, Tailscale | eingebaut; am XPS zu verifizieren |
-| 2 | Umbrel-Container aus dem Fork, Update-Skript mit Rückfallebene | offen |
-| 3 | Dashboard: [Design-Entwürfe](dashboard/README.md), Backend, Frontend, Kiosk | Design A gewählt; Grundgerüst mit Wetter- und Server-Widget steht, Kiosk offen |
+| 2 | Umbrel-Container aus dem Fork, Update-Skript mit Rückfallebene | eingebaut; XPS-Deployment offen |
+| 3 | Dashboard: [Design-Entwürfe](dashboard/README.md), Backend, Frontend, Kiosk | Design A gewählt; Grundgerüst mit Wetter- und Server-Widget steht, weitere Kacheln und Kiosk offen |
 | 4 | AirPlay und Musik-Modus | offen |
 | 5 | Webcam-Helligkeit und Nachtmodus | offen |
 | 6 | Bedienungsanleitung und Notfallplan | offen |

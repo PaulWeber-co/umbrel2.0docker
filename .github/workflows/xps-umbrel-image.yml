@@ -1,0 +1,43 @@
+name: XPS Umbrel container image
+
+on:
+  push:
+    paths:
+      - 'packages/**'
+      - 'patches/**'
+      - 'xps-homeserver/deploy/**'
+      - '.github/workflows/xps-umbrel-image.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build XPS container image
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out fork
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.repository_owner }}" --password-stdin
+
+      - name: Build and push amd64 container variant
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/xps-homeserver-umbrelos
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg BASE_VARIANT=-container \
+            --file packages/os/umbrelos.Dockerfile \
+            --tag "${IMAGE}:sha-${GITHUB_SHA}" \
+            --tag "${IMAGE}:branch-${GITHUB_REF_NAME//\//-}" \
+            --cache-from type=gha,scope=xps-container-amd64 \
+            --cache-to type=gha,mode=max,scope=xps-container-amd64 \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --push \
+            .

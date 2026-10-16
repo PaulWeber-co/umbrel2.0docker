@@ -17,6 +17,7 @@ main() {
 	install_packages
 	build_wifi_driver
 	install_host_configuration
+	systemctl enable docker
 	configure_apt_sources
 	configure_wifi
 	configure_ssh

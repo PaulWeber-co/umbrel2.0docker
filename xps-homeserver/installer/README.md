@@ -126,6 +126,25 @@ sudo xps-setup-tailscale
 Danach zeigt `tailscale status` die Verbindung. Es wird kein Auth-Key im Repo
 oder auf dem Installationsstick abgelegt.
 
+Der Installer bringt außerdem den Docker-Host und Docker Compose mit. Das
+Umbrel-Image baut GitHub Actions als `linux/amd64`-Container aus dem Fork. Nach
+dem ersten erfolgreichen Workflow das Paket
+`xps-homeserver-umbrelos` in GitHub Container Registry auf **Public** stellen,
+damit der XPS Images ohne Registry-Zugangsdaten laden kann. Dann den Fork auf
+dem XPS auschecken und den Stack starten:
+
+```sh
+git clone --branch <branch> https://github.com/PaulWeber-co/umbrel2.0docker.git ~/umbrel2.0docker
+cd ~/umbrel2.0docker
+sudo ./xps-homeserver/scripts/install-umbrel.sh
+```
+
+Künftige manuelle Updates laufen mit `sudo
+./xps-homeserver/scripts/update-umbrel.sh`. Das Skript aktualisiert den Branch,
+holt das dazugehörige unveränderliche Image, wartet auf den Healthcheck und
+startet bei einem Fehler das vorherige Image wieder. Umbrel-Daten liegen im
+Docker-Volume `umbrel-data` und werden beim Rollback nicht gelöscht.
+
 ## 7. Feste IP im Speedport
 
 Damit der XPS immer dieselbe Adresse bekommt: Speedport-Oberfläche
