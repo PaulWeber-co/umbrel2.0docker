@@ -24,7 +24,7 @@ import {
 } from '../server/sources/shairport.js';
 import music, { DEMO_COVER } from '../server/widgets/music.js';
 import { rectFor } from '../web/js/layout.js';
-import { averageColour, brighten, formatTime, musicRects, progressAt, SLOTS } from '../web/js/music.js';
+import { averageColour, brighten, formatTime, musicRects, progressAt, SLOTS } from '../web/js/features/music.js';
 
 const FIXTURE = new URL('./fixtures/shairport-metadata.txt', import.meta.url);
 const stream = readFileSync(FIXTURE);
@@ -310,14 +310,14 @@ test('a new track drops the old cover unless its own arrives', () => {
 
 /* ---------- front end: layout, progress, colour ---------- */
 
-test('music mode keeps weather, commute, home and server in the right column', () => {
+test('music mode keeps weather, commute, home and services in the right column', () => {
   const rects = musicRects(DEFAULT_LAYOUT);
   assert.equal(rects.size, DEFAULT_LAYOUT.tiles.length);
   assert.deepEqual(rects.get('wetter'), [1336, 80, 488, 290]);
   assert.deepEqual(rects.get('weg'), [1336, 394, 232, 290]);
   assert.deepEqual(rects.get('home'), [1592, 394, 232, 290]);
-  assert.deepEqual(rects.get('server'), [1336, 708, 488, 290]);
-  for (const id of ['fotos', 'kal', 'todo', 'dc']) assert.equal(rects.get(id), null, id);
+  assert.deepEqual(rects.get('dienste'), [1336, 708, 488, 290]);
+  for (const id of ['fotos', 'kal', 'todo', 'server']) assert.equal(rects.get(id), null, id);
   // Narrower than in normal mode, and right of the player (x 96 … 1276)
   for (const tile of DEFAULT_LAYOUT.tiles) {
     const rect = rects.get(tile.id);
@@ -331,12 +331,13 @@ test('music mode keeps weather, commute, home and server in the right column', (
 test('music mode fills the slots with other tiles when the preferred ones are gone', () => {
   const layout = { tiles: DEFAULT_LAYOUT.tiles.filter((tile) => !['wetter', 'weg'].includes(tile.id)), hidden: ['wetter', 'weg'] };
   const rects = musicRects(layout);
-  assert.deepEqual(rects.get('server'), SLOTS.wide[0]);
+  assert.deepEqual(rects.get('dienste'), SLOTS.wide[0]);
   assert.deepEqual(rects.get('kal'), SLOTS.wide[1], 'first other wide tile');
   assert.deepEqual(rects.get('home'), SLOTS.small[0]);
   assert.deepEqual(rects.get('fotos'), SLOTS.small[1], 'first other small tile');
   assert.equal(rects.get('wetter'), null);
   assert.equal(rects.get('todo'), null);
+  assert.equal(rects.get('server'), null);
   assert.deepEqual(musicRects({ tiles: [] }), new Map());
   assert.deepEqual(musicRects(undefined), new Map());
 });

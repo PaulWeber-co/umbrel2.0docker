@@ -1,0 +1,35 @@
+[Unit]
+Description=Wall dashboard on the XPS display (Cage + Chromium) as %i
+After=network-online.target xps-dashboard.service
+Wants=network-online.target
+Requires=xps-dashboard.service
+Conflicts=getty@tty1.service
+ConditionPathExists=/opt/xps-homeserver/xps-homeserver/dashboard/server/index.js
+
+[Service]
+Type=simple
+User=%i
+PAMName=login
+SupplementaryGroups=video input
+Environment=HOME=%h
+Environment=XDG_RUNTIME_DIR=/run/user/%U
+Environment=LIBSEAT_BACKEND=logind
+TTYPath=/dev/tty1
+StandardInput=tty
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+# Chromium decodes the background videos on the GPU (VA-API, intel-media-va-driver);
+# no keyring, no update or crash bubbles, no swipe-back on the touchpad.
+ExecStart=/usr/bin/cage -s -- /usr/bin/chromium --kiosk --ozone-platform=wayland \
+  --enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL,VaapiVideoDecoder \
+  --disable-features=TranslateUI --autoplay-policy=no-user-gesture-required \
+  --no-first-run --no-default-browser-check --disable-infobars --disable-session-crashed-bubble --noerrdialogs \
+  --password-store=basic --overscroll-history-navigation=0 --check-for-update-interval=31536000 \
+  --user-data-dir=/var/lib/xps-kiosk http://127.0.0.1:7777
+Restart=always
+RestartSec=3
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

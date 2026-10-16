@@ -1,0 +1,47 @@
+/* Server tile (web/js/widgets/server.js) */
+.server-wrap { flex: 1 1 0; min-height: 0; display: flex; container-type: inline-size; }
+.server-grid {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+  align-content: center;
+}
+.server-stat {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  column-gap: 8px;
+}
+.server-stat > .ic {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  align-self: center;
+  font-size: 24px;
+  opacity: .85;
+}
+.server-label { font-size: 18px; opacity: .76; }
+.server-stat strong {
+  overflow: hidden;
+  font-size: 36px;
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.server-stat small { overflow: hidden; font-size: 16px; opacity: .72; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 1×1 and music mode: values only, the details would not fit */
+@container (max-width: 400px) {
+  .server-grid { gap: 14px 12px; }
+  .server-stat { grid-template-columns: minmax(0, 1fr); }
+  .server-stat > .ic, .server-stat small { display: none; }
+  .server-label { font-size: 15px; }
+  .server-stat strong { font-size: 30px; }
+}

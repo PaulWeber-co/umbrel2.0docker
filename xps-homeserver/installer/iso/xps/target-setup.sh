@@ -14,8 +14,12 @@ step() { printf '\n==> %s\n' "$*"; }
 main() {
 	# shellcheck source=/dev/null
 	. "$SRC/config.env"
+	# shellcheck source=SCRIPTDIR/host-files.sh
+	. "$SRC/host-files.sh"
 	install_packages
 	build_wifi_driver
+	install_host_configuration
+	systemctl enable docker
 	configure_apt_sources
 	configure_wifi
 	configure_ssh
@@ -24,6 +28,13 @@ main() {
 	write_install_info
 	cleanup
 	step "Fertig"
+}
+
+install_host_configuration() {
+	step "Server-Betrieb: Updates, Kernel-Wächter, Watchdogs, zram, kein Standby"
+	install_host_files "$SRC/host"
+	systemctl enable apt-daily.timer apt-daily-upgrade.timer
+	update-grub
 }
 
 install_packages() {

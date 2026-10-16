@@ -1,0 +1,5 @@
+#!/bin/sh
+# After every kernel (and its headers): see /usr/local/sbin/xps-wl-guard.
+# Never fails, so a missing wl can't leave the kernel package half-configured.
+/usr/local/sbin/xps-wl-guard || true
+exit 0

@@ -1,0 +1,17 @@
+// Do not start a package transaction on battery. The XPS normally stays on
+// AC, but a battery pull or power outage must not interrupt a kernel update.
+Unattended-Upgrade::OnlyOnACPower "true";
+
+// Keep the current kernel and its fallback available until an operator checks
+// the new kernel and its Broadcom wl module.
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "false";
+Unattended-Upgrade::Remove-Unused-Dependencies "false";
+
+// A kernel or libc security update only protects after a reboot: when one
+// asks for it, the XPS restarts at 04:30. xps-wl-guard has made sure by then
+// that GRUB boots a kernel with the wl Wi-Fi driver, and every service starts
+// again on its own. Set to "false" to reboot only by hand.
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "04:30";
+Unattended-Upgrade::Automatic-Reboot-WithUsers "true";
+Unattended-Upgrade::SyslogEnable "true";

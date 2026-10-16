@@ -1,0 +1,24 @@
+/* Services tile (web/js/widgets/dienste.js). The wrapper is a size container:
+   below 400 px (1×1 tiles, music mode) memory and uptime are left out. */
+.di { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; gap: 6px; container-type: inline-size; }
+.di-head, .di-row { display: grid; grid-template-columns: minmax(0, 1fr) 64px 78px 56px; align-items: center; column-gap: 12px; }
+.di-head { padding-left: 24px; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; opacity: .6; }
+.di-head span:not(:first-child), .di-num { text-align: right; }
+.di-list { flex: 1 1 0; min-height: 0; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; justify-content: space-evenly; overflow: hidden; }
+.di-row { position: relative; padding-left: 24px; font-size: 19px; line-height: 1.25; }
+.di-dot { position: absolute; left: 2px; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; background: #7ee2a8; box-shadow: 0 0 10px rgba(126, 226, 168, .7); }
+.di-warn .di-dot { background: var(--warn); box-shadow: 0 0 10px rgba(255, 195, 107, .8); }
+.di-down .di-dot { background: rgba(255, 255, 255, .35); box-shadow: none; }
+.di-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.di-name small { margin-left: 8px; font-size: 15px; font-weight: 400; opacity: .65; }
+.di-num { font-variant-numeric: tabular-nums; opacity: .88; white-space: nowrap; }
+.di-problem { grid-column: 2 / -1; min-width: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; color: var(--warn); }
+.di-down .di-problem { color: inherit; opacity: .6; }
+.di-more { font-size: 15px; opacity: .6; }
+
+@container (max-width: 400px) {
+  .di-head, .di-row { grid-template-columns: minmax(0, 1fr) 58px; }
+  .di-mem, .di-up { display: none; }
+  .di-row { font-size: 17px; }
+  .di-name small { display: none; }
+}

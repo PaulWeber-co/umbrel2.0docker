@@ -1,0 +1,24 @@
+#!/bin/sh
+# Install Tailscale from its official Debian installer, then start the
+# interactive login flow. No auth key is stored in the repository or ISO.
+set -eu
+
+if [ "$(id -u)" -ne 0 ]; then
+	echo "Bitte mit sudo starten: sudo xps-setup-tailscale" >&2
+	exit 1
+fi
+
+if ! command -v tailscale >/dev/null 2>&1; then
+	command -v curl >/dev/null 2>&1 || {
+		echo "curl fehlt. Bitte zuerst WLAN und Paketquellen prüfen." >&2
+		exit 1
+	}
+	echo "Installiere Tailscale über den offiziellen Debian-Installer …"
+	installer=$(mktemp)
+	trap 'rm -f "$installer"' EXIT HUP INT TERM
+	curl -fsSL https://tailscale.com/install.sh -o "$installer"
+	sh "$installer"
+fi
+
+echo "Es folgt die einmalige Anmeldung. Öffne den angezeigten Link im Browser."
+exec tailscale up

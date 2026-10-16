@@ -1,5 +1,5 @@
-// Every widget must follow the contract described in server/hub.js and have a
-// front-end module with the same id. New widgets are checked automatically.
+// Every data source follows the hub contract and has a tile renderer or a
+// same-named feature module. New widgets are checked automatically.
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { test } from 'node:test';
@@ -8,9 +8,8 @@ import widgets from '../server/widgets/index.js';
 
 const config = loadConfig({ argv: ['--demo'], env: {}, envFile: '/nonexistent' });
 const ctx = { config, store: { read: async (_, fallback) => fallback, write: async () => {} }, log: console, now: () => new Date('2026-10-15T07:42:00+02:00') };
-
-// Widgets that drive a feature instead of a tile (web/js/music.js, ambient.js)
-const NO_TILE = new Set(['music', 'ambient']);
+// Widgets without a tile drive a feature module instead (web/js/features/)
+const FEATURE = { music: '../web/js/features/music.js', ambient: '../web/js/features/ambient.js' };
 
 for (const widget of widgets) {
   test(`widget ${widget.id} follows the contract`, async () => {
@@ -21,7 +20,8 @@ for (const widget of widgets) {
     const data = await widget.demo(ctx);
     assert.ok(data && typeof data === 'object', 'demo() returns an object');
     assert.doesNotThrow(() => JSON.stringify(data));
-    if (!NO_TILE.has(widget.id)) assert.ok(existsSync(new URL(`../web/js/widgets/${widget.id}.js`, import.meta.url)), `web/js/widgets/${widget.id}.js exists`);
+    const consumer = FEATURE[widget.id] ?? `../web/js/widgets/${widget.id}.js`;
+    assert.ok(existsSync(new URL(consumer, import.meta.url)), `${consumer.slice(3)} exists`);
   });
 }
 

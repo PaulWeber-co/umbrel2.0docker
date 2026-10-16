@@ -30,12 +30,27 @@ const deepFreeze = (value) => {
   }
   return value;
 };
-const full = () => deepFreeze(structuredClone(DEFAULT_LAYOUT));
+// A full grid in the shape the tests below rely on (row 1: kal kal server server,
+// row 2: todo todo home dienste), independent of DEFAULT_LAYOUT
+const FULL = {
+  tiles: [
+    { id: 'wetter', col: 0, row: 0, w: 2, h: 1 },
+    { id: 'weg', col: 2, row: 0, w: 1, h: 1 },
+    { id: 'fotos', col: 3, row: 0, w: 1, h: 1 },
+    { id: 'kal', col: 0, row: 1, w: 2, h: 1 },
+    { id: 'server', col: 2, row: 1, w: 2, h: 1 },
+    { id: 'todo', col: 0, row: 2, w: 2, h: 1 },
+    { id: 'home', col: 2, row: 2, w: 1, h: 1 },
+    { id: 'dienste', col: 3, row: 2, w: 1, h: 1 },
+  ],
+  hidden: [],
+};
+const full = () => deepFreeze(structuredClone(FULL));
 const at = (layout, id) => layout.tiles.find((tile) => tile.id === id);
 // The form the server stores and echoes over /api/events (see server/http.js)
 const serverClean = (layout) => ({ tiles: layout.tiles.map(({ id, col, row, w, h }) => ({ id, col, row, w, h })), hidden: layout.hidden ?? [] });
 
-// Row 0: wetter wetter weg · | row 1: kal kal · · | row 2: todo todo · dc
+// Row 0: wetter wetter weg · | row 1: kal kal · · | row 2: todo todo · dienste
 const sparse = () =>
   deepFreeze({
     tiles: [
@@ -43,10 +58,15 @@ const sparse = () =>
       { id: 'weg', col: 2, row: 0, w: 1, h: 1 },
       { id: 'kal', col: 0, row: 1, w: 2, h: 1 },
       { id: 'todo', col: 0, row: 2, w: 2, h: 1 },
-      { id: 'dc', col: 3, row: 2, w: 1, h: 1 },
+      { id: 'dienste', col: 3, row: 2, w: 1, h: 1 },
     ],
     hidden: ['fotos', 'server', 'home'],
   });
+
+test('the default layout is valid and fills the grid', () => {
+  assert.equal(validate(DEFAULT_LAYOUT), null);
+  assert.ok(occupancy(DEFAULT_LAYOUT).flat().every((id) => id !== null));
+});
 
 test('grid size matches the server', () => {
   assert.equal(COLS, SERVER_GRID.cols);
@@ -57,7 +77,7 @@ test('occupancy maps every cell to its tile', () => {
   const cells = occupancy(full());
   assert.equal(cells.length, 3);
   assert.deepEqual(cells[0], ['wetter', 'wetter', 'weg', 'fotos']);
-  assert.deepEqual(cells[2], ['todo', 'todo', 'home', 'dc']);
+  assert.deepEqual(cells[2], ['todo', 'todo', 'home', 'dienste']);
   assert.ok(cells.flat().every((id) => id !== null), 'default layout fills the grid');
   const holes = occupancy(sparse());
   assert.deepEqual(holes[0], ['wetter', 'wetter', 'weg', null]);
@@ -110,8 +130,8 @@ test('swapTiles swaps tiles of the same size and refuses others', () => {
   assert.deepEqual(at(swapped, 'wetter'), { id: 'wetter', col: 2, row: 1, w: 2, h: 1 });
   assert.deepEqual(at(swapped, 'server'), { id: 'server', col: 0, row: 0, w: 2, h: 1 });
   assert.equal(validateLayout(swapped), null);
-  const small = swapTiles(layout, 'weg', 'dc');
-  assert.deepEqual([at(small, 'weg').col, at(small, 'weg').row, at(small, 'dc').col, at(small, 'dc').row], [3, 2, 2, 0]);
+  const small = swapTiles(layout, 'weg', 'dienste');
+  assert.deepEqual([at(small, 'weg').col, at(small, 'weg').row, at(small, 'dienste').col, at(small, 'dienste').row], [3, 2, 2, 0]);
   assert.equal(swapTiles(layout, 'wetter', 'weg'), null, 'different sizes');
   assert.equal(swapTiles(layout, 'weg', 'weg'), null, 'with itself');
   assert.equal(swapTiles(layout, 'weg', 'nope'), null, 'unknown id');
@@ -122,17 +142,17 @@ test('resizeTile grows right, then left, and always shrinks', () => {
   // weg at column 2, column 3 free → grows to the right
   assert.deepEqual(at(resizeTile(layout, 'weg'), 'weg'), { id: 'weg', col: 2, row: 0, w: 2, h: 1 });
   // dc at the right edge, column 2 of row 2 free → grows to the left
-  assert.deepEqual(at(resizeTile(layout, 'dc'), 'dc'), { id: 'dc', col: 2, row: 2, w: 2, h: 1 });
+  assert.deepEqual(at(resizeTile(layout, 'dienste'), 'dienste'), { id: 'dienste', col: 2, row: 2, w: 2, h: 1 });
   // right side blocked, left side free: · a b ·
   const blockedRight = deepFreeze({ tiles: [{ id: 'a', col: 1, row: 0, w: 1, h: 1 }, { id: 'b', col: 2, row: 0, w: 1, h: 1 }], hidden: [] });
   assert.deepEqual(at(resizeTile(blockedRight, 'a'), 'a'), { id: 'a', col: 0, row: 0, w: 2, h: 1 });
   assert.deepEqual(at(resizeTile(blockedRight, 'b'), 'b'), { id: 'b', col: 2, row: 0, w: 2, h: 1 }, 'right side preferred');
-  // both sides blocked: kal kal weg dc
-  const blockedBoth = moveTile(moveTile(layout, 'dc', 3, 1), 'weg', 2, 1);
+  // both sides blocked: kal kal weg dienste
+  const blockedBoth = moveTile(moveTile(layout, 'dienste', 3, 1), 'weg', 2, 1);
   assert.equal(resizeTile(blockedBoth, 'weg'), null);
   // no room on either side
   assert.equal(resizeTile(full(), 'weg'), null);
-  assert.equal(resizeTile(full(), 'dc'), null, 'right edge, left side taken');
+  assert.equal(resizeTile(full(), 'dienste'), null, 'right edge, left side taken');
   const leftEdge = { tiles: [{ id: 'a', col: 0, row: 0, w: 1, h: 1 }, { id: 'b', col: 1, row: 0, w: 1, h: 1 }], hidden: [] };
   assert.equal(resizeTile(leftEdge, 'a'), null, 'left edge, right side taken');
   // shrinking keeps the left cell, even on a full grid
@@ -180,7 +200,7 @@ test('no function changes its input', () => {
   swapTiles(layout, 'wetter', 'kal');
   resizeTile(layout, 'weg');
   resizeTile(layout, 'wetter');
-  removeTile(layout, 'dc');
+  removeTile(layout, 'dienste');
   addTile(layout, 'fotos', 1, 1);
   dropTarget(layout, 'weg', { col: 3, row: 0 });
   copyLayout(layout);
@@ -201,7 +221,7 @@ test('results keep the server form, so the saved echo compares equal', () => {
     (l) => resizeTile(l, 'weg'),
     (l) => addTile(l, 'fotos', 1, 1),
     (l) => removeTile(l, 'home'),
-    (l) => moveTile(l, 'dc', 2, 2),
+    (l) => moveTile(l, 'dienste', 2, 2),
   ];
   for (const step of steps) {
     const next = step(layout);
@@ -321,7 +341,7 @@ test('dropTarget picks swap, move or nothing', () => {
   const layout = sparse();
   // Over a tile of the same size: swap
   assert.deepEqual(dropTarget(layout, 'wetter', { col: 1, row: 1 }), { type: 'swap', id: 'kal' });
-  assert.deepEqual(dropTarget(layout, 'weg', { col: 3, row: 2 }), { type: 'swap', id: 'dc' });
+  assert.deepEqual(dropTarget(layout, 'weg', { col: 3, row: 2 }), { type: 'swap', id: 'dienste' });
   // Over a tile of another size: nothing
   assert.equal(dropTarget(layout, 'weg', { col: 0, row: 1 }), null);
   // Over free cells: move

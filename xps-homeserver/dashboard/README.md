@@ -1,28 +1,87 @@
 # Dashboard
 
-Noch im Entwurf. Hier entsteht das Wand-Dashboard für das Display des XPS.
+Das Wand-Dashboard in **Design A · Glas**: ein kleiner Node.js-Server ohne
+Abhängigkeiten sammelt die Daten, die Oberfläche läuft im Chromium-Kiosk auf
+dem XPS-Display und in jedem Browser unter `http://xps.local:7777`.
+`scripts/setup-xps.sh` richtet Dienst und Kiosk ein (siehe
+[Betrieb](../docs/betrieb.md)).
 
-## Entwürfe
+## Kacheln
 
-`mockup/wand-dashboard.html` zeigt drei Design-Richtungen auf einer simulierten
-1920×1080-Fläche:
+| Kachel | Quelle | Einstellungen |
+| --- | --- | --- |
+| Wetter | Open-Meteo, ohne Schlüssel | `DASH_PLACE`, `DASH_LAT`, `DASH_LON` |
+| Arbeitsweg | TomTom mit Verkehrslage, nur im eingestellten Zeitfenster | `DASH_TOMTOM_KEY`, `DASH_HOME_*`, `DASH_WORK_*`, `DASH_COMMUTE_*` |
+| Fotos | Immich: Fotos, Videos, diese Woche neu | `DASH_IMMICH_URL`, `DASH_IMMICH_KEY` |
+| Kalender | Home-Assistant-Kalender (z. B. iCloud über CalDAV) | `DASH_HA_CALENDAR_ENTITY` |
+| Dienste | Umbrel-Apps und eigene docker-compose-Projekte: Status, CPU, RAM, Laufzeit | `DASH_SERVICES_NAMES`, `DASH_SERVICES_HIDE` |
+| To-dos | Home-Assistant-Liste, abhaken und hinzufügen | `DASH_HA_TODO_ENTITY` |
+| XPS | CPU, RAM, SSD, Temperatur des XPS selbst | – |
+| Zuhause | Home-Assistant-Entitäten, Licht und Schalter tippbar | `DASH_HA_ENTITIES` |
 
-- **A · Glas**: Milchglas-Kacheln wie in umbrelOS 2.0
-- **B · Panorama**: viel Bild, Infos ruhig in einer Zeile
-- **C · Leitstand**: dunkles Rauchglas, mehr Live-Daten
+Alle Einstellungen mit Beispielen stehen in
+[`dashboard.env.example`](../dashboard.env.example). Fehlt einer Kachel eine
+Pflicht-Einstellung, zeigt sie Beispieldaten und oben rechts die Marke
+„Beispiel“.
 
-Die Seite lässt sich zwischen den Entwürfen, Tageszeiten, Musik-Modus und
-Bearbeiten-Modus umschalten. Alle Zahlen darin sind Beispieldaten.
+**Dienste** zeigt alles, was auf dem XPS in Docker läuft: jede Umbrel-App und
+jedes eigene Compose-Projekt (Frontend, Backend, Datenbank …) als eine Zeile,
+Probleme zuerst. Die Werte sammelt `xps-services.service`
+(`scripts/xps-services.py`) als root, weil der Docker-Socket root-gleich ist;
+das Dashboard selbst bekommt nie Zugriff auf Docker. Ein Projekt ist „Problem“,
+wenn ein Container, der laufen soll, steht, neu startet oder als ungesund
+gemeldet wird. Einmalige Aufgaben (Migration, Init), die erfolgreich beendet
+sind, zählen nicht als Problem.
 
-Lokal ansehen (die Videos werden heruntergeladen, nicht mitgeliefert):
+## Bedienung
+
+- **Bearbeiten**: lange auf eine Kachel drücken. Dann Kacheln gleicher Größe
+  tauschen, auf freie Felder ziehen, mit × entfernen und unten wieder
+  hinzufügen; „Fertig“ speichert die Anordnung für alle Bildschirme.
+- **Glas-Effekt**: Reglersymbol unten rechts, von klar bis milchig. Der Wert
+  gilt für alle Browser und den Kiosk (`DASH_DATA_DIR/settings.json`;
+  `DASH_GLASS` ist nur der Startwert).
+- **Musikmodus**: Sobald etwas per AirPlay läuft, gleiten die Kacheln zur
+  Seite, Cover, Titel und Fortschritt erscheinen, der Hintergrund nimmt die
+  Farbe des Covers an. Nach dem Ende oder fünf Minuten Pause geht es zurück.
+- **Tageszeiten**: Morgen, Tag, Abend und Nacht haben eigene Videos und
+  Farben; nachts bleibt nur eine gedimmte Uhr. Ist der Raum dunkel (Webcam),
+  kommt die Nachtansicht auch tagsüber.
+
+## Datenschutz
+
+Der Webcam-Dienst liest wenige Bilder in 16×12 Graupunkten in den Speicher,
+nimmt den Mittelwert und verwirft die Pixel sofort; er hat keinen
+Netzwerkzugang und schreibt nur Prozentwerte nach
+`/run/xps-ambient/ambient.json`. AirPlay-Metadaten bleiben im Speicher des
+Dashboard-Prozesses. Die Dashboard-Seite und ihre Aktionen sind im Heimnetz
+ohne Anmeldung erreichbar; das Netz muss also vertrauenswürdig sein (von
+unterwegs über Tailscale).
+
+## Entwickeln
+
+```sh
+cd dashboard
+npm run demo        # Beispieldaten, http://localhost:7777
+npm test            # Unit-Tests
+npm run check       # Syntax aller Dateien
+npm run smoke       # Server starten und Seiten abrufen
+```
+
+Eine neue Kachel: [WIDGETS.md](WIDGETS.md). Echte Daten lokal: im Ordner
+`xps-homeserver/` `cp dashboard.env.example dashboard.env`, ausfüllen,
+`npm start`.
+
+## Entwürfe und Hintergrundvideos
+
+`mockup/wand-dashboard.html` zeigt die drei Design-Richtungen, aus denen
+Design A gewählt wurde (B · Panorama und C · Leitstand bleiben zur
+Dokumentation). `scripts/backgrounds.txt` listet die Clips von Mixkit; sie
+dürfen genutzt, aber nicht weiterverteilt werden und liegen deshalb nicht im
+Repo. `scripts/fetch-backgrounds.sh` lädt sie und macht nahtlose Schleifen
+daraus (setup-xps.sh erledigt das auf dem XPS einmalig):
 
 ```sh
 dashboard/scripts/fetch-backgrounds.sh dashboard/mockup/media 720
 open dashboard/mockup/wand-dashboard.html
 ```
-
-## Hintergrundvideos
-
-`scripts/backgrounds.txt` listet die Clips von Mixkit (frei nutzbar, aber
-nicht weiterverteilbar, deshalb nicht im Repo). `scripts/fetch-backgrounds.sh`
-lädt sie und macht daraus nahtlose Schleifen mit niedriger Bitrate.

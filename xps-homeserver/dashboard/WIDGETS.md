@@ -1,6 +1,7 @@
 # Ein Widget hinzufügen
 
-Ein Widget besteht aus zwei Dateien mit derselben ID, zum Beispiel `wetter`:
+Eine sichtbare Kachel besteht aus zwei Dateien mit derselben ID, zum Beispiel
+`wetter`:
 
 | Datei | Aufgabe |
 | --- | --- |
@@ -8,9 +9,15 @@ Ein Widget besteht aus zwei Dateien mit derselben ID, zum Beispiel `wetter`:
 | `web/js/widgets/<id>.js` | zeichnet die Kachel, läuft im Browser |
 
 Dazu kommen ein Eintrag in `server/widgets/index.js` und in
-`web/js/widgets/index.js`, ein Test unter `test/` und die Einstellungen in
-`xps-homeserver/.env.example`. Das vollständige Vorbild ist das Wetter:
-`server/widgets/weather.js`, `web/js/widgets/wetter.js`, `test/weather.test.js`.
+`web/js/widgets/index.js`, eine Datenumwandlung, die sich isoliert prüfen lässt,
+und die Einstellungen in `dashboard.env.example`. Das vollständige Vorbild ist
+das Wetter: `server/widgets/weather.js`, `web/js/widgets/wetter.js` und
+`test/weather.test.js`. Ein Hintergrund-Datenstrom ohne eigene Kachel braucht
+kein Frontend-Widget; ein Modul unter `web/js/features/` abonniert ihn über
+`ctx.onEntry()`, wie der Musikmodus (`music`) und die Nachtansicht über die
+Webcam (`ambient`). Braucht ein Widget Rechte, die das Dashboard nicht hat
+(Docker, Kamera), schreibt ein eigener kleiner Dienst eine JSON-Datei unter
+`/run/`, und das Widget liest nur diese, wie `services.js` und `ambient.js`.
 
 ## Server: `server/widgets/<name>.js`
 
@@ -92,8 +99,8 @@ oder Zeilen weglassen.
 `web/css/w-<id>.css` und werden in `web/index.html` eingebunden.
 
 Icons (`icon('name')`): sun, cloud, cloudsun, rain, snow, storm, fog, car,
-train, cal, check, list, cpu, temp, photo, home, bulb, washer, note, trend, x,
-plus, airplay, wifi-off.
+train, cal, check, list, cpu, temp, photo, home, bulb, washer, note, trend,
+sliders, stack, disk, x, plus, airplay, wifi-off.
 
 ## Prüfen
 
@@ -102,7 +109,7 @@ node --test test/<name>.test.js   # nur das eigene Widget
 npm test                          # alles, inklusive Vertragstest für jedes Widget
 npm run check                     # Syntax aller Dateien
 npm run smoke                     # echter Server im Demo-Modus
-npm run demo                      # ansehen: http://localhost:8080
+npm run demo                      # ansehen: http://localhost:7777
 ```
 
 Tests greifen nie aufs Netz zu: `fetchJson` wird im Test durch eine Funktion

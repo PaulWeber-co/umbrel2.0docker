@@ -24,6 +24,12 @@ test('environment wins over .env, only DASH_ keys count', () => {
 test('--demo and defaults', () => {
   const config = loadConfig({ argv: ['--demo'], env: {}, envFile: '/nonexistent' });
   assert.equal(config.demo, true);
-  assert.equal(config.port, 8080);
+  assert.equal(config.port, 7777);
   assert.equal(config.timezone, 'Europe/Berlin');
+  assert.equal(config.glassLevel, 55);
+});
+
+test('glass level from the environment is clamped to the supported range', () => {
+  const config = loadConfig({ argv: [], env: { DASH_GLASS: '130' }, envFile: '/nonexistent' });
+  assert.equal(config.glassLevel, 100);
 });

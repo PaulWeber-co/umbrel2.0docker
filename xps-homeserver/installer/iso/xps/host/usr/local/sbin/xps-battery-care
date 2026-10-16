@@ -1,0 +1,18 @@
+#!/bin/sh
+# The XPS hangs on its charger day and night. Charging only up to
+# XPS_BATTERY_STOP percent (default 60) keeps the battery from swelling.
+# Newer kernels expose the Dell setting in sysfs; on older ones set it in the
+# BIOS (F2 → Power Management → Primary Battery Charge Configuration →
+# Custom, Start 50 %, Stop 60 %). The BIOS setting stays even after a reinstall.
+set -u
+
+STOP=${XPS_BATTERY_STOP:-60}
+for battery in /sys/class/power_supply/BAT*; do
+	[ -d "$battery" ] || continue
+	if [ -w "$battery/charge_control_end_threshold" ]; then
+		echo "$STOP" >"$battery/charge_control_end_threshold" && echo "xps-battery-care: $(basename "$battery") lädt bis $STOP %"
+	else
+		echo "xps-battery-care: Kernel bietet keine Ladegrenze; bitte im BIOS einstellen (siehe docs/betrieb.md)"
+	fi
+done
+exit 0

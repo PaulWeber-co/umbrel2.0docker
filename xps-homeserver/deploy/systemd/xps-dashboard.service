@@ -1,0 +1,30 @@
+[Unit]
+Description=XPS wall dashboard (http://xps.local:7777)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=xps-dashboard
+Group=xps-dashboard
+WorkingDirectory=/opt/xps-homeserver/xps-homeserver/dashboard
+Environment=DASH_HOST=0.0.0.0
+Environment=DASH_PORT=7777
+Environment=DASH_DATA_DIR=/var/lib/xps-dashboard
+EnvironmentFile=/etc/xps-homeserver/dashboard.env
+ExecStart=/usr/bin/node server/index.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadWritePaths=/var/lib/xps-dashboard /run/shairport-sync
+
+[Install]
+WantedBy=multi-user.target

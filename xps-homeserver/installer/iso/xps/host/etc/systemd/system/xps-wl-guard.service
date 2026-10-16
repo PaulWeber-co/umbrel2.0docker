@@ -1,0 +1,11 @@
+[Unit]
+Description=Boot only kernels that have the Broadcom wl Wi-Fi driver
+After=local-fs.target
+Before=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/xps-wl-guard --boot
+
+[Install]
+WantedBy=multi-user.target

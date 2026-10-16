@@ -1,0 +1,35 @@
+#!/bin/sh
+# Announces the Umbrel container as umbrel.local (and any XPS_MDNS_ALIASES)
+# with the XPS's own address: Umbrel's mDNS inside the container does not
+# reach the home network. Follows address changes (new DHCP lease).
+set -u
+
+ALIASES=${XPS_MDNS_ALIASES:-umbrel.local}
+pids=""
+
+address() { ip -4 route get 1.1.1.1 2>/dev/null | awk '{ for (i = 1; i < NF; i++) if ($i == "src") { print $(i + 1); exit } }'; }
+
+stop() {
+	# shellcheck disable=SC2086 # a list of process ids
+	[ -n "$pids" ] && kill $pids 2>/dev/null
+	pids=""
+}
+trap 'stop; exit 0' INT TERM
+
+current=""
+while :; do
+	ip=$(address)
+	if [ "$ip" != "$current" ]; then
+		stop
+		current=$ip
+		if [ -n "$ip" ]; then
+			for name in $ALIASES; do
+				# -R: no reverse entry, xps.local keeps the address's own name
+				avahi-publish-address -R "$name" "$ip" &
+				pids="$pids $!"
+			done
+			echo "xps-mdns-alias: $ALIASES → $ip"
+		fi
+	fi
+	sleep 30
+done

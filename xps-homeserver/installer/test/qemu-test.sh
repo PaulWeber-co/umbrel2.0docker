@@ -9,6 +9,8 @@
 # /dev/kvm exists (about 15 minutes), otherwise software emulation (1-2 hours).
 # The VM has no Broadcom card, so the test checks that wl is built and
 # installed for the kernel, not that it connects.
+# The checks run their commands on the VM: single quotes on purpose.
+# shellcheck disable=SC2016
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -156,6 +158,16 @@ boot_and_check() {
 	for unit in ssh NetworkManager avahi-daemon systemd-timesyncd; do
 		check "Dienst $unit läuft" ssh_vm systemctl is-active --quiet "$unit"
 	done
+	for unit in xps-wl-guard.timer xps-wifi-watchdog xps-mdns-alias docker; do
+		check "Dienst $unit aktiv" ssh_vm systemctl is-active --quiet "$unit"
+	done
+	check "Kernel-Wächter: neuester Kernel hat wl" ssh_vm 'grep -q "^ok " /var/lib/xps-homeserver/wl-status'
+	check "Kernel-Hook blockiert dpkg nie" ssh_vm 'test -x /etc/kernel/postinst.d/zz-xps-wl-guard && test ! -e /etc/kernel/postinst.d/xps-wl-check'
+	check "GRUB startet den gespeicherten Kernel" ssh_vm 'grep -q "set default=\"\${saved_entry}\"" /boot/grub/grub.cfg'
+	check "Kein Standby" ssh_vm 'test "$(systemctl is-enabled suspend.target)" = masked'
+	check "Hardware-Watchdog eingestellt" ssh_vm 'test "$(systemctl show -p RuntimeWatchdogUSec --value)" = 30s'
+	check "zram-Swap aktiv" ssh_vm 'grep -q zram /proc/swaps'
+	check "Sicherheitsupdates automatisch" ssh_vm 'apt-config dump | grep -q "APT::Periodic::Unattended-Upgrade \"1\""'
 	check "Passwort-Login per SSH aus" ssh_vm 'sudo sshd -T | grep -qx "passwordauthentication no"'
 	check "root-Login per SSH aus" ssh_vm 'sudo sshd -T | grep -qx "permitrootlogin no"'
 	check "Debian-Paketquellen inkl. non-free" ssh_vm 'grep -q "non-free " /etc/apt/sources.list.d/debian.sources'

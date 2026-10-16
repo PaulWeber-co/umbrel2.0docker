@@ -1,0 +1,14 @@
+[Unit]
+Description=Reconnect Wi-Fi when the XPS loses its network
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/xps-homeserver/host.env
+ExecStart=/usr/local/sbin/xps-wifi-watchdog
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

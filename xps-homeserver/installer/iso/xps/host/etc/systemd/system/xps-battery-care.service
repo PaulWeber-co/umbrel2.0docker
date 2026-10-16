@@ -1,0 +1,10 @@
+[Unit]
+Description=Limit battery charging while the XPS runs on its charger
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/xps-homeserver/host.env
+ExecStart=/usr/local/sbin/xps-battery-care
+
+[Install]
+WantedBy=multi-user.target

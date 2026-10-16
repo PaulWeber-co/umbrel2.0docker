@@ -1,0 +1,26 @@
+# AirPlay 2 needs the host network (mDNS, PTP via nqptp in the image). The
+# container uses the XPS's own avahi-daemon instead of starting a second one,
+# so xps.local and umbrel.local stay unique on the network.
+name: xps-airplay
+
+services:
+  shairport-sync:
+    image: mikebrady/shairport-sync:5.5.2
+    container_name: xps-airplay
+    network_mode: host
+    restart: unless-stopped
+    cap_add:
+      - SYS_NICE
+    devices:
+      - /dev/snd:/dev/snd
+    environment:
+      ENABLE_AVAHI: "0"
+    volumes:
+      - ./shairport-sync.conf:/etc/shairport-sync.conf:ro
+      - /run/shairport-sync:/run/shairport-sync
+      - /var/run/dbus:/var/run/dbus
+      - /var/run/avahi-daemon:/var/run/avahi-daemon
+    logging:
+      options:
+        max-size: "200k"
+        max-file: "5"

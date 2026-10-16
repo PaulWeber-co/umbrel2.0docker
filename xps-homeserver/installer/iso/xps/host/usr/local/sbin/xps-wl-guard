@@ -1,0 +1,98 @@
+#!/bin/sh
+# Keeps Wi-Fi alive across kernel updates. The XPS has no network without the
+# Broadcom wl module, which DKMS builds for every kernel; if that fails for a
+# new kernel, the XPS must not boot it.
+#
+#   xps-wl-guard          build wl where it is missing (headers installed),
+#                         then make GRUB boot the newest kernel that has wl
+#   xps-wl-guard --boot   the same, and if the running kernel has no wl:
+#                         reboot once into the newest kernel that has it
+#
+# Runs from the kernel hooks (never fails there, so dpkg and unattended
+# upgrades are never blocked), at boot and daily (xps-wl-guard.timer).
+# The result is in /var/lib/xps-homeserver/wl-status.
+set -u
+
+STATE_DIR=${XPS_STATE_DIR:-/var/lib/xps-homeserver}
+STATUS=$STATE_DIR/wl-status
+BOOT_DIR=${XPS_BOOT_DIR:-/boot}
+GRUB_CFG=$BOOT_DIR/grub/grub.cfg
+mkdir -p "$STATE_DIR"
+
+log() {
+	echo "xps-wl-guard: $*"
+	logger -t xps-wl-guard -- "$*" 2>/dev/null || true
+}
+has_wl() { modinfo -k "$1" -n wl >/dev/null 2>&1; }
+
+# Installed kernels, oldest first
+kernels=$(find "$BOOT_DIR" -maxdepth 1 -name 'vmlinuz-*' 2>/dev/null | sed "s#^$BOOT_DIR/vmlinuz-##" | sort -V)
+if [ -z "$kernels" ]; then
+	log "keine Kernel unter $BOOT_DIR gefunden"
+	exit 0
+fi
+
+for kver in $kernels; do
+	if ! has_wl "$kver" && [ -d "/usr/src/linux-headers-$kver" ] && command -v dkms >/dev/null 2>&1; then
+		log "wl fehlt für $kver, baue es mit DKMS"
+		dkms autoinstall -k "$kver" >/dev/null 2>&1 || log "DKMS konnte wl für $kver nicht bauen"
+	fi
+done
+
+newest=$(printf '%s\n' "$kernels" | tail -n 1)
+good=""
+for kver in $kernels; do
+	if has_wl "$kver"; then good=$kver; fi
+done
+
+# GRUB id of a kernel's entry, "<submenu id>><entry id>", read from grub.cfg
+entry_for() {
+	[ -r "$GRUB_CFG" ] || return 1
+	awk -v k="$1" -v q="'" '
+		function id(line,   rest) {
+			rest = line
+			if (!sub(/.*\$menuentry_id_option '\''/, "", rest)) return ""
+			sub(/'\''.*/, "", rest)
+			return rest
+		}
+		/^submenu / { submenu = id($0) }
+		/^[[:space:]]+menuentry / && index($0, "with Linux " k q) && !index($0, "recovery") {
+			print submenu ">" id($0)
+			exit
+		}' "$GRUB_CFG"
+}
+
+pin() {
+	command -v grub-set-default >/dev/null 2>&1 || return 1
+	grub-set-default "$1" 2>/dev/null
+}
+
+if [ "$good" = "$newest" ]; then
+	pin 0 || true
+	echo "ok $newest $(date -Iseconds)" >"$STATUS"
+elif [ -n "$good" ]; then
+	entry=$(entry_for "$good")
+	if [ -n "$entry" ] && pin "$entry"; then
+		log "wl fehlt für $newest; GRUB startet weiter $good"
+	else
+		log "wl fehlt für $newest, und GRUB ließ sich nicht auf $good festlegen"
+	fi
+	echo "pinned $good missing=$newest $(date -Iseconds)" >"$STATUS"
+else
+	log "kein installierter Kernel hat wl"
+	echo "none $(date -Iseconds)" >"$STATUS"
+fi
+
+if [ "${1:-}" = "--boot" ]; then
+	running=$(uname -r)
+	marker=$STATE_DIR/wl-rebooted-$running
+	if has_wl "$running"; then
+		rm -f "$STATE_DIR"/wl-rebooted-*
+	elif [ -n "$good" ] && [ "$good" != "$running" ] && [ ! -e "$marker" ]; then
+		# Only once per kernel, so a broken GRUB setup can't loop
+		touch "$marker"
+		log "Der laufende Kernel $running hat kein wl: Neustart in $good"
+		systemctl reboot
+	fi
+fi
+exit 0

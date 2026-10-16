@@ -1,0 +1,51 @@
+# Builds the umbrelOS container image the XPS runs (xps-homeserver/deploy/
+# compose.yaml) whenever Umbrel's code changes, and pushes it to GHCR as
+#   ghcr.io/<owner>/xps-homeserver-umbrelos:branch-<branch>   (moves along)
+#   ghcr.io/<owner>/xps-homeserver-umbrelos:sha-<commit>      (fixed)
+# update-umbrel.sh on the XPS pulls branch-<branch> and pins its digest.
+name: XPS Umbrel container image
+
+on:
+  push:
+    paths:
+      - 'packages/**'
+      - '.github/workflows/xps-umbrel-image.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: xps-umbrel-image-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build XPS container image
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out fork
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build and push amd64 container variant
+        run: |
+          # Image names must be lowercase, GitHub owners need not be
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/xps-homeserver-umbrelos"
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg BASE_VARIANT=-container \
+            --file packages/os/umbrelos.Dockerfile \
+            --tag "${IMAGE}:sha-${GITHUB_SHA}" \
+            --tag "${IMAGE}:branch-${GITHUB_REF_NAME//\//-}" \
+            --cache-from type=gha,scope=xps-container-amd64 \
+            --cache-to type=gha,mode=max,scope=xps-container-amd64 \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --push \
+            .

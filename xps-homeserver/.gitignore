@@ -1,5 +1,7 @@
 # Secrets and personal settings never go into git
 .env
+dashboard.env
+host.env
 
 # Build output and download caches
 installer/out/

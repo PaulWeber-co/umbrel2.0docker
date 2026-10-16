@@ -3,7 +3,8 @@
 //   GET  /                         the front end from web/
 //   GET  /media/<file>             background videos (with Range support for Safari)
 //   GET  /api/state                settings, the latest data of every widget, the layout
-//   GET  /api/events               Server-Sent Events: "widget" and "layout" updates
+//   GET  /api/events               Server-Sent Events: "widget", "layout" and "settings" updates
+//   PUT  /api/settings             save shared dashboard appearance settings
 //   GET  /api/layout               the saved layout (or the default)
 //   PUT  /api/layout               save a layout from edit mode
 //   POST /api/widgets/<id>/actions/<name>   e.g. toggle a light, tick off a to-do
@@ -47,7 +48,22 @@ export function createApp({ hub, store, config, webDir, defaultLayout }) {
   }, 25_000);
   heartbeat.unref();
 
-  const loadLayout = async () => (await store.read('layout.json', null)) ?? defaultLayout;
+  // A saved layout predates widgets added since: they join "hidden", so edit
+  // mode offers them instead of leaving them out without a way back.
+  const loadLayout = async () => {
+    const saved = await store.read('layout.json', null);
+    if (!saved) return defaultLayout;
+    const known = new Set([...(saved.tiles ?? []).map((tile) => tile.id), ...(saved.hidden ?? [])]);
+    const missing = defaultLayout.tiles.map((tile) => tile.id).filter((id) => !known.has(id));
+    return missing.length ? { ...saved, hidden: [...(saved.hidden ?? []), ...missing] } : saved;
+  };
+  const loadSettings = async () => {
+    const saved = await store.read('settings.json', null);
+    const value = Number(saved?.glassLevel);
+    const fallback = Number.isFinite(config.glassLevel) ? config.glassLevel : 55;
+    const glassLevel = Number.isFinite(value) ? Math.round(Math.min(100, Math.max(0, value))) : fallback;
+    return { glassLevel };
+  };
 
   async function handle(req, res) {
     const url = new URL(req.url, 'http://dashboard');
@@ -64,14 +80,27 @@ export function createApp({ hub, store, config, webDir, defaultLayout }) {
         place: config.place,
         timezone: config.timezone,
         demo: config.demo,
+        settings: await loadSettings(),
         widgets: hub.snapshot(),
         layout: await loadLayout(),
       });
     }
 
+    if (path === '/api/settings' && req.method === 'PUT') {
+      const payload = await readJson(req);
+      if (!Number.isInteger(payload.glassLevel) || payload.glassLevel < 0 || payload.glassLevel > 100) {
+        throw new HttpError(400, 'Glasstufe muss eine ganze Zahl zwischen 0 und 100 sein');
+      }
+      const settings = { glassLevel: payload.glassLevel };
+      await store.write('settings.json', settings);
+      broadcast('settings', settings);
+      return sendJson(res, 200, settings);
+    }
+
     if (path === '/api/events' && req.method === 'GET') {
       res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-store', connection: 'keep-alive' });
       res.write('retry: 5000\n\n');
+      res.write(`event: settings\ndata: ${JSON.stringify(await loadSettings())}\n\n`);
       for (const entry of Object.values(hub.snapshot())) res.write(`event: widget\ndata: ${JSON.stringify(entry)}\n\n`);
       clients.add(res);
       req.on('close', () => clients.delete(res));

@@ -3,14 +3,56 @@
 // and switches scenes by time of day.
 import { applyRects, normalRects } from './layout.js';
 import { createScenes, GREETINGS, sceneAt } from './scene.js';
-import * as edit from './edit.js';
-import * as music from './music.js';
+import * as ambient from './features/ambient.js';
+import * as edit from './features/edit.js';
+import * as music from './features/music.js';
+import { applyGlass, DEFAULT_GLASS, initGlassSettings } from './glass.js';
 import { $, $$, esc, icon } from './util.js';
 import widgets from './widgets/index.js';
 
 const stage = $('#stage');
 const state = { name: '', timezone: 'Europe/Berlin', widgets: {}, layout: { tiles: [], hidden: [] }, scale: 1 };
 const scenes = createScenes(stage);
+
+/* ---------- glass level: one setting for every browser and the kiosk ---------- */
+const glassControl = $('#glass-level');
+let glassSaveTimer = null;
+
+function applyGlassLevel(value) {
+  const normalized = applyGlass(stage, value);
+  glassControl.value = String(normalized);
+  return normalized;
+}
+
+async function saveGlassLevel(value) {
+  clearTimeout(glassSaveTimer);
+  glassSaveTimer = null;
+  try {
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ glassLevel: value }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  } catch (error) {
+    console.error('Glas-Einstellung konnte nicht gespeichert werden:', error);
+  }
+}
+
+applyGlassLevel(DEFAULT_GLASS);
+initGlassSettings({
+  toggle: $('#glass-settings-toggle'),
+  overlay: $('#glass-settings-overlay'),
+  slider: glassControl,
+  close: $('#glass-settings-close'),
+  keyboard: document,
+});
+glassControl.addEventListener('input', () => {
+  const value = applyGlassLevel(glassControl.value);
+  clearTimeout(glassSaveTimer);
+  glassSaveTimer = setTimeout(() => saveGlassLevel(value), 180);
+});
+glassControl.addEventListener('change', () => saveGlassLevel(Number(glassControl.value)));
 
 /* ---------- scale the 1920×1080 stage to the window ---------- */
 function fit() {
@@ -52,7 +94,8 @@ export function renderTile(id) {
     body.innerHTML = `<div class="lbl">${esc(module?.label ?? id)}</div><div class="loading">Anzeige fehlgeschlagen</div>`;
   }
   el.classList.toggle('is-error', Boolean(entry?.error));
-  $('#chip-demo').classList.toggle('on', Object.values(state.widgets).some((w) => w.demo));
+  // Sample data (widget not set up yet) gets a small "Beispiel" mark on its tile
+  el.classList.toggle('is-demo', Boolean(entry?.demo));
 }
 
 // A feature such as music mode can move tiles elsewhere: it registers a
@@ -95,7 +138,7 @@ const featureContext = {
     sceneOverride = provider;
   },
 };
-const FEATURES = [music, edit];
+const FEATURES = [music, edit, ambient];
 
 /* ---------- widget actions ----------
    A widget module only writes markup: <button data-action="toggle"
@@ -177,6 +220,10 @@ function connect() {
     offlineTimer = setTimeout(() => $('#chip-offline').classList.add('on'), 30_000);
   });
   events.addEventListener('widget', (event) => deliver(JSON.parse(event.data)));
+  events.addEventListener('settings', (event) => {
+    const value = Number(JSON.parse(event.data).glassLevel);
+    if (Number.isFinite(value) && document.activeElement !== glassControl) applyGlassLevel(value);
+  });
   events.addEventListener('layout', (event) => {
     // Our own edits come back here too; only rebuild for changes made elsewhere.
     if (event.data === JSON.stringify(state.layout)) return;
@@ -195,6 +242,7 @@ async function boot() {
   const response = await fetch('/api/state');
   const data = await response.json();
   Object.assign(state, { name: data.name, timezone: data.timezone, widgets: data.widgets, layout: data.layout });
+  applyGlassLevel(data.settings?.glassLevel ?? DEFAULT_GLASS);
   buildTiles();
   relayout(false);
   for (const feature of FEATURES) feature.init(featureContext);

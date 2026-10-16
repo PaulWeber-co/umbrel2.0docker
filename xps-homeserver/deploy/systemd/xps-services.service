@@ -1,0 +1,29 @@
+[Unit]
+Description=Container statistics for the dashboard's services tile
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+# Root for the Docker socket; only names, states and figures leave this
+# service, in /run/xps-services/services.json (group xps-dashboard).
+User=root
+Group=xps-dashboard
+RuntimeDirectory=xps-services
+RuntimeDirectoryMode=0750
+EnvironmentFile=-/etc/xps-homeserver/host.env
+ExecStart=/usr/bin/python3 /opt/xps-homeserver/xps-homeserver/scripts/xps-services.py
+Restart=always
+RestartSec=15
+Nice=10
+NoNewPrivileges=true
+PrivateNetwork=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ReadWritePaths=/run/xps-services /run/docker.sock
+
+[Install]
+WantedBy=multi-user.target

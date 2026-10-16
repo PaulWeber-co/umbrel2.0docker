@@ -1,0 +1,22 @@
+[Unit]
+Description=AirPlay 2 receiver "XPS Lautsprecher" (shairport-sync in Docker)
+After=network-online.target docker.service avahi-daemon.service
+Wants=network-online.target
+Requires=docker.service avahi-daemon.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/xps-homeserver/xps-homeserver/deploy/airplay
+# The metadata pipe for the dashboard: it reads and writes (group), the
+# container only writes into it.
+ExecStartPre=/usr/bin/install -d -m 0755 /run/shairport-sync
+ExecStartPre=/bin/sh -c '[ -p /run/shairport-sync/metadata ] || mkfifo -m 0662 /run/shairport-sync/metadata; chgrp xps-dashboard /run/shairport-sync/metadata'
+# The headphone jack starts muted on a fresh system
+ExecStartPre=-/bin/sh -c 'amixer -q -c 0 sset Master 85%% unmute; amixer -q -c 0 sset Headphone 100%% unmute; true'
+ExecStart=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml up --detach --remove-orphans
+ExecStop=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml down
+TimeoutStartSec=10min
+
+[Install]
+WantedBy=multi-user.target

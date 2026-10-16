@@ -1,0 +1,15 @@
+[Unit]
+Description=Announce umbrel.local on the home network
+After=avahi-daemon.service network-online.target
+Requires=avahi-daemon.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/xps-homeserver/host.env
+ExecStart=/usr/local/sbin/xps-mdns-alias
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

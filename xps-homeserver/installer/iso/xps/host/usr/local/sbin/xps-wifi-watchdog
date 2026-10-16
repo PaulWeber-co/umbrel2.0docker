@@ -1,0 +1,55 @@
+#!/bin/sh
+# Brings Wi-Fi back when the XPS loses its network. Every 60 s it pings the
+# router (default gateway, or XPS_WATCHDOG_TARGET); after 3 misses in a row it
+# reconnects, after 6 it reloads the wl driver, after 15 minutes offline it
+# reboots, at most once every 6 hours and never in the first 30 minutes after
+# a boot, so a router outage does not turn into a reboot loop.
+set -u
+
+TARGET=${XPS_WATCHDOG_TARGET:-}
+STATE=/var/lib/xps-homeserver/wifi-watchdog-reboot
+misses=0
+
+log() { echo "xps-wifi-watchdog: $*"; }
+
+gateway() { ip -4 route show default 2>/dev/null | awk '/default/ { print $3; exit }'; }
+
+online() {
+	host=${TARGET:-$(gateway)}
+	[ -n "$host" ] && ping -c 2 -W 3 "$host" >/dev/null 2>&1
+}
+
+while :; do
+	sleep 60
+	if online; then
+		[ "$misses" -gt 0 ] && log "wieder online nach $misses Fehlversuchen"
+		misses=0
+		continue
+	fi
+	misses=$((misses + 1))
+	case $misses in
+	3)
+		log "kein Netz seit 3 Minuten: WLAN neu verbinden"
+		nmcli radio wifi off; sleep 3; nmcli radio wifi on
+		;;
+	6)
+		log "kein Netz seit 6 Minuten: wl-Treiber neu laden"
+		nmcli radio wifi off
+		modprobe -r wl && sleep 2 && modprobe wl
+		nmcli radio wifi on
+		;;
+	15)
+		uptime_s=$(cut -d. -f1 /proc/uptime)
+		last=$(cat "$STATE" 2>/dev/null || echo 0)
+		now=$(date +%s)
+		if [ "$uptime_s" -ge 1800 ] && [ $((now - last)) -ge 21600 ]; then
+			log "kein Netz seit 15 Minuten: Neustart"
+			mkdir -p "$(dirname "$STATE")"
+			echo "$now" >"$STATE"
+			systemctl reboot
+		else
+			log "kein Netz seit 15 Minuten, Neustart ausgelassen (eben erst gestartet oder schon neu gestartet)"
+		fi
+		;;
+	esac
+done

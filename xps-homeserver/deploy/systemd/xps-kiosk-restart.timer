@@ -1,0 +1,9 @@
+[Unit]
+Description=Restart the dashboard browser every night at 04:20
+
+[Timer]
+OnCalendar=*-*-* 04:20
+Persistent=false
+
+[Install]
+WantedBy=timers.target

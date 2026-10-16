@@ -19,6 +19,7 @@ wireless-regdb
 iw
 rfkill
 avahi-daemon
+avahi-utils
 libnss-mdns
 systemd-timesyncd
 
@@ -29,10 +30,23 @@ python3
 python3-apt
 ca-certificates
 curl
+git
+docker.io
+docker-compose
+nodejs
+chromium
+cage
+seatd
+alsa-utils
+ffmpeg
+v4l-utils
+unattended-upgrades
+systemd-zram-generator
 
 # Firmware: Intel CPU microcode, Skylake graphics, audio DSP
 intel-microcode
 firmware-intel-graphics
+intel-media-va-driver
 firmware-sof-signed
 
 # Handy on the console
