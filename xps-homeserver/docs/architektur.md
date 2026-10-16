@@ -1,9 +1,9 @@
 # Architektur
 
-Stand: Phase 0 ist gebaut und in QEMU getestet. Die Phase-1-Konfiguration ist
-im Installer eingebaut; der Dashboard-Grundaufbau in Design A enthält Wetter-
-und Server-Widget. Umbrel-Container, Kiosk, AirPlay, Webcam und
-Betriebsanleitung sind noch offen.
+Stand: Phase 0 ist gebaut und in QEMU getestet. Phase 1, der Umbrel-Container
+aus Phase 2, Design A mit sieben Widgets, der Kiosk und AirPlay sind eingerichtet.
+Webcam-Regelung und Betriebsanleitung sind noch offen. WLAN, Display, Audio,
+Kamera und Backlight müssen am XPS praktisch verifiziert werden.
 
 ## Überblick
 
@@ -75,8 +75,8 @@ Umbrel-Updates ab.
 | --- | --- |
 | CPU, RAM, Temperatur, Speicher, Netzwerk, WLAN-Signal, Akku, Uptime | direkt vom Linux-Kernel des XPS (`/proc`, `/sys`). Umbrel liest dieselben Werte, nur ohne Umweg. |
 | Umbrel-Apps (installiert, läuft, CPU/RAM je App, Update verfügbar), Umbrel-Version | Umbrels offizielle MCP-Schnittstelle unter `http://umbrel.local/mcp` mit einem Zugangstoken aus den Umbrel-Einstellungen. `get_system_info`, `get_system_resources` und `list_apps` brauchen keine Freigaben. Der Token kann also nur lesen, nichts ändern (geprüft in `packages/umbreld/source/modules/mcp/tools/`). |
-| Anzahl Fotos und Videos, belegter Platz | API der Foto-App mit eigenem Schlüssel (siehe „Offen“) |
-| Smart Home | Home Assistant (Umbrel-App), Long-Lived Access Token |
+| Anzahl Fotos und Videos, belegter Platz | Immich-API mit eigenem API-Schlüssel |
+| Smart Home, To-dos, Kalender | Home Assistant (Umbrel-App), Long-Lived Access Token |
 | Wetter | Open-Meteo, ohne Schlüssel |
 | Songinfos und Cover | Metadaten von shairport-sync |
 | Raumhelligkeit | `xps-ambient`, nur eine Zahl |
@@ -127,14 +127,16 @@ die Zahl über eine Datei in `/run` weiter.
 
 ### AirPlay 2
 
-Debian 13 hat `shairport-sync` 4.3.7, aber kein `nqptp`, das AirPlay 2
-braucht. Kandidat ist das offizielle Docker-Image von shairport-sync
-(enthält nqptp, AirPlay 2), mit `network_mode: host` und Zugriff auf
-`/dev/snd`. Wird in Phase 4 entschieden.
+Der offizielle `mikebrady/shairport-sync` Container enthält Shairport Sync und
+NQPTP, nutzt `network_mode: host` für mDNS und AirPlay und erhält nur Zugriff
+auf `/dev/snd`. Ein lokaler UDP-Metadatenstrom auf Port 5555 versorgt das
+Dashboard mit Titel, Interpret, Album und Cover. Die Stream-Erkennung läuft
+über Shairport Syncs Fortschrittsmeldungen.
 
 ## Offen
 
-- Umbrel-Image bauen: auf dem XPS oder vorgebaut per GitHub Actions
-- Fotos: Immich oder Umbrels eigene Fotos-App
-- To-dos, Kalender, Arbeitsweg: Quellen und Anbieter
-- DynamicChicken: statisch hosten mit Firebase oder selbst gehostet
+- Umbrel-Image muss nach Push in GHCR veröffentlicht und als öffentlich
+  lesbares Paket eingerichtet werden.
+- Dashboard-Integrationen am XPS konfigurieren und physisch prüfen.
+- AirPlay-Audio am XPS prüfen.
+- Webcam-Regelung und Notfallplan fertigstellen.

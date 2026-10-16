@@ -24,6 +24,10 @@ Zuhause, Arbeitsweg und Fotos ihre Demo-Ansicht. Für Zuhause werden nur die in
 Die Dashboard-API ist im Heimnetz erreichbar und setzt voraus, dass dieses
 Netzwerk vertrauenswürdig ist.
 
+Ein AirPlay-Stream blendet automatisch den Musikmodus ein. Shairport Sync
+liefert Titel, Interpret, Album und Cover über UDP auf `127.0.0.1`; die
+Metadaten bleiben im Speicher des Dashboard-Prozesses.
+
 ## Entwürfe
 
 `mockup/wand-dashboard.html` zeigt drei Design-Richtungen auf einer simulierten

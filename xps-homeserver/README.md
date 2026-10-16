@@ -21,7 +21,7 @@ Wie die Teile zusammenhängen und warum sie so gebaut sind:
 | 1 | Grundsystem: Updates, Treiber-Schutz bei Kernel-Updates, Server-Betrieb, Akku, zram, Tailscale | eingebaut; am XPS zu verifizieren |
 | 2 | Umbrel-Container aus dem Fork, Update-Skript mit Rückfallebene | eingebaut; XPS-Deployment offen |
 | 3 | Dashboard: [Design-Entwürfe](dashboard/README.md), Backend, Frontend, Kiosk | Design A mit Wetter, Server, Arbeitsweg, Fotos, Kalender, To-dos und Zuhause; Kiosk-Installer eingebaut; XPS-Display noch zu verifizieren |
-| 4 | AirPlay und Musik-Modus | offen |
+| 4 | AirPlay und Musik-Modus | Shairport Sync mit AirPlay 2, Titel/Cover und automatischer Musikansicht eingebaut; XPS-Audio noch zu verifizieren |
 | 5 | Webcam-Helligkeit und Nachtmodus | offen |
 | 6 | Bedienungsanleitung und Notfallplan | offen |
 

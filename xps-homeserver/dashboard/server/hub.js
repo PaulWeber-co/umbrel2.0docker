@@ -13,7 +13,7 @@
 //   demo(ctx)    -> data, the same shape as fetch() with sample values
 //   actions      optional { name: async (ctx & { payload, demo }) => result }
 //   watch(ctx, emit) optional, for sources that push (the AirPlay metadata
-//                pipe): called once at start unless in demo mode, emit(data)
+//                UDP stream): called once at start unless in demo mode, emit(data)
 //                publishes at once, returns a function that stops watching.
 //                fetch() still runs every intervalMs and returns the current state.
 //   ctx = { config, store, log, now, fetchJson, fetchText }

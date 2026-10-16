@@ -1,6 +1,7 @@
 # Ein Widget hinzufügen
 
-Ein Widget besteht aus zwei Dateien mit derselben ID, zum Beispiel `wetter`:
+Eine sichtbare Kachel besteht aus zwei Dateien mit derselben ID, zum Beispiel
+`wetter`:
 
 | Datei | Aufgabe |
 | --- | --- |
@@ -9,10 +10,13 @@ Ein Widget besteht aus zwei Dateien mit derselben ID, zum Beispiel `wetter`:
 
 Dazu kommen ein Eintrag in `server/widgets/index.js` und in
 `web/js/widgets/index.js`, eine Datenumwandlung, die sich isoliert prüfen lässt,
-und die Einstellungen in `dashboard.env.example`. Das vollständige Vorbild ist das Wetter:
-`server/widgets/weather.js`, `web/js/widgets/wetter.js`, `test/weather.test.js`.
-Das Server-Widget liest lokale Host-Werte aus `/proc`, `/sys` und Node.js und
-braucht dafür keine Einträge in `.env`.
+und die Einstellungen in `dashboard.env.example`. Das vollständige Vorbild ist
+das Wetter: `server/widgets/weather.js`, `web/js/widgets/wetter.js` und
+`test/weather.test.js`. Ein Hintergrund-Datenstrom ohne eigene Kachel braucht
+kein Frontend-Widget; eine Funktion unter `web/js/features/` kann ihn über
+`app.js` abonnieren, wie beim AirPlay-Musikmodus. Das Server-Widget liest lokale
+Host-Werte aus `/proc`, `/sys` und Node.js und braucht dafür keine Einträge in
+der Konfiguration.
 
 ## Server: `server/widgets/<name>.js`
 
@@ -20,7 +24,7 @@ braucht dafür keine Einträge in `.env`.
 export default {
   id: 'fotos',                      // a-z, 0-9, -; gleich der Datei in web/js/widgets/
   intervalMs: 30 * 60_000,          // wie oft fetch() läuft
-  isConfigured: (config) => Boolean(config.get('DASH_IMMICH_KEY')),
+  isConfigured: (config) => Boolean(config.get('DASH_IMMICH_API_KEY')),
   async fetch(ctx) { ... },         // echte Daten
   demo(ctx) { ... },                // Beispieldaten, gleiche Form wie fetch()
   actions: { async toggle(ctx) { ... } },   // optional, ctx.payload, ctx.demo

@@ -1,0 +1,14 @@
+name: xps-airplay
+
+services:
+  shairport-sync:
+    image: mikebrady/shairport-sync:5.5.2
+    container_name: xps-airplay
+    network_mode: host
+    devices:
+      - /dev/snd:/dev/snd
+    cap_add:
+      - SYS_NICE
+    restart: unless-stopped
+    volumes:
+      - ./shairport-sync.conf:/etc/shairport-sync.conf:ro

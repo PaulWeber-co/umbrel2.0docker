@@ -64,14 +64,17 @@ done
 install -d -o "$KIOSK_USER" -g "$(id -gn "$KIOSK_USER")" -m 700 /var/lib/xps-kiosk
 install -m 644 "$DEPLOY_ROOT/xps-homeserver/deploy/systemd/xps-dashboard.service" /etc/systemd/system/xps-dashboard.service
 install -m 644 "$DEPLOY_ROOT/xps-homeserver/deploy/systemd/xps-kiosk@.service" /etc/systemd/system/xps-kiosk@.service
+install -m 644 "$DEPLOY_ROOT/xps-homeserver/deploy/systemd/xps-airplay.service" /etc/systemd/system/xps-airplay.service
+systemctl enable --now docker.service
 systemctl daemon-reload
-systemctl enable --now xps-dashboard.service "xps-kiosk@$KIOSK_USER.service"
+systemctl enable --now xps-dashboard.service "xps-kiosk@$KIOSK_USER.service" xps-airplay.service
 
 cat <<EOF
 Dashboard ist eingerichtet.
   Browser: http://xps.local:8080
   Konfiguration: $CONFIG_DIR/dashboard.env
   Dienststatus: systemctl status xps-dashboard xps-kiosk@$KIOSK_USER
+  AirPlay: systemctl status xps-airplay
 
 Änderungen am Konfigurationsfile werden nach einem Dashboard-Neustart geladen:
   sudo systemctl restart xps-dashboard

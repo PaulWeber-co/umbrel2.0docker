@@ -1,0 +1,15 @@
+[Unit]
+Description=XPS AirPlay receiver
+After=network-online.target docker.service
+Wants=network-online.target docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/xps-homeserver/xps-homeserver/deploy/airplay
+ExecStart=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml up --detach
+ExecStop=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
