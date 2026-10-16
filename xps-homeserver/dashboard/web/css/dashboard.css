@@ -136,7 +136,8 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .n-date { font-size: 34px; opacity: .32; }
 
 /* ---------- status chips ---------- */
-.status { position: absolute; left: 96px; bottom: 40px; display: flex; gap: 10px; z-index: 26; }
+/* Above the tiles, top right: free in every mode (the player sits bottom left) */
+.status { position: absolute; right: 96px; top: 24px; display: flex; gap: 10px; z-index: 26; }
 .chip { display: none; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 20px; font-size: 18px; background: rgba(0, 0, 0, .35); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .chip.on { display: inline-flex; }
 

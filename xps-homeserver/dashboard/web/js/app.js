@@ -3,6 +3,8 @@
 // and switches scenes by time of day.
 import { applyRects, normalRects } from './layout.js';
 import { createScenes, GREETINGS, sceneAt } from './scene.js';
+import * as edit from './edit.js';
+import * as music from './music.js';
 import { $, $$, esc, icon } from './util.js';
 import widgets from './widgets/index.js';
 
@@ -93,7 +95,7 @@ const featureContext = {
     sceneOverride = provider;
   },
 };
-const FEATURES = [];
+const FEATURES = [music, edit];
 
 /* ---------- widget actions ----------
    A widget module only writes markup: <button data-action="toggle"

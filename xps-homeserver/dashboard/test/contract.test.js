@@ -9,6 +9,9 @@ import widgets from '../server/widgets/index.js';
 const config = loadConfig({ argv: ['--demo'], env: {}, envFile: '/nonexistent' });
 const ctx = { config, store: { read: async (_, fallback) => fallback, write: async () => {} }, log: console, now: () => new Date('2026-10-15T07:42:00+02:00') };
 
+// Widgets that drive a feature instead of a tile (web/js/music.js, ambient.js)
+const NO_TILE = new Set(['music', 'ambient']);
+
 for (const widget of widgets) {
   test(`widget ${widget.id} follows the contract`, async () => {
     assert.match(widget.id, /^[a-z0-9-]+$/);
@@ -18,7 +21,7 @@ for (const widget of widgets) {
     const data = await widget.demo(ctx);
     assert.ok(data && typeof data === 'object', 'demo() returns an object');
     assert.doesNotThrow(() => JSON.stringify(data));
-    assert.ok(existsSync(new URL(`../web/js/widgets/${widget.id}.js`, import.meta.url)), `web/js/widgets/${widget.id}.js exists`);
+    if (!NO_TILE.has(widget.id)) assert.ok(existsSync(new URL(`../web/js/widgets/${widget.id}.js`, import.meta.url)), `web/js/widgets/${widget.id}.js exists`);
   });
 }
 
