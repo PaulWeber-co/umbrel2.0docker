@@ -10,3 +10,6 @@ installer/cache/
 # Background videos are downloaded by dashboard/scripts/fetch-backgrounds.sh;
 # the Mixkit license allows using them, not redistributing the files.
 dashboard/**/media/
+
+# Runtime data of the dashboard (saved layout, to-dos)
+dashboard/data/
