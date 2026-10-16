@@ -1,11 +1,14 @@
 # Dashboard
 
-Noch im Entwurf. Hier entsteht das Wand-Dashboard für das Display des XPS.
+Das Wand-Dashboard für den XPS wird in **Design A · Glas** umgesetzt. Backend,
+Frontend sowie Wetter- und Server-Widget sind vorhanden. Die Kiosk-Integration
+und die übrigen Datenquellen sind noch offen.
 
 ## Entwürfe
 
 `mockup/wand-dashboard.html` zeigt drei Design-Richtungen auf einer simulierten
-1920×1080-Fläche:
+1920×1080-Fläche. Design A ist ausgewählt; B und C bleiben als verworfene
+Alternativen zur Dokumentation im Mockup:
 
 - **A · Glas**: Milchglas-Kacheln wie in umbrelOS 2.0
 - **B · Panorama**: viel Bild, Infos ruhig in einer Zeile

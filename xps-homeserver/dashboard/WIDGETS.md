@@ -11,6 +11,8 @@ Dazu kommen ein Eintrag in `server/widgets/index.js` und in
 `web/js/widgets/index.js`, ein Test unter `test/` und die Einstellungen in
 `xps-homeserver/.env.example`. Das vollständige Vorbild ist das Wetter:
 `server/widgets/weather.js`, `web/js/widgets/wetter.js`, `test/weather.test.js`.
+Das Server-Widget liest lokale Host-Werte aus `/proc`, `/sys` und Node.js und
+braucht dafür keine Einträge in `.env`.
 
 ## Server: `server/widgets/<name>.js`
 

@@ -1,7 +1,8 @@
 # Architektur
 
-Stand: Phase 0 gebaut, ab Phase 1 Entwurf. Entscheidungen, die noch offen
-sind, stehen unten unter „Offen“.
+Stand: Phase 0 gebaut. Das Dashboard aus Phase 3 hat ein Grundgerüst in Design A
+mit Wetter- und Server-Widget; Grundsystem, Umbrel-Container, Kiosk, AirPlay,
+Webcam und Betriebsanleitung sind noch offen.
 
 ## Überblick
 
@@ -96,4 +97,3 @@ braucht. Kandidat ist das offizielle Docker-Image von shairport-sync
 - Fotos: Immich oder Umbrels eigene Fotos-App
 - To-dos, Kalender, Arbeitsweg: Quellen und Anbieter
 - DynamicChicken: statisch hosten mit Firebase oder selbst gehostet
-- Design-Richtung des Dashboards (2–3 Entwürfe)
