@@ -13,6 +13,9 @@ Ein Dell XPS 13 9350 als Homeserver, der jahrelang ohne Pflege läuft:
 Wie die Teile zusammenhängen und warum sie so gebaut sind:
 [docs/architektur.md](docs/architektur.md).
 
+Für eine unabhängige Prüfung und die Weiterarbeit mit Opus 5.5 gibt es den
+[Hand-off mit Review-Prompt](OPUS_5_5_HANDOFF.md).
+
 ## Phasen
 
 | Phase | Inhalt | Stand |
