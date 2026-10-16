@@ -12,7 +12,13 @@
 //   fetch(ctx)   -> data, the real source
 //   demo(ctx)    -> data, the same shape as fetch() with sample values
 //   actions      optional { name: async (ctx & { payload, demo }) => result }
+//   watch(ctx, emit) optional, for sources that push (the AirPlay metadata
+//                pipe): called once at start unless in demo mode, emit(data)
+//                publishes at once, returns a function that stops watching.
+//                fetch() still runs every intervalMs and returns the current state.
 //   ctx = { config, store, log, now, fetchJson, fetchText }
+//
+// Updates whose data did not change are not sent to the browsers again.
 
 export class Hub {
   #widgets = new Map();
@@ -20,6 +26,7 @@ export class Hub {
   #timers = new Map();
   #failures = new Map();
   #listeners = new Set();
+  #watchers = [];
   #running = false;
 
   constructor({ widgets, config, store, fetchImpl = globalThis.fetch, log = console, timeoutMs = 15000 }) {
@@ -69,13 +76,28 @@ export class Hub {
 
   start() {
     this.#running = true;
-    for (const id of this.#widgets.keys()) this.#loop(id);
+    for (const [id, widget] of this.#widgets) {
+      if (widget.watch && !this.usesDemo(widget)) this.#watch(id, widget);
+      this.#loop(id);
+    }
   }
 
   stop() {
     this.#running = false;
     for (const timer of this.#timers.values()) clearTimeout(timer);
     this.#timers.clear();
+    for (const stopWatching of this.#watchers.splice(0)) stopWatching?.();
+  }
+
+  #watch(id, widget) {
+    const emit = (data) => {
+      if (this.#running) this.#set({ id, data, demo: false, updatedAt: Date.now(), error: null });
+    };
+    try {
+      this.#watchers.push(widget.watch(this.ctx, emit));
+    } catch (error) {
+      this.log.warn(`[${id}] watch: ${error.message}`);
+    }
   }
 
   async #loop(id) {
@@ -110,7 +132,14 @@ export class Hub {
   }
 
   #set(entry) {
+    const previous = this.#entries.get(entry.id);
     this.#entries.set(entry.id, entry);
+    const same =
+      previous &&
+      previous.error === entry.error &&
+      previous.demo === entry.demo &&
+      JSON.stringify(previous.data) === JSON.stringify(entry.data);
+    if (same) return;
     for (const listener of this.#listeners) listener(entry);
   }
 }

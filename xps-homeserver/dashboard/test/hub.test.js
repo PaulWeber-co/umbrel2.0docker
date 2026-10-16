@@ -41,14 +41,38 @@ test('a failure keeps the last good data and backs off', async () => {
   assert.equal(hub.delayFor('probe'), 60_000);
 });
 
-test('subscribers hear about every update', async () => {
-  const hub = new Hub({ widgets: [widget()], config: { demo: false }, store, log: quiet });
+test('subscribers hear about changes, not repeats', async () => {
+  let n = 0;
+  const hub = new Hub({ widgets: [widget({ fetch: async () => ({ n: Math.floor(n++ / 2) }) })], config: { demo: false }, store, log: quiet });
   const seen = [];
-  const off = hub.subscribe((entry) => seen.push(entry.id));
-  await hub.refresh('probe');
+  const off = hub.subscribe((entry) => seen.push(entry.data.n));
+  await hub.refresh('probe'); // n 0
+  await hub.refresh('probe'); // still 0: not sent again
+  await hub.refresh('probe'); // 1
   off();
   await hub.refresh('probe');
-  assert.deepEqual(seen, ['probe']);
+  assert.deepEqual(seen, [0, 1]);
+});
+
+test('push sources publish through watch(), not in demo mode', async () => {
+  let emit;
+  let stopped = false;
+  const pushing = widget({ watch: (_ctx, e) => { emit = e; return () => { stopped = true; }; } });
+  const hub = new Hub({ widgets: [pushing], config: { demo: false }, store, log: quiet });
+  const seen = [];
+  hub.subscribe((entry) => seen.push(entry.data));
+  hub.start();
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  emit({ playing: true });
+  assert.deepEqual(seen.at(-1), { playing: true });
+  hub.stop();
+  assert.equal(stopped, true);
+
+  let watched = false;
+  const demoHub = new Hub({ widgets: [widget({ watch: () => { watched = true; } })], config: { demo: true }, store, log: quiet });
+  demoHub.start();
+  demoHub.stop();
+  assert.equal(watched, false);
 });
 
 test('actions run and refresh the widget', async () => {

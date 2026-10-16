@@ -53,9 +53,85 @@ export function renderTile(id) {
   $('#chip-demo').classList.toggle('on', Object.values(state.widgets).some((w) => w.demo));
 }
 
+// A feature such as music mode can move tiles elsewhere: it registers a
+// provider that returns rects (Map id → [x, y, w, h] | null) or null for "normal".
+let rectsProvider = () => null;
+
 export function relayout(animate = true) {
-  applyRects($$('#tiles .t'), normalRects(state.layout), { animate, scale: state.scale });
+  const rects = rectsProvider(state.layout) ?? normalRects(state.layout);
+  applyRects($$('#tiles .t'), rects, { animate, scale: state.scale });
 }
+
+/* ---------- features that are not tiles: music mode, edit mode, ambient light ----------
+   Each feature module exports init(ctx) and is listed in FEATURES below. */
+const entryListeners = new Map();
+function deliver(entry) {
+  state.widgets[entry.id] = entry;
+  renderTile(entry.id);
+  for (const listener of entryListeners.get(entry.id) ?? []) listener(entry);
+}
+const featureContext = {
+  stage,
+  state,
+  relayout,
+  renderTile,
+  buildTiles: () => buildTiles(),
+  runAction: (...args) => runAction(...args),
+  // Called with every update of widget id (also ones without a tile, e.g. "music")
+  onEntry(id, listener) {
+    if (!entryListeners.has(id)) entryListeners.set(id, []);
+    entryListeners.get(id).push(listener);
+    if (state.widgets[id]) listener(state.widgets[id]);
+  },
+  setRectsProvider(provider) {
+    rectsProvider = provider;
+  },
+};
+const FEATURES = [];
+
+/* ---------- widget actions ----------
+   A widget module only writes markup: <button data-action="toggle"
+   data-payload='{"id":"x"}'> or <form data-action="add"> (payload = the
+   form's fields). The click goes to POST /api/widgets/<id>/actions/<name>; the
+   widget's new data comes back over /api/events and re-renders the tile. */
+export async function runAction(id, name, payload = {}) {
+  const response = await fetch(`/api/widgets/${encodeURIComponent(id)}/actions/${encodeURIComponent(name)}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error ?? `HTTP ${response.status}`);
+  return body.result;
+}
+
+function onTileAction(event) {
+  if (stage.dataset.edit === '1') return;
+  const isSubmit = event.type === 'submit';
+  const el = isSubmit ? event.target.closest('form[data-action]') : event.target.closest('[data-action]:not(form)');
+  const tile = el?.closest('.t');
+  if (!el || !tile) return;
+  event.preventDefault();
+  let payload = {};
+  if (isSubmit) payload = Object.fromEntries(new FormData(el));
+  else {
+    try {
+      payload = JSON.parse(el.dataset.payload || '{}');
+    } catch {
+      console.error('data-payload ist kein JSON:', el.dataset.payload);
+    }
+    // Answer the touch at once; the server's data confirms or corrects it.
+    if (el.hasAttribute('aria-pressed')) el.setAttribute('aria-pressed', String(el.getAttribute('aria-pressed') !== 'true'));
+  }
+  runAction(tile.dataset.id, el.dataset.action, payload)
+    .then(() => isSubmit && el.reset())
+    .catch((error) => {
+      console.error(`Aktion ${el.dataset.action} von ${tile.dataset.id}:`, error);
+      renderTile(tile.dataset.id);
+    });
+}
+$('#tiles').addEventListener('click', onTileAction);
+$('#tiles').addEventListener('submit', onTileAction);
 
 /* ---------- clock, greeting, scene ---------- */
 function tick() {
@@ -91,11 +167,7 @@ function connect() {
     clearTimeout(offlineTimer);
     offlineTimer = setTimeout(() => $('#chip-offline').classList.add('on'), 30_000);
   });
-  events.addEventListener('widget', (event) => {
-    const entry = JSON.parse(event.data);
-    state.widgets[entry.id] = entry;
-    renderTile(entry.id);
-  });
+  events.addEventListener('widget', (event) => deliver(JSON.parse(event.data)));
   events.addEventListener('layout', (event) => {
     state.layout = JSON.parse(event.data);
     buildTiles();
@@ -114,6 +186,7 @@ async function boot() {
   Object.assign(state, { name: data.name, timezone: data.timezone, widgets: data.widgets, layout: data.layout });
   buildTiles();
   relayout(false);
+  for (const feature of FEATURES) feature.init(featureContext);
   tick();
   setInterval(tick, 1000);
   connect();
