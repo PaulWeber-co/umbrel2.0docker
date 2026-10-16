@@ -163,7 +163,7 @@ boot_and_check() {
 	done
 	check "Kernel-Wächter: neuester Kernel hat wl" ssh_vm 'grep -q "^ok " /var/lib/xps-homeserver/wl-status'
 	check "Kernel-Hook blockiert dpkg nie" ssh_vm 'test -x /etc/kernel/postinst.d/zz-xps-wl-guard && test ! -e /etc/kernel/postinst.d/xps-wl-check'
-	check "GRUB startet den gespeicherten Kernel" ssh_vm 'grep -q "set default=\"\${saved_entry}\"" /boot/grub/grub.cfg'
+	check "GRUB startet den gespeicherten Kernel" ssh_vm 'sudo grep -q "set default=\"\${saved_entry}\"" /boot/grub/grub.cfg'
 	check "Kein Standby" ssh_vm 'test "$(systemctl is-enabled suspend.target)" = masked'
 	check "Hardware-Watchdog eingestellt" ssh_vm 'test "$(systemctl show -p RuntimeWatchdogUSec --value)" = 30s'
 	check "zram-Swap aktiv" ssh_vm 'grep -q zram /proc/swaps'
