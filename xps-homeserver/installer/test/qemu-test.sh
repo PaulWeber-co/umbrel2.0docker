@@ -144,11 +144,13 @@ boot_and_check() {
 	}
 	check "SSH-Login mit Schlüssel, sudo ohne Passwort" ssh_vm sudo -n true
 	check "Hostname" test "$(ssh_vm hostname)" = "$TEST_HOST"
-	check "wl für den laufenden Kernel gebaut" ssh_vm 'modinfo -n wl | grep -q updates/dkms'
-	check "DKMS meldet broadcom-sta installiert" ssh_vm 'dkms status broadcom-sta | grep -q installed'
+	# modinfo and dkms live in /usr/sbin, which is not on a normal user's PATH
+	check "Neuester Kernel läuft" ssh_vm 'test "$(uname -r)" = "$(linux-version list | linux-version sort | tail -n1)"'
+	check "wl für den laufenden Kernel gebaut" ssh_vm 'sudo modinfo -n wl | grep -q updates/dkms'
+	check "DKMS meldet broadcom-sta installiert" ssh_vm 'sudo dkms status broadcom-sta | grep -q installed'
 	check "Broadcom-Konfliktmodule gesperrt" ssh_vm 'grep -rqs "blacklist b43" /etc/modprobe.d/'
-	check "WLAN-Profil: SSID" test "$(ssh_vm sudo nmcli -g 802-11-wireless.ssid connection show heim-wlan)" = "$TEST_SSID"
-	check "WLAN-Profil: Passwort" test "$(ssh_vm sudo nmcli -s -g 802-11-wireless-security.psk connection show heim-wlan)" = "$TEST_PSK"
+	check "WLAN-Profil: SSID" test "$(ssh_vm sudo nmcli --escape no -g 802-11-wireless.ssid connection show heim-wlan)" = "$TEST_SSID"
+	check "WLAN-Profil: Passwort" test "$(ssh_vm sudo nmcli --escape no -s -g 802-11-wireless-security.psk connection show heim-wlan)" = "$TEST_PSK"
 	check "WLAN-Stromsparen aus" ssh_vm 'nmcli -g 802-11-wireless.powersave connection show heim-wlan | grep -q "2\|disable"'
 	local unit
 	for unit in ssh NetworkManager avahi-daemon systemd-timesyncd; do
