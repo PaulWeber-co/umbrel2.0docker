@@ -7,6 +7,7 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd -- "$SCRIPT_DIR/../.." && pwd)
 COMPOSE_FILE="$REPO_ROOT/xps-homeserver/deploy/compose.yaml"
 ENV_FILE=${XPS_UMBREL_ENV_FILE:-/etc/xps-homeserver/umbrel.env}
+PREVIOUS_ENV_FILE=${XPS_UMBREL_PREVIOUS_ENV_FILE:-/etc/xps-homeserver/umbrel-previous.env}
 IMAGE_REPOSITORY=${XPS_UMBREL_IMAGE_REPOSITORY:-ghcr.io/paulweber-co/xps-homeserver-umbrelos}
 HEALTH_TIMEOUT_SECONDS=${XPS_UMBREL_HEALTH_TIMEOUT_SECONDS:-900}
 git_repo() { git -C "$REPO_ROOT" -c safe.directory="$REPO_ROOT" "$@"; }
@@ -85,8 +86,15 @@ if ! compose "$candidate_env" pull umbrel port-publisher; then
 fi
 
 if compose "$candidate_env" up --detach --remove-orphans && wait_healthy; then
+	if [ -n "$old_image" ] && [ "$old_image" != "$new_image" ]; then
+		previous_env=$(mktemp "$(dirname -- "$PREVIOUS_ENV_FILE")/.umbrel-previous.XXXXXX")
+		trap 'rm -f "$candidate_env" "$previous_env"' EXIT
+		printf 'XPS_UMBREL_IMAGE=%s\n' "$old_image" >"$previous_env"
+		chmod 600 "$previous_env"
+		install -m 600 "$previous_env" "$PREVIOUS_ENV_FILE"
+	fi
 	install -m 600 "$candidate_env" "$ENV_FILE"
-	log "Umbrel ist gesund auf Commit $commit. Das vorherige Image bleibt als Rückfall erhalten."
+	log "Umbrel ist gesund auf Commit $commit. Das vorherige Image ist für einen manuellen Rollback gespeichert."
 	exit 0
 fi
 

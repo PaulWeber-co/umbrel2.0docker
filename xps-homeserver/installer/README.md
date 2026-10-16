@@ -134,7 +134,8 @@ damit der XPS Images ohne Registry-Zugangsdaten laden kann. Dann den Fork auf
 dem XPS auschecken und den Stack starten:
 
 ```sh
-git clone --branch <branch> https://github.com/PaulWeber-co/umbrel2.0docker.git ~/umbrel2.0docker
+BRANCH=codex/xps-dashboard-system-widget # auf den gewünschten Ziel-Branch ändern
+git clone --branch "$BRANCH" https://github.com/PaulWeber-co/umbrel2.0docker.git ~/umbrel2.0docker
 cd ~/umbrel2.0docker
 sudo ./xps-homeserver/scripts/install-umbrel.sh
 ```
@@ -144,6 +145,15 @@ Künftige manuelle Updates laufen mit `sudo
 holt das dazugehörige unveränderliche Image, wartet auf den Healthcheck und
 startet bei einem Fehler das vorherige Image wieder. Umbrel-Daten liegen im
 Docker-Volume `umbrel-data` und werden beim Rollback nicht gelöscht.
+
+Dashboard, AirPlay und Webcam richten sich danach mit demselben Branch ein:
+
+```sh
+sudo ./xps-homeserver/scripts/install-xps-dashboard.sh "$(id -un)"
+```
+
+Die Konfiguration und der Notfallplan stehen in
+[docs/betrieb.md](../docs/betrieb.md).
 
 ## 7. Feste IP im Speedport
 

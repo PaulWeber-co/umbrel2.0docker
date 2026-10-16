@@ -23,7 +23,7 @@ Wie die Teile zusammenhängen und warum sie so gebaut sind:
 | 3 | Dashboard: [Design-Entwürfe](dashboard/README.md), Backend, Frontend, Kiosk | Design A mit Wetter, Server, Arbeitsweg, Fotos, Kalender, To-dos und Zuhause; Kiosk-Installer eingebaut; XPS-Display noch zu verifizieren |
 | 4 | AirPlay und Musik-Modus | Shairport Sync mit AirPlay 2, Titel/Cover und automatischer Musikansicht eingebaut; XPS-Audio noch zu verifizieren |
 | 5 | Webcam-Helligkeit und Nachtmodus | Isolierter Kameradienst, automatische Backlight-Regelung und Nachtmodus eingebaut; XPS-Kamera/Display noch zu verifizieren |
-| 6 | Bedienungsanleitung und Notfallplan | offen |
+| 6 | [Bedienungsanleitung und Notfallplan](docs/betrieb.md) | Betrieb, Update, Rückrollen, Backup und Wiederherstellung dokumentiert |
 
 ## Wo das liegt
 
@@ -33,6 +33,7 @@ nie in die Quere. Der Fork ist öffentlich: Code ja, Geheimnisse nie.
 
 ## Geheimnisse
 
-WLAN-Passwort, API-Schlüssel und Adressen stehen nur in `.env`. Die Datei
-steht in `.gitignore` und landet nie im Repo; `.env.example` zeigt, was
-hineingehört.
+Das WLAN-Passwort für den Installer steht lokal in `.env`; die Datei steht in
+`.gitignore`, und `.env.example` zeigt die nötigen Werte. Dashboard-API-Schlüssel
+liegen auf dem XPS separat in `/etc/xps-homeserver/dashboard.env`; das Beispiel
+dafür ist `dashboard.env.example`. Beide Dateien gehören nicht ins Repo.

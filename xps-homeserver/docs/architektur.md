@@ -1,9 +1,9 @@
 # Architektur
 
-Stand: Phase 0 ist gebaut und in QEMU getestet. Phase 1 bis 5 sind eingerichtet:
-Basissystem, Umbrel, sieben Widgets in Design A, Kiosk, AirPlay und
-Webcam-Regelung. Die Betriebsanleitung aus Phase 6 ist noch offen. WLAN,
-Display, Audio, Kamera und Backlight müssen am XPS praktisch verifiziert werden.
+Stand: Phase 0 ist gebaut und in QEMU getestet. Phase 1 bis 6 sind umgesetzt:
+Basissystem, Umbrel, sieben Widgets in Design A, Kiosk, AirPlay,
+Webcam-Regelung und Betriebsanleitung. WLAN, Display, Audio, Kamera und
+Backlight müssen am XPS praktisch verifiziert werden.
 
 ## Überblick
 
@@ -141,4 +141,4 @@ Dashboard mit Titel, Interpret, Album und Cover. Die Stream-Erkennung läuft
 - Dashboard-Integrationen am XPS konfigurieren und physisch prüfen.
 - AirPlay-Audio am XPS prüfen.
 - Webcam-Regelung und Backlight am XPS prüfen.
-- Notfallplan fertigstellen.
+- Installer, Ausfall und Wiederherstellung am XPS praktisch durchspielen.
