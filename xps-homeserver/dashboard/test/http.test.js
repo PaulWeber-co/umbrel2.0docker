@@ -15,7 +15,7 @@ const quiet = { warn() {}, log() {}, error() {} };
 
 before(async () => {
   const dataDir = mkdtempSync(join(tmpdir(), 'dash-data-'));
-  const config = { demo: true, name: 'Paul', place: 'Hamburg', timezone: 'Europe/Berlin', mediaDir: dataDir };
+  const config = { demo: true, name: 'Paul', place: 'Hamburg', timezone: 'Europe/Berlin', glassLevel: 55, mediaDir: dataDir };
   const store = createStore(dataDir, quiet);
   const hub = new Hub({ widgets: [{ id: 'probe', intervalMs: 60_000, fetch: async () => ({}), demo: () => ({ n: 1 }) }], config, store, log: quiet });
   await hub.refresh('probe');
@@ -34,6 +34,25 @@ test('state lists widgets and the default layout', async () => {
   assert.equal(state.name, 'Paul');
   assert.deepEqual(state.widgets.probe.data, { n: 1 });
   assert.deepEqual(state.layout, DEFAULT_LAYOUT);
+  assert.deepEqual(state.settings, { glassLevel: 55 });
+});
+
+test('glass settings reject invalid levels and persist valid values for every client', async () => {
+  const bad = await fetch(`${base}/api/settings`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ glassLevel: 101 }),
+  });
+  assert.equal(bad.status, 400);
+
+  const saved = await fetch(`${base}/api/settings`, {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ glassLevel: 82 }),
+  });
+  assert.equal(saved.status, 200);
+  assert.deepEqual(await saved.json(), { glassLevel: 82 });
+  assert.deepEqual((await (await fetch(`${base}/api/state`)).json()).settings, { glassLevel: 82 });
 });
 
 test('layout is validated and saved', async () => {
@@ -67,6 +86,7 @@ test('events stream starts with the cached widgets', async () => {
   const reader = response.body.getReader();
   let text = '';
   while (!text.includes('event: widget')) text += new TextDecoder().decode((await reader.read()).value);
+  assert.match(text, /event: settings\ndata: \{"glassLevel":82\}/);
   assert.match(text, /"id":"probe"/);
   controller.abort();
 });

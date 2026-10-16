@@ -49,6 +49,7 @@ export function loadConfig({ argv = process.argv.slice(2), env = process.env, en
     host: get('DASH_HOST', '0.0.0.0'),
     name: get('DASH_NAME', ''),
     place: get('DASH_PLACE', 'Hamburg'),
+    glassLevel: Math.round(Math.min(100, Math.max(0, num('DASH_GLASS', 55)))),
     lat: num('DASH_LAT', 53.55),
     lon: num('DASH_LON', 10.0),
     timezone: get('DASH_TIMEZONE', 'Europe/Berlin'),

@@ -36,6 +36,7 @@
       <symbol id="i-washer" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><circle cx="12" cy="13" r="4.5"/><path d="M7.5 6.5h2"/></symbol>
       <symbol id="i-note" viewBox="0 0 24 24"><path d="M9 18V5.5l11-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
       <symbol id="i-trend" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+      <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 6h8M16 6h4M4 12h3M11 12h9M4 18h6M14 18h6"/><circle cx="14" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="12" cy="18" r="2"/></symbol>
       <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
       <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
       <symbol id="i-airplay" viewBox="0 0 24 24"><path d="M6 17H4.5A1.5 1.5 0 0 1 3 15.5v-10A1.5 1.5 0 0 1 4.5 4h15A1.5 1.5 0 0 1 21 5.5v10a1.5 1.5 0 0 1-1.5 1.5H18"/><path d="M12 14l5 6H7z"/></symbol>
@@ -85,8 +86,29 @@
 
         <div class="status">
           <span class="chip" id="chip-offline"><svg class="ic"><use href="#i-wifi-off"/></svg>Keine Verbindung zum Server</span>
-          <span class="chip" id="chip-demo">Beispieldaten</span>
         </div>
+
+        <div class="glass-settings-overlay" id="glass-settings-overlay" hidden>
+          <section class="glass-settings" id="glass-settings" role="dialog" aria-modal="true" aria-labelledby="glass-settings-title">
+            <div class="glass-settings-head">
+              <div>
+                <h2 id="glass-settings-title">Glas-Effekt</h2>
+                <p>Dashboard-Kacheln und Musikansicht</p>
+              </div>
+              <button class="glass-settings-close" type="button" id="glass-settings-close" aria-label="Einstellungen schließen"><svg class="ic"><use href="#i-x"/></svg></button>
+            </div>
+            <label class="glass-settings-label" for="glass-level">Transparenz</label>
+            <div class="glass-range-row">
+              <span class="glass-edge">Klar</span>
+              <input id="glass-level" type="range" min="0" max="100" step="1" value="55" aria-label="Glas-Effekt von klar bis milchig">
+              <span class="glass-edge">Milchig</span>
+            </div>
+            <p class="glass-settings-note">Die Einstellung gilt für alle Dashboard-Browser und den XPS-Kiosk.</p>
+          </section>
+        </div>
+        <button class="glass-settings-toggle" id="glass-settings-toggle" type="button" aria-label="Glas-Einstellungen öffnen" aria-controls="glass-settings" aria-expanded="false">
+          <svg class="ic"><use href="#i-sliders"/></svg>
+        </button>
 
         <div class="editbar" role="toolbar" aria-label="Widgets bearbeiten">
           <span>Auf gleich große Kachel ziehen zum Tauschen, × zum Entfernen</span>

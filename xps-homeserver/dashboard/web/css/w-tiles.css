@@ -29,6 +29,10 @@
 .home-switch[aria-pressed="true"] .knob::after { transform: translateX(16px); }
 .home-state { cursor: default; }
 .home-state strong { margin-left: auto; font-weight: 500; opacity: .82; }
+.home-list-compact { grid-template-columns: minmax(0, 1fr); align-content: center; gap: 6px; }
+.home-list-compact .home-switch { min-height: 42px; padding: 6px 10px; gap: 8px; font-size: 16px; }
+.home-list-compact .home-switch > span:not(.knob), .home-list-compact .home-state > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-list-compact .home-state > strong { flex: none; font-size: 15px; }
 .stage[data-night-mode="1"] .dash { filter: brightness(.38) saturate(.72); }
 .stage[data-night-mode="1"] .night { opacity: 1; visibility: visible; }
 .stage[data-night-mode="1"] .warm { opacity: 1; }

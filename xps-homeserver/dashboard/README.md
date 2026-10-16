@@ -17,6 +17,16 @@ Dashboard-Dienst an und startet Design A auf `tty1`. Zugangsdaten stehen in
 sudo systemctl restart xps-dashboard
 ```
 
+## Glas-Effekt
+
+Über das Reglersymbol unten rechts lässt sich die Glaswirkung zwischen klar
+und milchig einstellen. Der Wert wird für alle Dashboard-Browser und den
+XPS-Kiosk gemeinsam unter `DASH_DATA_DIR/settings.json` gespeichert. Auf dem
+XPS ist das standardmäßig `/var/lib/xps-dashboard/settings.json`; `DASH_GLASS`
+in `/etc/xps-homeserver/dashboard.env` legt den Startwert fest, wenn noch keine
+Einstellung gespeichert wurde. Zum Zurücksetzen die Datei `settings.json`
+entfernen und den Dienst neu starten.
+
 Die Integrationen sind optional. Ohne Konfiguration zeigen Kalender, To-dos,
 Zuhause, Arbeitsweg und Fotos ihre Demo-Ansicht. Für Zuhause werden nur die in
 `DASH_HA_HOME_ENTITIES` freigegebenen `light`, `switch`, `fan` und

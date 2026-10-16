@@ -36,6 +36,7 @@ Die Datei hat Modus `0600`; Schlüssel gehören nicht in Git.
 | Einstellung | Zweck |
 | --- | --- |
 | `DASH_PLACE`, `DASH_LAT`, `DASH_LON`, `DASH_TIMEZONE` | Wetter und Uhr |
+| `DASH_GLASS` | Startwert des Glas-Effekts von 0 (klar) bis 100 (milchig); gespeicherte Einstellungen unter `/var/lib/xps-dashboard/settings.json` haben Vorrang |
 | `DASH_HA_URL`, `DASH_HA_TOKEN` | Home-Assistant-API |
 | `DASH_HA_CALENDAR_ENTITY`, `DASH_HA_TODO_ENTITY` | Kalender und Aufgabenliste |
 | `DASH_HA_HOME_ENTITIES` | Kommagetrennte Liste erlaubter Geräte; nur Licht, Schalter, Lüfter und Eingabe-Schalter sind schaltbar |
@@ -46,6 +47,16 @@ Nach einer Änderung:
 
 ```sh
 sudo chmod 600 /etc/xps-homeserver/dashboard.env
+sudo systemctl restart xps-dashboard
+```
+
+Der Glas-Effekt lässt sich auch über das Reglersymbol im Dashboard ändern; der
+neue Wert gilt für den Kiosk und alle Browser. Zum Anwenden eines neuen
+`DASH_GLASS`-Startwerts die gespeicherte Glas-Einstellung löschen und den
+Dashboard-Dienst neu starten:
+
+```sh
+sudo rm /var/lib/xps-dashboard/settings.json
 sudo systemctl restart xps-dashboard
 ```
 
