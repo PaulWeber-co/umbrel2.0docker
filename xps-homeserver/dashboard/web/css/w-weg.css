@@ -1,0 +1,14 @@
+/* Commute tile (web/js/widgets/weg.js) */
+
+/* A long label ends in "…" instead of running out of the tile */
+.weg-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Pill shrinks to its text but never grows wider than the tile */
+.pill.weg-pill { display: block; box-sizing: border-box; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* No noteworthy delay: calm green instead of the amber warning */
+.pill.weg-frei { background: rgba(127, 224, 176, .25); border-color: rgba(160, 240, 200, .4); color: #eafff4; }
+
+/* Wraps only between the parts ("an 08:19" · "18,4 km" / "Mo 06:00") */
+.weg-nw { white-space: nowrap; }
+.weg-foot { font-variant-numeric: tabular-nums; }

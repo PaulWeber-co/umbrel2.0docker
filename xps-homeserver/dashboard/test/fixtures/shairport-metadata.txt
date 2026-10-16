@@ -1,0 +1,46 @@
+<item><type>73736e63</type><code>736e616d</code><length>12</length>
+<data encoding="base64">
+UGF1bHMgaVBob25l</data></item>
+<item><type>73736e63</type><code>736e7561</code><length>15</length>
+<data encoding="base64">
+QWlyUGxheS83NzAuOC4x</data></item>
+<item><type>73736e63</type><code>70766f6c</code><length>25</length>
+<data encoding="base64">
+LTE1LjAwLC00OC43NSwtOTYuMzAsMC4wMA==</data></item>
+<item><type>73736e63</type><code>70626567</code><length>0</length></item>
+shairport-sync: noise that is not an item
+<item><type>73736e63</type><code>6d647374</code><length>7</length>
+<data encoding="base64">
+MTAwMDAwMA==</data></item>
+<item><type>636f7265</type><code>6d706572</code><length>8</length>
+<data encoding="base64">
+EjRWeJq83vA=</data></item>
+<item><type>636f7265</type><code>6173616c</code><length>10</length>
+<data encoding="base64">
+RGVtby1BbGJ1bQ==</data></item>
+<item><type>636f7265</type><code>61736172</code><length>20</length>
+<data encoding="base64">
+QmVpc3BpZWwtS8O8bnN0bGVyaW4=</data></item>
+<item><type>636f7265</type><code>6d696e6d</code><length>11</length>
+<data encoding="base64">
+V2VpdGVzIExhbmQ=</data></item>
+<item><type>636f7265</type><code>6173676e</code><length>3</length>
+<data encoding="base64">
+UG9w</data></item>
+<item><type>73736e63</type><code>6d64656e</code><length>7</length>
+<data encoding="base64">
+MTAwMDAwMA==</data></item>
+<item><type>73736e63</type><code>70<item><type>73736e63</type><code>70637374</code><length>7</length>
+<data encoding="base64">
+MTAwMDAwMA==</data></item>
+<item><type>73736e63</type><code>50494354</code><length>70</length>
+<data encoding="base64">
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8
+z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==</data></item>
+<item><type>73736e63</type><code>7063656e</code><length>7</length>
+<data encoding="base64">
+MTAwMDAwMA==</data></item>
+<item><type>zzzz</type></item>
+<item><type>73736e63</type><code>70726772</code><length>24</length>
+<data encoding="base64">
+MTAwMDAwMC8xNDQxMDAwLzEwNzkwMjAw</data></item>

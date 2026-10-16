@@ -1,0 +1,20 @@
+/* Photo tile (web/js/widgets/fotos.js).
+   Onest's tabular digits at weight 300 are about 0.65em wide (with the -.02em
+   letter-spacing of .big.long), so the image count steps down with its length:
+   the sizes keep it inside 188 px (1×1) and, with .compact, 172 px (1×1 in
+   music mode). fo-l6 = "18.432", fo-l7 = "180.432", fo-l8 = "1.180.432",
+   fo-l10 = "18.180.432". */
+.fo { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.fo-n { white-space: nowrap; }
+.fo-n.fo-l6 { font-size: 52px; }
+.fo-n.fo-l7 { font-size: 44px; }
+.fo-n.fo-l8 { font-size: 36px; }
+.fo-n.fo-l10 { font-size: 32px; }
+.fo.compact .fo-n.fo-l6 { font-size: 48px; }
+.fo.compact .fo-n.fo-l7 { font-size: 40px; }
+.fo.compact .fo-n.fo-l8 { font-size: 32px; }
+.fo.compact .fo-n.fo-l10 { font-size: 28px; }
+
+/* One line each; "+12.345 diese Woche" needs the smaller size in music mode. */
+.fo-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fo-line.fo-small { font-size: 17px; }

@@ -31,8 +31,9 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .tint { opacity: 0; transition: opacity 1.4s ease, background-color 1.4s ease; background-color: rgb(var(--glow) / .22); mix-blend-mode: soft-light; }
 .stage[data-music="1"] .glow, .stage[data-music="1"] .tint { opacity: 1; }
 /* Evening: warmer colours, less blue light */
-.warm { background: rgb(255 146 52 / .2); mix-blend-mode: multiply; opacity: 0; transition: opacity 2.5s ease; pointer-events: none; z-index: 30; }
-.stage[data-scene="abend"] .warm { opacity: 1; }
+/* --warm: 0 … 1; evenings 1, the ambient-light feature may set it on #stage */
+.warm { background: rgb(255 146 52 / .2); mix-blend-mode: multiply; opacity: var(--warm, 0); transition: opacity 2.5s ease; pointer-events: none; z-index: 30; }
+.stage[data-scene="abend"] { --warm: 1; }
 .scrim { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(4, 10, 16, .38) 0%, rgba(4, 10, 16, 0) 42%), linear-gradient(0deg, rgba(4, 10, 16, .2), rgba(4, 10, 16, 0) 45%); }
 
 /* ---------- fixed header: never moves ---------- */

@@ -1,0 +1,19 @@
+{
+  "photos": 18432,
+  "videos": 1204,
+  "usage": 103079215104,
+  "usagePhotos": 81604378624,
+  "usageVideos": 21474836480,
+  "usageByUser": [
+    {
+      "userId": "3f2b8c1e-6a4d-4e7b-9c2a-5d8f1e0b7a64",
+      "userName": "Paul",
+      "photos": 18432,
+      "videos": 1204,
+      "usage": 103079215104,
+      "usagePhotos": 81604378624,
+      "usageVideos": 21474836480,
+      "quotaSizeInBytes": null
+    }
+  ]
+}

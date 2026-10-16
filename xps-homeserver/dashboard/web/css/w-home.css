@@ -1,0 +1,39 @@
+/* Home tile (web/js/widgets/home.js) */
+
+/* Switch and rows share the space under the heading. The wrapper is a size
+   container, so the narrow 1×1 tiles (188 / 172 px) can stack both. */
+.ho { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; gap: 12px; container-type: inline-size; }
+
+/* Names and values end in "…" instead of running out of the tile */
+.ho-name, .ho-val, .ho-muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ho-muted { opacity: .72; }
+
+/* Switch: icon, name, knob on one line */
+.switch.ho-switch { flex: none; }
+.ho-label { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.ho-label small { font-size: 16px; }
+.switch.ho-na { cursor: default; opacity: .75; }
+
+/* Rows: icon, then value and muted name (or name and "nicht erreichbar").
+   A row that does not fit wraps into a second column outside the visible
+   area, so each row is shown whole or not at all. */
+.ho-rows { flex: 1 1 0; min-height: 0; display: flex; flex-flow: column wrap; align-content: flex-start; row-gap: 10px; column-gap: 60px; overflow: hidden; }
+.ho-row { box-sizing: border-box; width: 100%; gap: 10px; }
+.ho-stack { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 10px; line-height: 1.2; }
+.ho-stack > :first-child { flex: 0 1 auto; }
+.ho-stack > :last-child { flex: 1 1 0; font-size: 19px; }
+.ho-val { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* 1×1: on one line a switch name gets only 64 px next to icon and knob, and
+   "32 min Wäsche" needs more than a row's 150 px. So icon and knob share the
+   switch's top line with the name below, and rows put the name under the value. */
+@container (max-width: 320px) {
+  .switch.ho-switch { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "icon knob" "label label"; align-items: center; row-gap: 4px; padding: 10px 12px; }
+  .switch.ho-switch > .ic { grid-area: icon; }
+  .switch.ho-switch > .knob { grid-area: knob; justify-self: end; margin-left: 0; }
+  .switch.ho-switch > .ho-label { grid-area: label; }
+  .ho-row { padding-left: 0; }
+  .ho-stack { flex-direction: column; align-items: stretch; gap: 0; }
+  .ho-stack > :first-child, .ho-stack > :last-child { flex: none; }
+  .ho-stack > :last-child { font-size: 16px; }
+}

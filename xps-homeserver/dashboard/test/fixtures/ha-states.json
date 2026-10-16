@@ -1,0 +1,274 @@
+[
+  {
+    "entity_id": "sun.sun",
+    "state": "above_horizon",
+    "attributes": {
+      "next_dawn": "2026-10-17T05:16:31.884421+00:00",
+      "next_dusk": "2026-10-16T16:58:02.271345+00:00",
+      "next_midnight": "2026-10-16T23:07:46+00:00",
+      "next_noon": "2026-10-17T11:07:51+00:00",
+      "next_rising": "2026-10-17T05:56:20.338611+00:00",
+      "next_setting": "2026-10-16T16:17:43.590272+00:00",
+      "elevation": 12.43,
+      "azimuth": 128.67,
+      "rising": true,
+      "friendly_name": "Sun"
+    },
+    "last_changed": "2026-10-16T05:54:52.104729+00:00",
+    "last_reported": "2026-10-16T07:24:00.118035+00:00",
+    "last_updated": "2026-10-16T07:24:00.118035+00:00",
+    "context": { "id": "01JABQ7Y3N0VX5C2H8E4K9MRTD", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "person.paul",
+    "state": "home",
+    "attributes": {
+      "editable": true,
+      "id": "paul",
+      "device_trackers": ["device_tracker.pixel_8"],
+      "source": "device_tracker.pixel_8",
+      "user_id": "6d1f0c8b8e4a4f7c9a2b3e5d7f901234",
+      "friendly_name": "Paul"
+    },
+    "last_changed": "2026-10-15T16:42:10.552106+00:00",
+    "last_reported": "2026-10-16T07:21:37.903612+00:00",
+    "last_updated": "2026-10-16T07:21:37.903612+00:00",
+    "context": { "id": "01JABQ4C1F9W6XB0R3T7Y2NQSE", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "light.wohnzimmer",
+    "state": "on",
+    "attributes": {
+      "min_color_temp_kelvin": 2202,
+      "max_color_temp_kelvin": 6535,
+      "min_mireds": 153,
+      "max_mireds": 454,
+      "supported_color_modes": ["color_temp", "xy"],
+      "color_mode": "color_temp",
+      "brightness": 178,
+      "color_temp_kelvin": 2702,
+      "color_temp": 370,
+      "hs_color": [29.165, 69.497],
+      "rgb_color": [255, 166, 77],
+      "xy_color": [0.526, 0.387],
+      "friendly_name": "Wohnzimmer Decke",
+      "supported_features": 40
+    },
+    "last_changed": "2026-10-16T05:31:08.739544+00:00",
+    "last_reported": "2026-10-16T05:31:08.739544+00:00",
+    "last_updated": "2026-10-16T05:31:08.739544+00:00",
+    "context": { "id": "01JABJ2W8D5P0QH6V4M1C7ZKTA", "parent_id": "01JABJ2W8BX3GE9N2RJ5F0YQWC", "user_id": null }
+  },
+  {
+    "entity_id": "light.flur",
+    "state": "unavailable",
+    "attributes": {
+      "supported_color_modes": ["brightness"],
+      "friendly_name": "Flur",
+      "supported_features": 32
+    },
+    "last_changed": "2026-10-15T21:03:55.017263+00:00",
+    "last_reported": "2026-10-15T21:03:55.017263+00:00",
+    "last_updated": "2026-10-15T21:03:55.017263+00:00",
+    "context": { "id": "01JAA4Q0G7N2X9DK5H3W8RVB6M", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "switch.kaffeemaschine",
+    "state": "off",
+    "attributes": {
+      "friendly_name": "Kaffeemaschine"
+    },
+    "last_changed": "2026-10-16T06:48:31.220716+00:00",
+    "last_reported": "2026-10-16T06:48:31.220716+00:00",
+    "last_updated": "2026-10-16T06:48:31.220716+00:00",
+    "context": { "id": "01JABMS8HQ6C3Y0W5F2E9TDN7R", "parent_id": null, "user_id": "6d1f0c8b8e4a4f7c9a2b3e5d7f901234" }
+  },
+  {
+    "entity_id": "fan.bad_luefter",
+    "state": "off",
+    "attributes": {
+      "percentage": 0,
+      "percentage_step": 33.333333333333336,
+      "preset_mode": null,
+      "preset_modes": null,
+      "friendly_name": "Bad Lüfter",
+      "supported_features": 49
+    },
+    "last_changed": "2026-10-16T06:20:12.668091+00:00",
+    "last_reported": "2026-10-16T06:20:12.668091+00:00",
+    "last_updated": "2026-10-16T06:20:12.668091+00:00",
+    "context": { "id": "01JABK6R4E2T8W0N9C5Y3QJXGV", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "automation.licht_abends",
+    "state": "on",
+    "attributes": {
+      "id": "1729010334185",
+      "last_triggered": "2026-10-15T16:02:00.004218+00:00",
+      "mode": "single",
+      "current": 0,
+      "friendly_name": "Licht am Abend"
+    },
+    "last_changed": "2026-10-14T19:12:47.381570+00:00",
+    "last_reported": "2026-10-15T16:02:00.019843+00:00",
+    "last_updated": "2026-10-15T16:02:00.019843+00:00",
+    "context": { "id": "01JA8C2D9M4V7Q1X0E6W3N5HRT", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "input_boolean.urlaubsmodus",
+    "state": "off",
+    "attributes": {
+      "editable": true,
+      "icon": "mdi:airplane",
+      "friendly_name": "Urlaubsmodus"
+    },
+    "last_changed": "2026-09-28T17:30:05.912374+00:00",
+    "last_reported": "2026-09-28T17:30:05.912374+00:00",
+    "last_updated": "2026-09-28T17:30:05.912374+00:00",
+    "context": { "id": "01J8WQZ3T6B9F2M0K5R7C1NXHE", "parent_id": null, "user_id": "6d1f0c8b8e4a4f7c9a2b3e5d7f901234" }
+  },
+  {
+    "entity_id": "sensor.wohnzimmer_temperature",
+    "state": "21.46",
+    "attributes": {
+      "state_class": "measurement",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "friendly_name": "Wohnzimmer Temperatur"
+    },
+    "last_changed": "2026-10-16T07:18:43.126580+00:00",
+    "last_reported": "2026-10-16T07:23:43.140211+00:00",
+    "last_updated": "2026-10-16T07:18:43.126580+00:00",
+    "context": { "id": "01JABPV2K8Y5D0R3N7W1F9XCQM", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "sensor.wohnzimmer_humidity",
+    "state": "45.2",
+    "attributes": {
+      "state_class": "measurement",
+      "unit_of_measurement": "%",
+      "device_class": "humidity",
+      "friendly_name": "Wohnzimmer Luftfeuchtigkeit"
+    },
+    "last_changed": "2026-10-16T07:13:43.098334+00:00",
+    "last_reported": "2026-10-16T07:23:43.140588+00:00",
+    "last_updated": "2026-10-16T07:13:43.098334+00:00",
+    "context": { "id": "01JABPHX7C4W1Q9M2T6E0R8NDK", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "sensor.aussen_temperatur",
+    "state": "unknown",
+    "attributes": {
+      "state_class": "measurement",
+      "unit_of_measurement": "°C",
+      "device_class": "temperature",
+      "friendly_name": "Außentemperatur"
+    },
+    "last_changed": "2026-10-16T04:58:21.443902+00:00",
+    "last_reported": "2026-10-16T04:58:21.443902+00:00",
+    "last_updated": "2026-10-16T04:58:21.443902+00:00",
+    "context": { "id": "01JABH5N2R8X0C6V3T9W1KQEYF", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "sensor.strom_heute",
+    "state": "4.837",
+    "attributes": {
+      "state_class": "total_increasing",
+      "unit_of_measurement": "kWh",
+      "device_class": "energy",
+      "friendly_name": "Stromverbrauch heute"
+    },
+    "last_changed": "2026-10-16T07:23:12.705918+00:00",
+    "last_reported": "2026-10-16T07:23:12.705918+00:00",
+    "last_updated": "2026-10-16T07:23:12.705918+00:00",
+    "context": { "id": "01JABQ5X0V3M8D1R6N4C9TWKEB", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "sensor.waschmaschine_restzeit",
+    "state": "32",
+    "attributes": {
+      "unit_of_measurement": "min",
+      "device_class": "duration",
+      "icon": "mdi:timer-sand",
+      "friendly_name": "Waschmaschine Restzeit"
+    },
+    "last_changed": "2026-10-16T07:22:58.310442+00:00",
+    "last_reported": "2026-10-16T07:22:58.310442+00:00",
+    "last_updated": "2026-10-16T07:22:58.310442+00:00",
+    "context": { "id": "01JABQ5G6T1N9W4C0R7M2XEDVH", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "sensor.waschmaschine_programmphase",
+    "state": "Schleudern",
+    "attributes": {
+      "icon": "mdi:washing-machine",
+      "friendly_name": "Waschmaschine Programmphase"
+    },
+    "last_changed": "2026-10-16T07:16:04.851277+00:00",
+    "last_reported": "2026-10-16T07:16:04.851277+00:00",
+    "last_updated": "2026-10-16T07:16:04.851277+00:00",
+    "context": { "id": "01JABPQ8E3X6C0W9N1T4R7VKMD", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "binary_sensor.balkontuer",
+    "state": "off",
+    "attributes": {
+      "device_class": "door",
+      "friendly_name": "Balkontür"
+    },
+    "last_changed": "2026-10-16T06:55:17.592063+00:00",
+    "last_reported": "2026-10-16T06:55:17.592063+00:00",
+    "last_updated": "2026-10-16T06:55:17.592063+00:00",
+    "context": { "id": "01JABN5D2W8R0C3V6T1X9QMEKY", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "binary_sensor.kuechenfenster",
+    "state": "on",
+    "attributes": {
+      "device_class": "window",
+      "friendly_name": "Küchenfenster"
+    },
+    "last_changed": "2026-10-16T06:41:39.017744+00:00",
+    "last_reported": "2026-10-16T06:41:39.017744+00:00",
+    "last_updated": "2026-10-16T06:41:39.017744+00:00",
+    "context": { "id": "01JABMC9T2V5X8N0R3W6E1QDHF", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "binary_sensor.flur_bewegung",
+    "state": "on",
+    "attributes": {
+      "device_class": "motion",
+      "friendly_name": "Flur Bewegung"
+    },
+    "last_changed": "2026-10-16T07:23:51.264118+00:00",
+    "last_reported": "2026-10-16T07:23:51.264118+00:00",
+    "last_updated": "2026-10-16T07:23:51.264118+00:00",
+    "context": { "id": "01JABQ6A1M7C4X0W2T9R5NVEKD", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "binary_sensor.waschmaschine_laeuft",
+    "state": "on",
+    "attributes": {
+      "device_class": "running",
+      "friendly_name": "Waschmaschine läuft"
+    },
+    "last_changed": "2026-10-16T06:12:30.448015+00:00",
+    "last_reported": "2026-10-16T06:12:30.448015+00:00",
+    "last_updated": "2026-10-16T06:12:30.448015+00:00",
+    "context": { "id": "01JABKR4X9C2W7N0T5V8E3QDMH", "parent_id": null, "user_id": null }
+  },
+  {
+    "entity_id": "cover.wohnzimmer_rollo",
+    "state": "open",
+    "attributes": {
+      "current_position": 100,
+      "device_class": "shutter",
+      "friendly_name": "Rollo Wohnzimmer",
+      "supported_features": 15
+    },
+    "last_changed": "2026-10-16T05:45:00.928306+00:00",
+    "last_reported": "2026-10-16T05:45:00.928306+00:00",
+    "last_updated": "2026-10-16T05:45:00.928306+00:00",
+    "context": { "id": "01JABJW7M2Q5X8C0V3T6R9NEKD", "parent_id": "01JABJW7KZ0E3R6N9C2W5T8QXV", "user_id": null }
+  }
+]

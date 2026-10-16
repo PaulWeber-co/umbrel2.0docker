@@ -1,0 +1,21 @@
+/* Music mode extras (web/js/music.js); the player itself is in dashboard.css.
+   Long texts are shortened instead of running into the clock or off screen. */
+
+/* At most three lines of title, long titles a size smaller */
+.ptitle { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.ptitle.long { font-size: 58px; letter-spacing: -.02em; }
+.partist, .palbum { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.partist:empty, .palbum:empty { display: none; }
+
+/* Paused: the progress rests a little dimmer */
+.prog { transition: opacity .6s ease; }
+.player.is-paused .prog { opacity: .55; }
+
+/* Unknown duration (radio, live stream): no bar, only the position */
+.prog.no-dur .bar, .prog.no-dur .times span:last-child { display: none; }
+.prog.no-pos { visibility: hidden; }
+
+/* Night view: a quiet "♪ title" line under the clock while music plays */
+.n-music { display: none; align-items: center; gap: 12px; max-width: 1400px; margin-top: 30px; font-size: 28px; opacity: .3; }
+.n-music span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stage[data-music="1"] .n-music { display: flex; }

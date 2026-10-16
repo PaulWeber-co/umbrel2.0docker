@@ -1,0 +1,43 @@
+{
+  "summary": {
+    "query": "mönckebergstraße 7 20095 hamburg",
+    "queryType": "NON_NEAR",
+    "queryTime": 64,
+    "numResults": 1,
+    "offset": 0,
+    "totalResults": 1,
+    "fuzzyLevel": 1
+  },
+  "results": [
+    {
+      "type": "Point Address",
+      "id": "DE/PAD/p0/1830462",
+      "score": 13.4728212357,
+      "matchConfidence": { "score": 1 },
+      "address": {
+        "streetNumber": "7",
+        "streetName": "Mönckebergstraße",
+        "municipalitySubdivision": "Hamburg-Altstadt",
+        "municipality": "Hamburg",
+        "countrySecondarySubdivision": "Hamburg",
+        "countrySubdivision": "Hamburg",
+        "countrySubdivisionName": "Hamburg",
+        "countrySubdivisionCode": "HH",
+        "postalCode": "20095",
+        "countryCode": "DE",
+        "country": "Deutschland",
+        "countryCodeISO3": "DEU",
+        "freeformAddress": "Mönckebergstraße 7, 20095 Hamburg",
+        "localName": "Hamburg"
+      },
+      "position": { "lat": 53.55057, "lon": 10.00093 },
+      "viewport": {
+        "topLeftPoint": { "lat": 53.55147, "lon": 9.99942 },
+        "btmRightPoint": { "lat": 53.54967, "lon": 10.00244 }
+      },
+      "entryPoints": [
+        { "type": "main", "position": { "lat": 53.55071, "lon": 10.00081 } }
+      ]
+    }
+  ]
+}

@@ -56,6 +56,9 @@ export function renderTile(id) {
 // A feature such as music mode can move tiles elsewhere: it registers a
 // provider that returns rects (Map id → [x, y, w, h] | null) or null for "normal".
 let rectsProvider = () => null;
+// The ambient-light feature can force a scene ("nacht" when the room is dark);
+// null means "by time of day".
+let sceneOverride = () => null;
 
 export function relayout(animate = true) {
   const rects = rectsProvider(state.layout) ?? normalRects(state.layout);
@@ -86,6 +89,9 @@ const featureContext = {
   setRectsProvider(provider) {
     rectsProvider = provider;
   },
+  setSceneOverride(provider) {
+    sceneOverride = provider;
+  },
 };
 const FEATURES = [];
 
@@ -106,8 +112,9 @@ export async function runAction(id, name, payload = {}) {
 }
 
 function onTileAction(event) {
-  if (stage.dataset.edit === '1') return;
   const isSubmit = event.type === 'submit';
+  // In edit mode taps arrange tiles; only forms (e.g. a new to-do) still work.
+  if (stage.dataset.edit === '1' && !isSubmit) return;
   const el = isSubmit ? event.target.closest('form[data-action]') : event.target.closest('[data-action]:not(form)');
   const tile = el?.closest('.t');
   if (!el || !tile) return;
@@ -149,7 +156,7 @@ function tick() {
   $$('.js-date').forEach((el) => {
     if (el.textContent !== date) el.textContent = date;
   });
-  scenes.set(sceneAt(Number(parts.hour) * 60 + Number(parts.minute), state.widgets.wetter?.data?.sun));
+  scenes.set(sceneOverride() ?? sceneAt(Number(parts.hour) * 60 + Number(parts.minute), state.widgets.wetter?.data?.sun));
   const greeting = GREETINGS[scenes.scene] + (state.name ? `, ${state.name}` : '');
   if ($('#greet').textContent !== greeting) $('#greet').textContent = greeting;
 }
@@ -169,6 +176,8 @@ function connect() {
   });
   events.addEventListener('widget', (event) => deliver(JSON.parse(event.data)));
   events.addEventListener('layout', (event) => {
+    // Our own edits come back here too; only rebuild for changes made elsewhere.
+    if (event.data === JSON.stringify(state.layout)) return;
     state.layout = JSON.parse(event.data);
     buildTiles();
     relayout(true);

@@ -1,0 +1,31 @@
+/* Edit mode (js/edit.js): the resize button, short notes in the edit bar and
+   the outlines shown while a tile is dragged. The × button, the wiggle,
+   .dragging and .t.target come from dashboard.css. */
+
+/* A long press starts edit mode: no text selection, iOS callout or image drag on the way */
+#tiles .t { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#tiles .t :is(input, textarea, [contenteditable]) { -webkit-user-select: text; user-select: text; }
+.stage[data-edit="1"] .t img { -webkit-user-drag: none; }
+
+/* Width toggle 1 ↔ 2, the counterpart of .x at the bottom right */
+.t .resize { position: absolute; right: 12px; bottom: 12px; width: 48px; height: 48px; padding: 0; border-radius: 24px; border: 0; display: none; align-items: center; justify-content: center; font-size: 26px; color: #111; background: rgba(255, 255, 255, .92); cursor: pointer; z-index: 3; }
+.t .resize .ic { stroke-width: 2.2; }
+.stage[data-edit="1"] .t .resize { display: flex; }
+/* Flying back to its place after a drop, still above its neighbours */
+.t.settling { z-index: 19; }
+
+/* Notes such as "Kein Platz frei …" take the place of the hint for 3 s */
+.editbar .edit-msg { display: none; color: var(--warn); font-weight: 500; }
+.editbar.has-msg .edit-msg { display: inline; }
+.editbar.has-msg .edit-hint { display: none; }
+/* Many hidden widgets: the add buttons wrap instead of running off the stage */
+.editbar { width: max-content; max-width: 1840px; box-sizing: border-box; }
+.editbar .add { flex-wrap: wrap; justify-content: center; }
+.editbar .add:empty { display: none; }
+
+/* While dragging: dashed free cells, a solid outline where the tile will land */
+.edit-grid { position: absolute; inset: 0; pointer-events: none; }
+.edit-cell, .edit-drop { position: absolute; box-sizing: border-box; border-radius: 38px; }
+.edit-cell { border: 2px dashed rgba(255, 255, 255, .45); }
+.edit-drop { display: none; border: 3px solid rgba(255, 255, 255, .9); background: rgba(255, 255, 255, .12); }
+.edit-drop.target { display: block; }
