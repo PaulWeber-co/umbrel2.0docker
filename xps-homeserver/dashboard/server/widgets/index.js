@@ -1,5 +1,5 @@
-// Every server-side widget. A new widget: add its module here and a front-end
-// module with the same id in web/js/widgets/index.js.
+// Every dashboard data source. Tiles also have a renderer in web/js/widgets;
+// non-tile features such as music mode consume same-named modules in web/js/features.
 import weather from './weather.js';
 import server from './server.js';
 import commute from './commute.js';
