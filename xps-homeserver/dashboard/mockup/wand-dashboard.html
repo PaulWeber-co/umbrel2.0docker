@@ -461,12 +461,6 @@ body {
           <div class="a-row"><svg class="ic"><use href="#i-washer"/></svg><span>Wäsche: 32 min</span></div>
         </article>
 
-        <article class="t" data-id="dc">
-          <div class="a-lbl"><svg class="ic"><use href="#i-trend"/></svg>DynamicChicken</div>
-          <div class="a-ph">[Kennzahl]</div>
-          <div class="a-foot">Werte folgen, sobald die App angebunden ist</div>
-        </article>
-
         <div class="player a-player" aria-label="Läuft gerade">
           <div class="a-cover-wrap"><img class="cover js-cover" alt="" width="440" height="440"></div>
           <div class="a-pinfo">
@@ -518,7 +512,6 @@ body {
           <div class="b-rot js-rot">
             <div class="on"><div class="b-lbl">XPS-Server</div><div class="b-val js-cpu">12 %</div><div class="b-sub">CPU · 9 Apps laufen<br>48° · SSD 60 % voll</div></div>
             <div><div class="b-lbl">Fotos</div><div class="b-val">18.432</div><div class="b-sub">+37 diese Woche<br>1.204 Videos</div></div>
-            <div><div class="b-lbl">DynamicChicken</div><div class="b-val text">[Kennzahl]</div><div class="b-sub">folgt, sobald die App angebunden ist</div></div>
           </div>
         </div>
 
@@ -615,10 +608,6 @@ body {
         <article class="t c-mini" data-id="fotos">
           <div class="c-h">Fotos</div><span class="v">18.432</span>
         </article>
-        <article class="t c-mini" data-id="dc">
-          <div class="c-h">DynamicChicken</div><span class="v ph">[Kennzahl]</span>
-        </article>
-
         <article class="t c-player" data-id="player" aria-label="Läuft gerade">
           <div class="c-h">Läuft auf XPS Lautsprecher<em>AirPlay</em></div>
           <img class="cover js-cover" alt="" width="556" height="556">
@@ -695,7 +684,7 @@ body {
     b: '<b>B · Panorama</b>: Wie ein Apple-Bildschirmschoner. Viel Bild, die Infos ruhig in einer Zeile. Braucht kaum Unschärfe-Effekte und läuft am leichtesten.',
     c: '<b>C · Leitstand</b>: Dunkles Rauchglas, mehr Daten, Live-Werte vom Server. Gut lesbar auch abends.'
   };
-  const NAMES = { wetter: 'Wetter', weg: 'Arbeitsweg', fotos: 'Fotos', kal: 'Kalender', server: 'Server', todo: 'To-dos', home: 'Zuhause', dc: 'DynamicChicken', termin: 'Termin', rot: 'Server & Fotos', heute: 'Heute' };
+  const NAMES = { wetter: 'Wetter', weg: 'Arbeitsweg', fotos: 'Fotos', kal: 'Kalender', server: 'Server', todo: 'To-dos', home: 'Zuhause', termin: 'Termin', rot: 'Server & Fotos', heute: 'Heute' };
   const PLACES = { morgen: 'Nebelwald am Morgen', tag: 'Küste von oben', tal: 'Flusstal in den Bergen', abend: 'Felsküste bei Sonnenuntergang', nacht: 'See in der Dämmerung' };
   const SCENES = {
     morgen: { clips: ['morgen'], at: [7, 42], greet: 'Guten Morgen', accent: '#9fe3d6' },
@@ -708,7 +697,7 @@ body {
   const stripRects = (ids) => Object.fromEntries(ids.map((id, i) => [id, [112 + i * 1696 / ids.length, 816, 1696 / ids.length, 190]]));
   const LAYOUT = {
     a: {
-      normal: { wetter: [760, 80, 520, 290], weg: [1304, 80, 248, 290], fotos: [1576, 80, 248, 290], kal: [760, 394, 520, 290], server: [1304, 394, 520, 290], todo: [760, 708, 520, 290], home: [1304, 708, 248, 290], dc: [1576, 708, 248, 290] },
+      normal: { wetter: [760, 80, 520, 290], weg: [1304, 80, 248, 290], fotos: [1576, 80, 248, 290], kal: [760, 394, 520, 290], server: [1304, 394, 520, 290], todo: [760, 708, 520, 290], home: [1304, 708, 520, 290] },
       music: { wetter: [1336, 80, 488, 290], weg: [1336, 394, 232, 290], home: [1592, 394, 232, 290], server: [1336, 708, 488, 290] }
     },
     b: {
@@ -716,7 +705,7 @@ body {
       music: {}
     },
     c: {
-      normal: { heute: [64, 384, 536, 640], wetter: [632, 56, 636, 464], weg: [632, 552, 636, 472], server: [1300, 56, 556, 560], home: [1300, 648, 556, 244], fotos: [1300, 912, 262, 112], dc: [1594, 912, 262, 112] },
+      normal: { heute: [64, 384, 536, 640], wetter: [632, 56, 636, 464], weg: [632, 552, 636, 472], server: [1300, 56, 556, 560], home: [1300, 648, 556, 244], fotos: [1300, 912, 556, 112] },
       music: { heute: [64, 384, 536, 640], player: [632, 56, 636, 968], wetter: [1300, 56, 556, 190], weg: [1300, 270, 556, 210], server: [1300, 504, 556, 304], home: [1300, 832, 556, 190] }
     }
   };

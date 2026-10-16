@@ -47,7 +47,19 @@ export function createApp({ hub, store, config, webDir, defaultLayout }) {
   }, 25_000);
   heartbeat.unref();
 
-  const loadLayout = async () => (await store.read('layout.json', null)) ?? defaultLayout;
+  const loadLayout = async () => {
+    const saved = await store.read('layout.json', null);
+    if (!saved) return defaultLayout;
+    // Remove the old mockup-only DynamicChicken tile from saved layouts too.
+    const tiles = Array.isArray(saved.tiles) ? saved.tiles.filter((tile) => tile?.id !== 'dc') : defaultLayout.tiles;
+    const hidden = Array.isArray(saved.hidden) ? saved.hidden.filter((id) => id !== 'dc') : [];
+    if (tiles.length !== (saved.tiles ?? []).length || hidden.length !== (saved.hidden ?? []).length) {
+      const migrated = { tiles, hidden };
+      await store.write('layout.json', migrated);
+      return migrated;
+    }
+    return saved;
+  };
 
   async function handle(req, res) {
     const url = new URL(req.url, 'http://dashboard');

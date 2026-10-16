@@ -8,8 +8,8 @@ Ein Widget besteht aus zwei Dateien mit derselben ID, zum Beispiel `wetter`:
 | `web/js/widgets/<id>.js` | zeichnet die Kachel, läuft im Browser |
 
 Dazu kommen ein Eintrag in `server/widgets/index.js` und in
-`web/js/widgets/index.js`, ein Test unter `test/` und die Einstellungen in
-`xps-homeserver/.env.example`. Das vollständige Vorbild ist das Wetter:
+`web/js/widgets/index.js`, eine Datenumwandlung, die sich isoliert prüfen lässt,
+und die Einstellungen in `dashboard.env.example`. Das vollständige Vorbild ist das Wetter:
 `server/widgets/weather.js`, `web/js/widgets/wetter.js`, `test/weather.test.js`.
 Das Server-Widget liest lokale Host-Werte aus `/proc`, `/sys` und Node.js und
 braucht dafür keine Einträge in `.env`.

@@ -12,8 +12,7 @@ export const DEFAULT_LAYOUT = {
     { id: 'kal', col: 0, row: 1, w: 2, h: 1 },
     { id: 'server', col: 2, row: 1, w: 2, h: 1 },
     { id: 'todo', col: 0, row: 2, w: 2, h: 1 },
-    { id: 'home', col: 2, row: 2, w: 1, h: 1 },
-    { id: 'dc', col: 3, row: 2, w: 1, h: 1 },
+    { id: 'home', col: 2, row: 2, w: 2, h: 1 },
   ],
   hidden: [],
 };

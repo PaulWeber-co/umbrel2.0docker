@@ -1,0 +1,27 @@
+[Unit]
+Description=XPS Home Server Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=xps-dashboard
+Group=xps-dashboard
+WorkingDirectory=/opt/xps-homeserver/xps-homeserver/dashboard
+EnvironmentFile=/etc/xps-homeserver/dashboard.env
+Environment=DASH_HOST=0.0.0.0
+Environment=DASH_DATA_DIR=/var/lib/xps-dashboard
+ExecStart=/usr/bin/node server/index.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/var/lib/xps-dashboard
+
+[Install]
+WantedBy=multi-user.target

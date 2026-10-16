@@ -32,6 +32,10 @@ curl
 git
 docker.io
 docker-compose
+nodejs
+chromium
+cage
+seatd
 unattended-upgrades
 systemd-zram-generator
 

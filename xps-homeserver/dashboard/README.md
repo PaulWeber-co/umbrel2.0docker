@@ -1,8 +1,28 @@
 # Dashboard
 
-Das Wand-Dashboard für den XPS wird in **Design A · Glas** umgesetzt. Backend,
-Frontend sowie Wetter- und Server-Widget sind vorhanden. Die Kiosk-Integration
-und die übrigen Datenquellen sind noch offen.
+Das Wand-Dashboard für den XPS wird in **Design A · Glas** umgesetzt. Der
+Installer richtet den Node.js-Server und den Chromium-Kiosk ein. Wetter- und
+Hostdaten kommen direkt vom XPS; Kalender, To-dos und schaltbare Geräte lassen
+sich über Home Assistant anbinden, Fotos über Immich.
+
+## Einrichtung
+
+`sudo xps-homeserver/scripts/install-xps-dashboard.sh <Linux-Benutzer>` klont
+den gerade ausgecheckten Branch nach `/opt/xps-homeserver`, legt den
+Dashboard-Dienst an und startet Design A auf `tty1`. Zugangsdaten stehen in
+`/etc/xps-homeserver/dashboard.env`; das Beispiel liegt hier in
+`dashboard.env.example`. Nach Änderungen daran den Dienst neu starten:
+
+```sh
+sudo systemctl restart xps-dashboard
+```
+
+Die Integrationen sind optional. Ohne Konfiguration zeigen Kalender, To-dos,
+Zuhause, Arbeitsweg und Fotos ihre Demo-Ansicht. Für Zuhause werden nur die in
+`DASH_HA_HOME_ENTITIES` freigegebenen `light`, `switch`, `fan` und
+`input_boolean` schaltbar; andere Home-Assistant-Entitäten werden nur gelesen.
+Die Dashboard-API ist im Heimnetz erreichbar und setzt voraus, dass dieses
+Netzwerk vertrauenswürdig ist.
 
 ## Entwürfe
 

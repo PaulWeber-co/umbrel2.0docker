@@ -1,0 +1,31 @@
+/* Compact Design A tiles. */
+.commute-main { display: flex; align-items: center; flex: 1; }
+.commute-main .big { font-size: 76px; }
+.photo-link { height: 100%; display: flex; flex-direction: column; color: inherit; text-decoration: none; }
+.photo-link:focus-visible { outline: 2px solid #fff; outline-offset: 8px; border-radius: 12px; }
+.photo-count { margin: auto 0 0; font-size: 50px; font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; }
+.photo-detail { font-size: 17px; opacity: .8; }
+.calendar-list, .todo-list { min-height: 0; flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; gap: 5px; list-style: none; margin: 0; padding: 0; }
+.calendar-list li { min-width: 0; display: grid; grid-template-columns: 142px minmax(0, 1fr); gap: 0 12px; align-items: baseline; font-size: 17px; line-height: 1.25; }
+.calendar-list time { opacity: .76; font-variant-numeric: tabular-nums; }
+.calendar-list strong { overflow: hidden; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-list small { grid-column: 2; overflow: hidden; opacity: .68; text-overflow: ellipsis; white-space: nowrap; }
+.calendar-list .empty, .todo-list .empty, .home-list .empty { display: block; opacity: .65; font-size: 19px; }
+.todo-list { justify-content: flex-start; gap: 2px; }
+.todo-list li { min-height: 0; }
+.todo-check { font-size: 19px; padding: 5px 0; }
+.todo-readonly { cursor: default; }
+.todo-check .box { width: 22px; height: 22px; }
+.todo-check .box .ic { width: 16px; height: 16px; }
+.todo-add { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.todo-add input { min-width: 0; flex: 1; height: 42px; padding: 0 14px; border: 1px solid rgba(255,255,255,.25); border-radius: 22px; background: rgba(255,255,255,.12); color: #fff; font: 18px var(--f-ui); }
+.todo-add input::placeholder { color: rgba(255,255,255,.65); }
+.todo-add button { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; border: 0; border-radius: 50%; background: rgba(255,255,255,.9); color: #111; font-size: 22px; cursor: pointer; }
+.home-list { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: center; gap: 8px; }
+.home-switch { min-height: 48px; padding: 8px 11px; border-radius: 16px; gap: 8px; font-size: 16px; }
+.home-switch .ic { font-size: 21px; }
+.home-switch .knob { width: 40px; height: 24px; }
+.home-switch .knob::after { width: 18px; height: 18px; }
+.home-switch[aria-pressed="true"] .knob::after { transform: translateX(16px); }
+.home-state { cursor: default; }
+.home-state strong { margin-left: auto; font-weight: 500; opacity: .82; }

@@ -52,6 +52,11 @@ export function loadConfig({ argv = process.argv.slice(2), env = process.env, en
     lat: num('DASH_LAT', 53.55),
     lon: num('DASH_LON', 10.0),
     timezone: get('DASH_TIMEZONE', 'Europe/Berlin'),
+    haUrl: get('DASH_HA_URL'),
+    haToken: get('DASH_HA_TOKEN'),
+    commuteOrigin: get('DASH_COMMUTE_ORIGIN'),
+    commuteDestination: get('DASH_COMMUTE_DESTINATION'),
+    immichUrl: get('DASH_IMMICH_URL'),
     dataDir: get('DASH_DATA_DIR', join(DASHBOARD_DIR, 'data')),
     mediaDir: get('DASH_MEDIA_DIR', join(DASHBOARD_DIR, 'web', 'media')),
   };
