@@ -16,6 +16,7 @@
 //   POST /api/control/override     { state, minutes } / { state, until: "morning" } / { clear: true }
 //   POST /api/control/wake         a tap on the dark kiosk screen
 //   POST /api/unlock               { pin } when DASH_PIN is set
+//   GET  /api/minifunk/<id>.jpg    a photo from Minifunk, while it is shown
 //
 // Every request passes the checks in access.js first: a known host name,
 // changes only as same-origin JSON, and the PIN for other devices if set.
@@ -25,6 +26,7 @@ import { createServer } from 'node:http';
 import { extname, join, normalize, sep } from 'node:path';
 import { createAccess, isSameOrigin } from './access.js';
 import { validateLayout } from './layout.js';
+import { PHOTO_ID } from './widgets/minifunk.js';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -191,6 +193,11 @@ export function createApp({ hub, store, config, webDir, defaultLayout, control =
       const payload = await readObject(req);
       const result = await hub.action(action[1], action[2], payload);
       return sendJson(res, 200, { ok: true, result });
+    }
+
+    const funkPhoto = path.match(/^\/api\/minifunk\/([a-f0-9]+)\.jpg$/);
+    if (funkPhoto && PHOTO_ID.test(funkPhoto[1]) && config.dataDir && (req.method === 'GET' || req.method === 'HEAD')) {
+      return serveFile(req, res, join(config.dataDir, 'minifunk'), `${funkPhoto[1]}.jpg`, 'private, max-age=3600');
     }
 
     if (path.startsWith('/api/')) throw new HttpError(404, 'Unbekannter Endpunkt');

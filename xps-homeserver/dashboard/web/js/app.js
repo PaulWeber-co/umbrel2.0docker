@@ -8,6 +8,7 @@ import { applyRects, normalRects } from './layout.js';
 import { createScenes, GREETINGS, sceneAt } from './scene.js';
 import * as display from './features/display.js';
 import * as edit from './features/edit.js';
+import * as minifunk from './features/minifunk.js';
 import * as music from './features/music.js';
 import { applyGlass, DEFAULT_GLASS } from './glass.js';
 import { $, $$, esc, icon } from './util.js';
@@ -174,7 +175,7 @@ const featureContext = {
     if (state.control) listener(state.control);
   },
 };
-const FEATURES = [music, edit, display];
+const FEATURES = [music, minifunk, edit, display];
 
 /* ---------- widget actions ----------
    A widget module only writes markup: <button data-action="toggle"

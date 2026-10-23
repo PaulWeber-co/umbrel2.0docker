@@ -16,7 +16,8 @@
 //                pipe): called once at start unless in demo mode, emit(data)
 //                publishes at once, returns a function that stops watching.
 //                fetch() still runs every intervalMs and returns the current state.
-//   ctx = { config, store, log, now, fetchJson, fetchText }
+//   ctx = { config, store, log, now, fetchJson, fetchText, peek }
+//   peek(id) is the latest data of another widget (Minifunk asks for music)
 //
 // Updates whose data did not change are not sent to the browsers again.
 
@@ -41,6 +42,7 @@ export class Hub {
       now: () => new Date(),
       fetchJson: (url, options) => fetchJson(fetchImpl, url, { timeoutMs, ...options }),
       fetchText: (url, options) => fetchText(fetchImpl, url, { timeoutMs, ...options }),
+      peek: (id) => this.#entries.get(id)?.data ?? null,
     };
   }
 
