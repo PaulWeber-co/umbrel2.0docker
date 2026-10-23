@@ -1,37 +1,38 @@
 /* Minifunk in the side column under the clock (web/js/features/minifunk.js).
    Cards share .side-card with the music player; they stand at the bottom of
-   the column and are as wide as their text needs, up to the column. */
+   the column, as wide as the clock, and as tall as their text needs. */
 .funk { position: absolute; inset: 0; transition: opacity .5s ease, visibility 0s linear .5s; }
 .stage[data-music="1"] .funk { opacity: 0; visibility: hidden; }
 .funk-view { width: 100%; }
-.funk-view.is-text { gap: 14px; }
+.funk-view.is-text { gap: 12px; }
 
-.funk-card { width: fit-content; min-width: 300px; max-width: 600px; padding: 18px 24px 20px; transition: opacity .35s ease, transform .35s ease; }
+.funk-card { transition: opacity .35s ease, transform .35s ease; }
 .funk-card.leaving { opacity: 0; transform: translateX(-24px); }
-.funk-caption { width: 380px; min-width: 0; }
 
-.funk-head { display: flex; align-items: center; gap: 9px; font-size: 18px; margin-bottom: 8px; white-space: nowrap; }
+.funk-head { display: flex; align-items: center; gap: 9px; font-size: 17px; margin-bottom: 6px; white-space: nowrap; }
 .funk-head .ic { font-size: 22px; opacity: .9; }
 .funk-head b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
 .funk-ago { opacity: .7; }
 .funk-ago::before { content: "· "; }
-.funk-x { all: unset; margin-left: auto; margin-right: -8px; width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #fff; opacity: .55; cursor: pointer; }
+.funk-x { all: unset; margin: -6px -10px -6px auto; width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #fff; opacity: .55; cursor: pointer; }
 .funk-x:hover, .funk-x:focus-visible { opacity: 1; background: rgba(255, 255, 255, .14); }
 .funk-x .ic { font-size: 18px; }
 
 /* Size follows the length: a short line large, a long note small */
 .funk-text { line-height: 1.25; overflow-wrap: anywhere; }
 .funk-text p, .funk-text ul { margin: 0; }
+.funk-text p { text-wrap: pretty; }
 .funk-text p + p, .funk-text p + ul, .funk-text ul + p { margin-top: .35em; }
 .funk-text ul { padding-left: 1.1em; }
 .funk-text li { margin: .12em 0; }
 .funk-text li::marker { color: rgba(255, 255, 255, .7); }
-.size-xl .funk-text { font-size: 40px; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; }
-.size-l .funk-text { font-size: 30px; font-weight: 400; letter-spacing: -.01em; }
-.size-m .funk-text { font-size: 24px; }
-.size-s .funk-text { font-size: 20px; }
-.funk-caption .funk-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
-.funk-caption.size-xl .funk-text { font-size: 32px; }
-.funk-caption.size-l .funk-text { font-size: 26px; }
-.funk-quiet { font-size: 22px !important; opacity: .8; }
+.size-xl .funk-text { font-size: 38px; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; }
+.size-l .funk-text { font-size: 28px; font-weight: 400; letter-spacing: -.01em; }
+.size-m .funk-text { font-size: 23px; }
+.size-s .funk-text { font-size: 19px; }
+/* Above a photo the words get two lines, like title and artist */
+.funk-caption .funk-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.funk-caption.size-xl .funk-text, .funk-caption.size-l .funk-text { font-size: 26px; }
+.funk-caption.size-m .funk-text, .funk-caption.size-s .funk-text { font-size: 21px; }
+.funk-quiet { font-size: 21px !important; opacity: .8; }
 .funk-photo { background: rgba(255, 255, 255, .08); }

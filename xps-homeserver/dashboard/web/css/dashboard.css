@@ -48,10 +48,11 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .scrim { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(4, 10, 16, .38) 0%, rgba(4, 10, 16, 0) 42%), linear-gradient(0deg, rgba(4, 10, 16, .2), rgba(4, 10, 16, 0) 45%); }
 
 /* ---------- fixed header: never moves ---------- */
-.head { position: absolute; left: 96px; top: 74px; width: 640px; text-shadow: 0 2px 30px rgba(0, 0, 0, .28); }
-.greet { font-size: 36px; font-weight: 400; opacity: .94; }
-.time { font-size: 190px; font-weight: 200; letter-spacing: -.05em; line-height: .9; margin: 14px 0 12px -10px; font-variant-numeric: tabular-nums; }
-.date { font-size: 36px; font-weight: 400; opacity: .86; }
+.head { position: absolute; left: 96px; top: 58px; width: 640px; text-shadow: 0 2px 30px rgba(0, 0, 0, .28); }
+/* Two balanced lines, as wide as the clock below */
+.greet { max-width: var(--side-w, 496px); font-size: 30px; font-weight: 400; line-height: 1.16; opacity: .94; text-wrap: balance; }
+.time { font-size: 190px; font-weight: 200; letter-spacing: -.05em; line-height: .9; margin: 4px 0 4px -10px; font-variant-numeric: tabular-nums; }
+.date { font-size: 34px; font-weight: 400; opacity: .86; }
 
 /* ---------- tiles ---------- */
 .dash { position: absolute; inset: 0; transition: opacity 1s ease; }
@@ -112,15 +113,16 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .compact .hours { display: none; }
 
 /* ---------- the side column under the clock: music or Minifunk ----------
-   x 96 … 736, y 392 … 998: flush with the clock on the left and with the
-   bottom row of tiles. Its contents stand at the bottom and grow upwards. */
-.side { position: absolute; left: 96px; top: 392px; width: 640px; height: 606px; pointer-events: none; }
+   x 96 … 592, y 372 … 998: flush with the clock left and right (--side-w,
+   measured in app.js) and with the bottom row of tiles. Its contents stand
+   at the bottom and grow upwards. */
+.side { position: absolute; left: 96px; top: 372px; width: var(--side-w, 496px); height: 626px; pointer-events: none; }
 .side > * { pointer-events: auto; }
 .stage[data-scene="nacht"] .side { opacity: 0; visibility: hidden; }
 
 /* Shared building blocks: a glass card for the words, a photo under it */
 .side-card {
-  box-sizing: border-box; padding: 22px 26px 22px; border-radius: 30px;
+  position: relative; box-sizing: border-box; padding: 14px 22px 15px; border-radius: 28px;
   border: 1px solid rgba(255, 255, 255, var(--glass-border));
   background: linear-gradient(145deg, rgba(255, 255, 255, var(--glass-top)), rgba(255, 255, 255, var(--glass-low)) 48%, rgba(10, 20, 32, var(--glass-base))), rgba(12, 22, 34, var(--glass-base));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -128,21 +130,20 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   text-shadow: 0 1px 2px rgba(0, 0, 0, .22), 0 1px 14px rgba(0, 0, 0, .26);
   transition: background .25s ease, backdrop-filter .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
-.side-photo { display: block; width: 380px; height: 380px; flex: none; object-fit: cover; border-radius: 30px; background: rgba(255, 255, 255, .1); box-shadow: 0 40px 90px -30px rgb(var(--glow) / .9), 0 0 0 1px rgba(255, 255, 255, .25); }
+.side-photo { display: block; width: 100%; height: auto; aspect-ratio: 1; flex: none; object-fit: cover; border-radius: 30px; background: rgba(255, 255, 255, .1); box-shadow: 0 40px 90px -30px rgb(var(--glow) / .9), 0 0 0 1px rgba(255, 255, 255, .25); }
 
 /* Pops up: rises a little and grows from the cover's corner */
-.player, .funk-view { position: absolute; left: 0; bottom: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; opacity: 0; visibility: hidden; transform: translateY(28px) scale(.96); transform-origin: 0 100%; transition: opacity .5s ease, transform .7s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .7s; }
+.player, .funk-view { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: stretch; gap: 10px; opacity: 0; visibility: hidden; transform: translateY(28px) scale(.96); transform-origin: 0 100%; transition: opacity .5s ease, transform .7s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .7s; }
 .stage[data-music="1"] .player, .funk-view.on { opacity: 1; visibility: visible; transform: none; transition: opacity .6s ease .1s, transform .8s cubic-bezier(.2, .9, .25, 1.05) .05s; }
 .stage.no-anim .player { transition: none; }
 
 /* Music: title and progress flush above the cover, exactly as wide */
-.pinfo { width: 380px; display: flex; flex-direction: column; gap: 6px; }
-.eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 17px; letter-spacing: .02em; opacity: .8; margin-bottom: 4px; }
-.eyebrow .ic { font-size: 21px; }
-.ptitle { font-size: 34px; font-weight: 500; letter-spacing: -.02em; line-height: 1.08; text-wrap: balance; }
-.partist { font-size: 21px; opacity: .88; }
-.prog { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 16px; opacity: .9; }
-.prog .bar { height: 6px; border-radius: 3px; }
+.pinfo { display: flex; flex-direction: column; gap: 3px; }
+.psource { position: absolute; top: 16px; right: 20px; font-size: 22px; opacity: .7; }
+.ptitle { padding-right: 34px; font-size: 30px; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; }
+.partist { font-size: 19px; opacity: .88; }
+.prog { margin-top: 9px; display: flex; align-items: center; gap: 12px; font-size: 15px; font-variant-numeric: tabular-nums; opacity: .9; }
+.prog .bar { flex: 1; height: 5px; border-radius: 3px; }
 
 /* ---------- edit mode ---------- */
 .t .x { position: absolute; top: 12px; right: 12px; width: 48px; height: 48px; border-radius: 24px; border: 0; display: none; align-items: center; justify-content: center; font-size: 24px; color: #111; background: rgba(255, 255, 255, .92); cursor: pointer; z-index: 3; }

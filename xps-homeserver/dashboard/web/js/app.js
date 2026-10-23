@@ -5,7 +5,7 @@
 // /?kiosk=1; only there the screen goes dark when the control center says so.
 import { bindDialog, createPanel } from './control-panel.js';
 import { applyRects, normalRects } from './layout.js';
-import { createScenes, GREETINGS, sceneAt } from './scene.js';
+import { createScenes, sceneAt } from './scene.js';
 import * as display from './features/display.js';
 import * as edit from './features/edit.js';
 import * as minifunk from './features/minifunk.js';
@@ -89,6 +89,22 @@ const panel = createPanel($('#control'), {
   },
 });
 const dialog = bindDialog({ toggle: $('#settings-toggle'), overlay: $('#control-overlay'), panel: $('#control'), onOpen: () => panel.update() });
+
+/* ---------- the side column ends where the clock ends ----------
+   Cover, photo and their cards are exactly as wide as the time from its left
+   edge to the right edge of the last digit; 496 px in Onest, measured once
+   the font is there (tabular digits: every time is equally wide). */
+function measureClock() {
+  const time = $('.head .time');
+  // Only real digits count: before the first tick it shows "--:--"
+  if (!/^\d\d:\d\d$/.test(time?.textContent ?? '')) return;
+  const range = document.createRange();
+  range.selectNodeContents(time);
+  const right = range.getBoundingClientRect().right;
+  const left = $('.head').getBoundingClientRect().left;
+  const width = Math.round((right - left) / (state.scale || 1));
+  if (width > 300 && width < 640) stage.style.setProperty('--side-w', `${width}px`);
+}
 
 /* ---------- scale the 1920×1080 stage to the window ---------- */
 function fit() {
@@ -227,7 +243,8 @@ function onTileAction(event) {
 $('#tiles').addEventListener('click', onTileAction);
 $('#tiles').addEventListener('submit', onTileAction);
 
-/* ---------- clock, greeting, scene ---------- */
+/* ---------- clock and scene ----------
+   The greeting above the clock never changes (index.html). */
 function tick() {
   const now = new Date();
   const parts = Object.fromEntries(
@@ -244,8 +261,6 @@ function tick() {
     if (el.textContent !== date) el.textContent = date;
   });
   scenes.set(sceneOverride() ?? sceneAt(Number(parts.hour) * 60 + Number(parts.minute), state.widgets.wetter?.data?.sun));
-  const greeting = GREETINGS[scenes.scene] + (state.name ? `, ${state.name}` : '');
-  if ($('#greet').textContent !== greeting) $('#greet').textContent = greeting;
 }
 
 /* ---------- live updates ---------- */
@@ -301,6 +316,8 @@ async function boot() {
   for (const feature of FEATURES) feature.init(featureContext);
   if (location.hash === '#steuerung') dialog.open();
   tick();
+  measureClock();
+  document.fonts?.ready.then(measureClock);
   setInterval(tick, 1000);
   connect();
 }

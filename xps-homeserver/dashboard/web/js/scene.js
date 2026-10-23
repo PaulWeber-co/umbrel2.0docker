@@ -1,5 +1,5 @@
-// Time of day decides the scene: background video, greeting and the evening
-// warm filter. "spaet" is the late evening and the small hours with the
+// Time of day decides the scene: background video and the evening warm
+// filter. "spaet" is the late evening and the small hours with the
 // dashboard still on; "nacht", the dimmed clock alone, comes only from the
 // control center (features/display.js), which follows the schedule. Videos
 // come from /media (see dashboard/scripts/fetch-backgrounds.sh); without them,
@@ -7,7 +7,6 @@
 // gradient shows instead.
 
 const CLIPS = { morgen: ['morgen'], tag: ['tag', 'tal'], abend: ['abend'], spaet: ['nacht'], nacht: [] };
-export const GREETINGS = { morgen: 'Guten Morgen', tag: 'Hallo', abend: 'Guten Abend', spaet: 'Gute Nacht', nacht: 'Gute Nacht' };
 
 const minutes = (hhmm) => {
   const [h, m] = hhmm.split(':').map(Number);

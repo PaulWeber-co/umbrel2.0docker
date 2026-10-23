@@ -319,7 +319,8 @@ test('music mode leaves every tile where it is and pops up under the clock', () 
   assert.ok(side.indexOf('id="pbar"') < side.indexOf('id="cover"'));
   const css = readFileSync(new URL('../web/css/dashboard.css', import.meta.url), 'utf8');
   // The side column ends where the bottom row of tiles ends (y 998) and stays left of the grid (x 760)
-  const box = css.match(/\.side \{[^}]*left: (\d+)px; top: (\d+)px; width: (\d+)px; height: (\d+)px;/);
+  // Its width is the clock's (--side-w, measured in app.js; 496 px in Onest)
+  const box = css.match(/\.side \{[^}]*left: (\d+)px; top: (\d+)px; width: var\(--side-w, (\d+)px\); height: (\d+)px;/);
   assert.ok(box, 'side column geometry');
   const [left, top, width, height] = box.slice(1).map(Number);
   assert.equal(top + height, rectFor({ col: 0, row: 2, w: 1, h: 1 })[1] + rectFor({ col: 0, row: 2, w: 1, h: 1 })[3]);
