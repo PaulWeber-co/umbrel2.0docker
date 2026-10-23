@@ -18,6 +18,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypt
 const HOME_SUFFIXES = ['.local', '.lan', '.home', '.home.arpa', '.internal', '.localdomain', '.fritz.box', '.speedport.ip', '.ts.net'];
 const COOKIE = 'xps_dash';
 const MAX_FAILURES = 5;
+const MAX_FAILURES_ALL = 20; // from all addresses together
 const LOCKOUT_MS = 10 * 60_000;
 
 export const isLoopback = (address) => /^(::ffff:)?127\./.test(String(address ?? '')) || address === '::1';
@@ -35,7 +36,9 @@ export function hostName(header) {
 export function isAllowedHost(header, extra = []) {
   const host = hostName(header);
   if (!host) return false;
-  if (host.includes(':')) return true; // an IPv6 address
+  if (host.includes(':')) return /^[0-9a-f:.]+$/.test(host); // an IPv6 address
+  // Only what a browser sends as a host name: no userinfo, no spaces
+  if (!/^[a-z0-9._-]+$/.test(host)) return false;
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return true;
   if (host === 'localhost' || !host.includes('.')) return true; // "xps"
   return HOME_SUFFIXES.some((suffix) => host.endsWith(suffix)) || extra.includes(host);
@@ -72,6 +75,7 @@ export function createAccess({ config, store, now = () => Date.now() }) {
   const pin = get('DASH_PIN');
   const allowedHosts = parseList(get('DASH_ALLOWED_HOSTS'));
   const failures = new Map(); // address → { count, until }
+  const everyone = { count: 0, since: 0, until: 0 }; // all addresses together
   let secret = null;
 
   // A random key in the data directory; the cookie is an HMAC of the PIN with
@@ -93,10 +97,13 @@ export function createAccess({ config, store, now = () => Date.now() }) {
     return Boolean(value) && timingSafeEqual(digest(value), digest(await token()));
   }
 
-  // Five wrong PINs from one address lock it out for ten minutes
+  // Five wrong PINs from one address lock it out for ten minutes. Twenty
+  // within ten minutes from all addresses together lock out every device but
+  // the kiosk: guessing from many addresses at once gets no further either.
   function checkPin(address, attempt) {
+    const t = now();
     const record = failures.get(address);
-    if (record && record.until > now()) {
+    if ((record && record.until > t) || everyone.until > t) {
       throw Object.assign(new Error('Zu viele Versuche, bitte in 10 Minuten noch einmal'), { status: 429 });
     }
     if (typeof attempt === 'string' && timingSafeEqual(digest(attempt.trim()), digest(pin))) {
@@ -105,7 +112,10 @@ export function createAccess({ config, store, now = () => Date.now() }) {
     }
     // A lockout that has run out starts the count again
     const count = (record && !record.until ? record.count : 0) + 1;
-    failures.set(address, { count, until: count >= MAX_FAILURES ? now() + LOCKOUT_MS : 0 });
+    failures.set(address, { count, until: count >= MAX_FAILURES ? t + LOCKOUT_MS : 0 });
+    if (t - everyone.since >= LOCKOUT_MS) Object.assign(everyone, { count: 0, since: t });
+    everyone.count += 1;
+    if (everyone.count >= MAX_FAILURES_ALL) Object.assign(everyone, { count: 0, since: t, until: t + LOCKOUT_MS });
     return false;
   }
 

@@ -38,7 +38,7 @@ const parseList = (text) => new Set(String(text ?? '').split(',').map((s) => s.t
 
 // "shop-api_db" → "Shop Api Db"
 export const prettyName = (id) =>
-  KNOWN[id] ?? String(id).replace(/[-_]+/g, ' ').trim().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+  (Object.hasOwn(KNOWN, id) ? KNOWN[id] : null) ?? String(id).replace(/[-_]+/g, ' ').trim().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
 
 // A container that finished its job (an init or migration step) is fine;
 // one that should be up and is not is a problem.

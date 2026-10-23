@@ -14,9 +14,12 @@ ExecCondition=/usr/bin/python3 /opt/xps-homeserver/xps-homeserver/scripts/xps-co
 # container only writes into it.
 ExecStartPre=/usr/bin/install -d -m 0755 /run/shairport-sync
 ExecStartPre=/bin/sh -c '[ -p /run/shairport-sync/metadata ] || mkfifo -m 0662 /run/shairport-sync/metadata; chgrp xps-dashboard /run/shairport-sync/metadata'
-# Spotify Connect: its config into the folder it may write (it keeps its state there)
-ExecStartPre=/usr/bin/install -d -m 0700 /var/lib/xps-spotify
-ExecStartPre=/usr/bin/install -m 0600 go-librespot.yml /var/lib/xps-spotify/config.yml
+# Spotify Connect runs as xps-spotify, whose IDs setup-xps.sh writes here,
+# with its config in the folder it may write (it keeps its state there)
+EnvironmentFile=/etc/xps-homeserver/spotify.env
+ExecStartPre=/usr/bin/install -d -m 0700 -o xps-spotify -g xps-spotify /var/lib/xps-spotify
+ExecStartPre=/bin/chown -R xps-spotify:xps-spotify /var/lib/xps-spotify
+ExecStartPre=/usr/bin/install -m 0600 -o xps-spotify -g xps-spotify go-librespot.yml /var/lib/xps-spotify/config.yml
 # The headphone jack starts muted on a fresh system
 ExecStartPre=-/bin/sh -c 'amixer -q -c 0 sset Master 85%% unmute; amixer -q -c 0 sset Headphone 100%% unmute; true'
 ExecStart=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml up --detach --remove-orphans

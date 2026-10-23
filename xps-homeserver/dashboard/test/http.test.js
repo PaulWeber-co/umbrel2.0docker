@@ -162,7 +162,9 @@ test('host names and origins', () => {
   for (const host of ['xps.local:7777', 'xps', '192.168.2.40:7777', '[fe80::1]:7777', 'localhost', 'xps.tail1234.ts.net', 'xps.fritz.box']) {
     assert.equal(isAllowedHost(host), true, host);
   }
-  for (const host of ['evil.example', 'xps.local.evil.example', '', undefined]) assert.equal(isAllowedHost(host), false, String(host));
+  for (const host of ['evil.example', 'xps.local.evil.example', '', undefined, 'evil.example:7777@xps.local', 'evil.example@xps.local', 'xps local', '[fe80::1%eth0]:7777']) {
+    assert.equal(isAllowedHost(host), false, String(host));
+  }
   assert.equal(isAllowedHost('dashboard.example.org', ['dashboard.example.org']), true);
   assert.equal(hostName('[::1]:7777'), '::1');
   assert.equal(isSameOrigin('http://xps.local:7777', 'xps.local:7777'), true);
@@ -198,4 +200,14 @@ test('the PIN locks changes from other devices, not from the kiosk', async () =>
   const automation = (pin) => ({ socket: { remoteAddress: '172.17.0.5' }, headers: { 'x-dashboard-pin': pin } });
   assert.equal(await access.canChange(automation('4711')), true);
   assert.equal(await access.canChange(automation('1234')), false);
+
+  // Guessing from many addresses: twenty wrong PINs lock out everyone but the kiosk
+  clock += 10 * 60_000 + 1;
+  const from = (n) => ({ socket: { remoteAddress: `192.168.2.${100 + n}` }, headers: {} });
+  for (let n = 0; n < 20; n++) await assert.rejects(access.unlock(from(n), String(1000 + n)), (error) => error.status === 401);
+  await assert.rejects(access.unlock(from(50), '4711'), (error) => error.status === 429);
+  await assert.rejects(access.canChange(automation('4711')), (error) => error.status === 429);
+  assert.equal(await access.canChange(kiosk), true);
+  clock += 10 * 60_000 + 1;
+  assert.equal(await access.canChange(automation('4711')), true);
 });

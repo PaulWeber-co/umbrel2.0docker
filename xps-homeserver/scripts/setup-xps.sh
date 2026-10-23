@@ -85,6 +85,10 @@ for group in video input render; do
 	getent group "$group" >/dev/null && usermod -aG "$group" xps-kiosk
 done
 install -d -o xps-kiosk -g xps-kiosk -m 700 /var/lib/xps-kiosk
+# Spotify Connect's container runs as this user instead of root
+if ! id xps-spotify >/dev/null 2>&1; then
+	useradd --system --user-group --home-dir /var/lib/xps-spotify --no-create-home --shell /usr/sbin/nologin xps-spotify
+fi
 # Older versions ran the kiosk as the login user (xps-kiosk@<user>.service)
 mapfile -t old_kiosks < <(systemctl list-units --all --plain --no-legend 'xps-kiosk@*.service' | awk '{ print $1 }')
 for unit in "${old_kiosks[@]}"; do
@@ -94,6 +98,10 @@ rm -f /etc/systemd/system/xps-kiosk@.service /etc/systemd/system/multi-user.targ
 install -d -m 755 "$CONFIG_DIR"
 [ -e "$CONFIG_DIR/dashboard.env" ] || install -m 600 "$XPS_ROOT/dashboard.env.example" "$CONFIG_DIR/dashboard.env"
 [ -e "$CONFIG_DIR/host.env" ] || install -m 600 "$XPS_ROOT/host.env.example" "$CONFIG_DIR/host.env"
+{
+	echo "# Von setup-xps.sh geschrieben: unter welchem Benutzer und welcher Gruppe Spotify Connect läuft"
+	echo "XPS_SPOTIFY_USER=$(id -u xps-spotify):$(getent group audio | cut -d: -f3)"
+} >"$CONFIG_DIR/spotify.env"
 if [ ! -e "$CONFIG_DIR/umbrel.env" ]; then
 	# ghcr.io/<owner>/…: image names are lowercase, GitHub owners need not be
 	owner=$(git_repo remote get-url origin | sed -E 's#^(https://github\.com/|git@github\.com:)##; s#/.*$##' | tr '[:upper:]' '[:lower:]')

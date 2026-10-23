@@ -261,7 +261,11 @@ neben AirPlay und in derselben Compose-Datei, also mit demselben Schalter in
 der Steuerung. Es meldet sich wie shairport-sync über den avahi-daemon des
 XPS an (D-Bus), braucht keine Anmeldung (Zeroconf: wer es auswählt, bringt
 sein Konto mit) und darf im Container nur die Soundkarte und seinen eigenen
-Ordner `/var/lib/xps-spotify`. Beide Empfänger nutzen das ALSA-Gerät
+Ordner `/var/lib/xps-spotify`. Es läuft als Benutzer `xps-spotify` mit der
+Gruppe audio, nicht als root: Wer als root am System-D-Bus hängt, kann systemd
+alles starten lassen. setup-xps.sh legt den Benutzer an und schreibt seine
+Nummern nach `/etc/xps-homeserver/spotify.env`, die `xps-airplay.service` an
+Compose weitergibt. Beide Empfänger nutzen das ALSA-Gerät
 `default`. go-librespot gibt es beim Pausieren frei, shairport-sync nach dem
 Ende einer Sitzung, so wechseln sie sich ab. Das Dashboard fragt die lokale
 API von go-librespot (`127.0.0.1:3678/status`) alle zwei Sekunden, solange

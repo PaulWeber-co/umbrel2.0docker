@@ -113,8 +113,10 @@ export class Hub {
 
   async action(id, name, payload) {
     const widget = this.#widgets.get(id);
-    const run = widget?.actions?.[name];
-    if (!run) {
+    // Only the widget's own actions: names like "constructor" or "toString"
+    // would otherwise reach Object.prototype through the URL
+    const run = widget?.actions && Object.hasOwn(widget.actions, name) ? widget.actions[name] : null;
+    if (typeof run !== 'function') {
       const error = new Error(`Widget ${id} kennt die Aktion ${name} nicht`);
       error.status = 404;
       throw error;

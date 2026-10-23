@@ -35,6 +35,10 @@ services:
     restart: unless-stopped
     # Needs nothing but the sound card, D-Bus for avahi and its own folder
     read_only: true
+    # Its own user (setup-xps.sh, with the audio group for the sound card), not
+    # root: whoever is root on the system D-Bus, which avahi needs, can have
+    # systemd run anything. xps-airplay.service reads the IDs from spotify.env.
+    user: "${XPS_SPOTIFY_USER:?fehlt in /etc/xps-homeserver/spotify.env, bitte sudo update-xps}"
     cap_drop:
       - ALL
     security_opt:

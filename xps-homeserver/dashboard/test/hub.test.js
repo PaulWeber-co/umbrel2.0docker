@@ -87,6 +87,10 @@ test('actions run and refresh the widget', async () => {
   assert.equal(toggled, 2);
   assert.ok(hub.snapshot().probe);
   await assert.rejects(hub.action('probe', 'nope', {}), /kennt die Aktion/);
+  // Inherited object methods are no actions (constructor would hand back the context)
+  for (const name of ['constructor', 'toString', 'valueOf', 'hasOwnProperty', '__proto__']) {
+    await assert.rejects(hub.action('probe', name, {}), (error) => error.status === 404, name);
+  }
 });
 
 test('API keys never reach logs', () => {
