@@ -181,6 +181,18 @@ def check_settings(env):
     return found
 
 
+def reason(error):
+    """Why a request failed, in a few words."""
+    if isinstance(error, urllib.error.HTTPError):
+        return f"HTTP {error.code}"
+    cause = getattr(error, "reason", error)  # urlopen wraps the real error
+    if isinstance(cause, ConnectionRefusedError):
+        return "Verbindung abgelehnt, der Dienst läuft nicht"
+    if isinstance(cause, TimeoutError):
+        return "keine Antwort"
+    return str(cause)
+
+
 def get_json(path, timeout=5):
     request = urllib.request.Request(DASHBOARD + path, headers={"accept": "application/json"})
     with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -281,7 +293,8 @@ def check_dashboard(report, env):
             last = error
             time.sleep(1)
     if state is None:
-        report.add(PROBLEM, f"Dashboard antwortet nicht auf Port 7777 ({last})", journal("xps-dashboard.service"))
+        report.add(PROBLEM, f"Dashboard antwortet nicht auf Port 7777: {reason(last)}",
+                   journal("xps-dashboard.service") or "sudo systemctl status xps-dashboard")
         return {}
     report.add(OK, "Dashboard antwortet (http://xps.local:7777)")
     control = state.get("control") or {}

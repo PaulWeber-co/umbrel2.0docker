@@ -23,7 +23,8 @@ ProtectSystem=strict
 ProtectHome=true
 ProtectKernelTunables=true
 ProtectKernelModules=true
-ReadWritePaths=/run/xps-services /run/docker.sock
+# "-": without Docker the tile says so instead of a start failing (226/NAMESPACE)
+ReadWritePaths=/run/xps-services -/run/docker.sock
 
 [Install]
 WantedBy=multi-user.target

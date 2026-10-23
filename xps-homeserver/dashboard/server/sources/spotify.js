@@ -118,7 +118,7 @@ export function createSpotifySource({
       quiet = false;
     } catch (error) {
       // Switched off in the control center, or still starting: no Spotify
-      if (!quiet) log.warn?.(`[spotify] go-librespot unter ${base} nicht erreichbar: ${networkReason(error)} (Lautsprecher aus oder noch nicht gestartet?)`);
+      if (!quiet) log.warn?.(`[spotify] go-librespot unter ${base} nicht erreichbar: ${networkReason(error)} – normal, solange der Lautsprecher aus ist oder startet`);
       quiet = true;
     }
     const t = now();

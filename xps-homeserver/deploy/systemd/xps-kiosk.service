@@ -16,6 +16,9 @@ PAMName=login
 SupplementaryGroups=video input
 TTYPath=/dev/tty1
 StandardInput=tty
+# What the script, Cage and Chromium say: journalctl -u xps-kiosk, not the screen
+StandardOutput=journal
+StandardError=journal
 TTYReset=yes
 TTYVHangup=yes
 TTYVTDisallocate=yes

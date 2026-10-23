@@ -54,6 +54,16 @@ class SettingsTest(unittest.TestCase):
             self.assertIsNone(doctor.read_env(Path(tmp) / "fehlt.env"))
 
 
+class ReasonTest(unittest.TestCase):
+    def test_network_errors_in_words(self):
+        import urllib.error
+        self.assertEqual(doctor.reason(urllib.error.URLError(ConnectionRefusedError(111, "Connection refused"))),
+                         "Verbindung abgelehnt, der Dienst läuft nicht")
+        self.assertEqual(doctor.reason(TimeoutError("timed out")), "keine Antwort")
+        self.assertEqual(doctor.reason(urllib.error.HTTPError("http://x", 502, "Bad Gateway", {}, None)), "HTTP 502")
+        self.assertEqual(doctor.reason(ValueError("Expecting value")), "Expecting value")
+
+
 class ExecutableTest(unittest.TestCase):
     def test_everything_units_and_links_start_is_executable(self):
         # setup-xps.sh links xps-display and xps-doctor, the units start the rest
