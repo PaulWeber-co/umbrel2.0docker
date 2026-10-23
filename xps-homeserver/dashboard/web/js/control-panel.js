@@ -99,7 +99,7 @@ export function createPanel(root, { getState, onControl, onAccess = () => {}, on
     const result = await response.json().catch(() => ({}));
     if (response.status === 401) {
       onAccess({ ...(getState().access ?? {}), locked: true });
-      throw new Error('Gesperrt: bitte zuerst die PIN eingeben');
+      throw new Error(path === '/api/unlock' ? result.error ?? 'Falsche PIN' : 'Gesperrt: bitte zuerst die PIN eingeben');
     }
     if (!response.ok) throw new Error(result.error ?? `HTTP ${response.status}`);
     return result;

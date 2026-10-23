@@ -195,6 +195,11 @@ export async function runAction(id, name, payload = {}) {
     body: JSON.stringify(payload),
   });
   const body = await response.json().catch(() => ({}));
+  if (response.status === 401) {
+    // DASH_PIN is set and this browser is not unlocked: ask for the PIN
+    state.access = { ...(state.access ?? {}), locked: true };
+    dialog.open();
+  }
   if (!response.ok) throw new Error(body.error ?? `HTTP ${response.status}`);
   return body.result;
 }

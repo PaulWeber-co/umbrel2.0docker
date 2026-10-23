@@ -383,7 +383,7 @@ export function init(ctx) {
             ctx.relayout(true);
             renderAddList();
           }
-          flash('Speichern fehlgeschlagen');
+          flash(/^Gesperrt/.test(error.message) ? 'Gesperrt: PIN in der Steuerung eingeben' : 'Speichern fehlgeschlagen');
         } finally {
           pending--;
         }
