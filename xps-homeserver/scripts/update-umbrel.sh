@@ -20,10 +20,17 @@ if [ -z "$repository" ] || [ -z "$tag" ]; then
 	exit 1
 fi
 
+old_image=$(read_image "$ENV_FILE")
+
 log "Lade $repository:$tag."
 if ! docker pull --quiet "$repository:$tag" >/dev/null; then
-	log "Das Image ließ sich nicht laden; Umbrel läuft unverändert weiter."
+	if [ -n "$old_image" ]; then
+		log "Das Image ließ sich nicht laden; Umbrel läuft unverändert weiter."
+	else
+		log "Das Image ließ sich nicht laden; Umbrel ist noch nicht installiert."
+	fi
 	log "Ist der GitHub-Build durchgelaufen und das Paket öffentlich? (docs/betrieb.md, Abschnitt Umbrel-Image)"
+	log "Oder fehlt das Internet? Dann später erneut: sudo update-xps"
 	exit 1
 fi
 new_image=$(docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$repository:$tag" | grep -m1 "^$repository@" || true)
@@ -31,8 +38,6 @@ if [ -z "$new_image" ]; then
 	log "Kein Digest für $repository:$tag gefunden."
 	exit 1
 fi
-old_image=$(read_image "$ENV_FILE")
-
 candidate=$(mktemp "$(dirname -- "$ENV_FILE")/.umbrel.env.XXXXXX")
 trap 'rm -f "$candidate"' EXIT
 write_env "$ENV_FILE" "$candidate" "$new_image"
