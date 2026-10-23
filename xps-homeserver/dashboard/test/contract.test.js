@@ -8,8 +8,9 @@ import widgets from '../server/widgets/index.js';
 
 const config = loadConfig({ argv: ['--demo'], env: {}, envFile: '/nonexistent' });
 const ctx = { config, store: { read: async (_, fallback) => fallback, write: async () => {} }, log: console, now: () => new Date('2026-10-15T07:42:00+02:00') };
-// Widgets without a tile drive a feature module instead (web/js/features/)
-const FEATURE = { music: '../web/js/features/music.js', ambient: '../web/js/features/ambient.js' };
+// Widgets without a tile drive a feature module instead (web/js/features/),
+// or the control center on the server (the dark room → night clock)
+const FEATURE = { music: '../web/js/features/music.js', ambient: '../server/control.js' };
 
 for (const widget of widgets) {
   test(`widget ${widget.id} follows the contract`, async () => {

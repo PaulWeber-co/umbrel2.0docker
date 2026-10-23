@@ -5,6 +5,8 @@ function entity(config) {
   return /^todo\.[a-z0-9_]+$/.test(value) ? value : '';
 }
 
+const badRequest = (message) => Object.assign(new Error(message), { status: 400 });
+
 function serviceResult(response) {
   return response?.service_response ?? response;
 }
@@ -38,7 +40,7 @@ export default {
     async add(ctx) {
       if (ctx.demo) return;
       const title = String(ctx.payload.item ?? '').trim();
-      if (!title || title.length > 160) throw new Error('Aufgabe muss zwischen 1 und 160 Zeichen lang sein');
+      if (!title || title.length > 160) throw badRequest('Aufgabe muss zwischen 1 und 160 Zeichen lang sein');
       await haRequest(ctx, '/api/services/todo/add_item', {
         method: 'POST',
         body: { entity_id: entity(ctx.config), item: title },
@@ -47,7 +49,7 @@ export default {
     async complete(ctx) {
       if (ctx.demo) return;
       const uid = String(ctx.payload.uid ?? '').trim();
-      if (!uid || uid.length > 180) throw new Error('Ungültige Aufgaben-ID');
+      if (!uid || uid.length > 180) throw badRequest('Ungültige Aufgaben-ID');
       await haRequest(ctx, '/api/services/todo/update_item', {
         method: 'POST',
         body: { entity_id: entity(ctx.config), item: uid, status: 'completed' },

@@ -1,6 +1,7 @@
 // Ambient light from the webcam sensor service (scripts/xps-ambient.py), read
-// from the JSON file it writes. No tile: web/js/features/ambient.js switches to
-// the night view while the room is dark.
+// from the JSON file it writes. No tile: the control center (server/control.js)
+// switches to the night clock while the room is dark. paused means the
+// control center switched the camera off (screen dark or off).
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 
@@ -18,8 +19,8 @@ export function toWidgetData(state, now = Date.now()) {
   return {
     available: Boolean(state?.available && fresh),
     ambientPercent: fresh ? value('ambientPercent') : null,
-    backlightPercent: fresh ? value('backlightPercent') : null,
     dark: Boolean(state?.dark && fresh),
+    paused: Boolean(state?.paused),
   };
 }
 
@@ -33,5 +34,5 @@ export default {
     return toWidgetData(state);
   },
 
-  demo: () => ({ available: false, ambientPercent: null, backlightPercent: null, dark: false }),
+  demo: () => ({ available: false, ambientPercent: null, dark: false, paused: false }),
 };

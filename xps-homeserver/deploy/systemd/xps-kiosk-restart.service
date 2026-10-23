@@ -3,4 +3,4 @@ Description=Fresh start of the dashboard browser (long-running Chromium grows)
 
 [Service]
 Type=oneshot
-ExecStart=/bin/systemctl try-restart xps-kiosk@*.service
+ExecStart=/bin/systemctl try-restart xps-kiosk.service

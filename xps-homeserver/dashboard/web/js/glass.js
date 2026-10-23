@@ -1,3 +1,6 @@
+// The glass effect of tiles and the music view, from clear (0) to milky
+// (100). One value for every browser and the kiosk: the slider lives in the
+// control center, app.js saves it with PUT /api/settings.
 export const DEFAULT_GLASS = 55;
 
 export function normalizeGlass(value) {
@@ -30,38 +33,4 @@ export function applyGlass(stage, value) {
     stage.style.setProperty(property, setting);
   }
   return normalized;
-}
-
-export function initGlassSettings({ toggle, overlay, slider, close, keyboard }) {
-  const setOpen = (open) => {
-    overlay.hidden = !open;
-    toggle.setAttribute('aria-expanded', String(open));
-    toggle.setAttribute('aria-label', open ? 'Glas-Einstellungen schließen' : 'Glas-Einstellungen öffnen');
-    if (open) slider.focus();
-    else toggle.focus();
-  };
-
-  overlay.hidden = true;
-  toggle.setAttribute('aria-expanded', 'false');
-  toggle.setAttribute('aria-label', 'Glas-Einstellungen öffnen');
-  toggle.addEventListener('click', () => setOpen(overlay.hidden));
-  close.addEventListener('click', () => setOpen(false));
-  keyboard.addEventListener('keydown', (event) => {
-    if (overlay.hidden) return;
-    if (event.key === 'Escape') {
-      setOpen(false);
-      return;
-    }
-    if (event.key !== 'Tab') return;
-    if (event.shiftKey && keyboard.activeElement === close) {
-      event.preventDefault();
-      slider.focus();
-    } else if (!event.shiftKey && keyboard.activeElement === slider) {
-      event.preventDefault();
-      close.focus();
-    }
-  });
-  overlay.addEventListener('click', (event) => {
-    if (event.target === overlay) setOpen(false);
-  });
 }

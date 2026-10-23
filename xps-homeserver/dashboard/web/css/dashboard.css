@@ -33,6 +33,7 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .stage[data-scene="morgen"] .bg { background: linear-gradient(160deg, #6f8f8a, #2e4b47 55%, #142321); }
 .stage[data-scene="tag"] .bg { background: linear-gradient(160deg, #5fa8c9, #2b6f8c 55%, #12384a); }
 .stage[data-scene="abend"] .bg { background: linear-gradient(160deg, #c98a6f, #6b4251 55%, #251a26); }
+.stage[data-scene="spaet"] .bg { background: linear-gradient(160deg, #31455c, #142233 55%, #070c13); }
 .stage[data-scene="nacht"] .bg { background: #000; }
 .bg video { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.8s ease; }
 .bg video.on { opacity: 1; }
@@ -42,7 +43,7 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 /* Evening: warmer colours, less blue light */
 /* --warm: 0 … 1; evenings 1, the ambient-light feature may set it on #stage */
 .warm { background: rgb(255 146 52 / .2); mix-blend-mode: multiply; opacity: var(--warm, 0); transition: opacity 2.5s ease; pointer-events: none; z-index: 30; }
-.stage[data-scene="abend"] { --warm: 1; }
+.stage[data-scene="abend"], .stage[data-scene="spaet"] { --warm: 1; }
 .scrim { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(4, 10, 16, .38) 0%, rgba(4, 10, 16, 0) 42%), linear-gradient(0deg, rgba(4, 10, 16, .2), rgba(4, 10, 16, 0) 45%); }
 
 /* ---------- fixed header: never moves ---------- */
@@ -139,28 +140,15 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .editbar .add { display: flex; gap: 8px; }
 .editbar .add button { background: rgba(255, 255, 255, .16); color: #fff; }
 .editbar .done { background: #fff; color: #111; }
-.glass-settings-toggle { position: absolute; right: 32px; bottom: 32px; z-index: 31; width: 60px; height: 60px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, .32); border-radius: 50%; color: #fff; background: linear-gradient(145deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .08)), rgba(10, 17, 25, .48); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .32), 0 12px 30px -20px rgba(0, 0, 0, .8); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%); cursor: pointer; }
-.glass-settings-toggle .ic { width: 26px; height: 26px; }
-.glass-settings-toggle:hover { background-color: rgba(255, 255, 255, .18); }
-.glass-settings-toggle:focus-visible, .glass-settings-close:focus-visible { outline: 2px solid #fff; outline-offset: 5px; }
-.glass-settings-overlay { position: absolute; inset: 0; z-index: 45; display: grid; place-items: center; padding: 32px; box-sizing: border-box; background: rgba(3, 8, 13, .48); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
-.glass-settings-overlay[hidden] { display: none; }
-.glass-settings { width: min(560px, 100%); box-sizing: border-box; padding: 32px; border: 1px solid rgba(255, 255, 255, var(--glass-border)); border-radius: 32px; color: #fff; background: linear-gradient(145deg, rgba(255, 255, 255, var(--glass-top)), rgba(255, 255, 255, var(--glass-low)) 55%), rgba(12, 22, 34, var(--glass-base)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--glass-shine)), 0 30px 90px -35px rgba(0, 0, 0, .8); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); text-shadow: 0 1px 12px rgba(0, 0, 0, .28); }
-.glass-settings-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 30px; }
-.glass-settings-head h2 { margin: 0; font-size: 30px; font-weight: 500; letter-spacing: -.02em; }
-.glass-settings-head p { margin: 7px 0 0; font-size: 18px; opacity: .75; }
-.glass-settings-close { all: unset; width: 42px; height: 42px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; cursor: pointer; }
-.glass-settings-close .ic { width: 22px; height: 22px; }
-.glass-settings-label { display: block; margin-bottom: 12px; font-size: 20px; font-weight: 500; }
-.glass-range-row { display: flex; align-items: center; gap: 14px; }
-.glass-edge { font-size: 16px; opacity: .8; }
-.glass-range-row input { appearance: none; flex: 1; min-width: 0; height: 26px; margin: 0; padding: 0; background: transparent; cursor: pointer; }
-.glass-range-row input::-webkit-slider-runnable-track { height: 5px; border-radius: 3px; background: linear-gradient(90deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, .9)); }
-.glass-range-row input::-moz-range-track { height: 5px; border-radius: 3px; background: linear-gradient(90deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, .9)); }
-.glass-range-row input::-webkit-slider-thumb { appearance: none; width: 22px; height: 22px; margin-top: -9px; border: 1px solid rgba(255, 255, 255, .9); border-radius: 50%; background: rgba(255, 255, 255, .95); box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
-.glass-range-row input::-moz-range-thumb { width: 20px; height: 20px; border: 1px solid rgba(255, 255, 255, .9); border-radius: 50%; background: rgba(255, 255, 255, .95); box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
-.glass-range-row input:focus-visible { outline: 2px solid #fff; outline-offset: 6px; border-radius: 8px; }
-.glass-settings-note { margin: 24px 0 0; font-size: 16px; line-height: 1.4; opacity: .74; }
+.settings-toggle { position: absolute; right: 32px; bottom: 32px; z-index: 31; width: 60px; height: 60px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, .32); border-radius: 50%; color: #fff; background: linear-gradient(145deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .08)), rgba(10, 17, 25, .48); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .32), 0 12px 30px -20px rgba(0, 0, 0, .8); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%); cursor: pointer; }
+.settings-toggle .ic { width: 26px; height: 26px; }
+.settings-toggle:hover { background-color: rgba(255, 255, 255, .18); }
+.settings-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 5px; }
+.stage[data-edit="1"] .settings-toggle { display: none; }
+
+/* ---------- sleep: the control center turned the wall black (kiosk only) ---------- */
+.sleep { position: absolute; inset: 0; z-index: 70; background: #000; opacity: 0; visibility: hidden; transition: opacity 1s ease, visibility 0s linear 1s; }
+.stage[data-display="sleep"] .sleep { opacity: 1; visibility: visible; cursor: none; transition: opacity 1.4s ease; }
 
 /* ---------- night view: clock only, very dark ---------- */
 .night { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: #000; color: #ff9f5f; opacity: 0; visibility: hidden; transition: opacity 1.2s ease, visibility 0s linear 1.2s; z-index: 40; }

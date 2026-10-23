@@ -8,6 +8,8 @@ Requires=docker.service avahi-daemon.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/opt/xps-homeserver/xps-homeserver/deploy/airplay
+# Switched off in the control center (Steuerung → Funktionen): stays off
+ExecCondition=/usr/bin/python3 /opt/xps-homeserver/xps-homeserver/scripts/xps-control.py --wants airplay
 # The metadata pipe for the dashboard: it reads and writes (group), the
 # container only writes into it.
 ExecStartPre=/usr/bin/install -d -m 0755 /run/shairport-sync

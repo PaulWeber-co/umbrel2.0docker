@@ -139,8 +139,9 @@ export function init(ctx) {
   el.cover?.addEventListener('error', () => {
     if (coverSrc !== PLACEHOLDER) setCover(null);
   });
-  // Edit mode arranges the normal grid: music mode waits until it is done
-  new MutationObserver(() => safely(apply)).observe(stage, { attributes: true, attributeFilter: ['data-edit'] });
+  // Edit mode arranges the normal grid: music mode waits until it is done.
+  // data-musicmode="0": switched off in the control center (features/display.js)
+  new MutationObserver(() => safely(apply)).observe(stage, { attributes: true, attributeFilter: ['data-edit', 'data-musicmode'] });
   reducedMotion?.addEventListener?.('change', () => safely(apply));
 
   ctx.onEntry('music', (entry) => safely(() => update(entry)));
@@ -203,7 +204,7 @@ export function init(ctx) {
 
   // Music mode on or off, then the progress loop
   function apply() {
-    const next = Boolean(data?.active) && stage.dataset.edit !== '1';
+    const next = Boolean(data?.active) && stage.dataset.edit !== '1' && stage.dataset.musicmode !== '0';
     if (next !== shown) {
       shown = next;
       stage.dataset.music = shown ? '1' : '0';

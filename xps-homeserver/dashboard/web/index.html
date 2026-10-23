@@ -4,9 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>XPS Dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@200;300;400;500;600&display=swap">
+  <link rel="stylesheet" href="/css/fonts.css">
   <link rel="stylesheet" href="/css/dashboard.css">
   <link rel="stylesheet" href="/css/w-weg.css">
   <link rel="stylesheet" href="/css/w-fotos.css">
@@ -16,6 +14,7 @@
   <link rel="stylesheet" href="/css/w-server.css">
   <link rel="stylesheet" href="/css/w-dienste.css">
   <link rel="stylesheet" href="/css/w-tiles.css">
+  <link rel="stylesheet" href="/css/control.css">
   <script type="module" src="/js/app.js"></script>
 </head>
 <body>
@@ -54,7 +53,7 @@
 
   <main class="screen" id="screen">
     <div class="frame">
-      <div class="stage" id="stage" data-scene="tag" data-music="0" data-edit="0">
+      <div class="stage" id="stage" data-scene="tag" data-music="0" data-edit="0" data-display="on" data-musicmode="1">
         <div class="bg">
           <video id="v1" muted playsinline loop preload="auto" aria-hidden="true"></video>
           <video id="v2" muted playsinline loop preload="auto" aria-hidden="true"></video>
@@ -93,29 +92,15 @@
 
         <div class="status">
           <span class="chip" id="chip-offline"><svg class="ic"><use href="#i-wifi-off"/></svg>Keine Verbindung zum Server</span>
+          <span class="chip" id="chip-wall"><svg class="ic"><use href="#i-sliders"/></svg><span>Wandbildschirm aus</span></span>
         </div>
 
-        <div class="glass-settings-overlay" id="glass-settings-overlay" hidden>
-          <section class="glass-settings" id="glass-settings" role="dialog" aria-modal="true" aria-labelledby="glass-settings-title">
-            <div class="glass-settings-head">
-              <div>
-                <h2 id="glass-settings-title">Glas-Effekt</h2>
-                <p>Dashboard-Kacheln und Musikansicht</p>
-              </div>
-              <button class="glass-settings-close" type="button" id="glass-settings-close" aria-label="Einstellungen schließen"><svg class="ic"><use href="#i-x"/></svg></button>
-            </div>
-            <label class="glass-settings-label" for="glass-level">Transparenz</label>
-            <div class="glass-range-row">
-              <span class="glass-edge">Klar</span>
-              <input id="glass-level" type="range" min="0" max="100" step="1" value="55" aria-label="Glas-Effekt von klar bis milchig">
-              <span class="glass-edge">Milchig</span>
-            </div>
-            <p class="glass-settings-note">Gilt für alle Browser und den Kiosk am XPS.</p>
-          </section>
-        </div>
-        <button class="glass-settings-toggle" id="glass-settings-toggle" type="button" aria-label="Glas-Einstellungen öffnen" aria-controls="glass-settings" aria-expanded="false">
+        <button class="settings-toggle" id="settings-toggle" type="button" aria-label="Steuerung öffnen" aria-controls="control" aria-expanded="false">
           <svg class="ic"><use href="#i-sliders"/></svg>
         </button>
+
+        <!-- Control center says "schwarz": only the kiosk shows this (features/display.js) -->
+        <div class="sleep" aria-hidden="true"></div>
 
         <div class="editbar" role="toolbar" aria-label="Widgets bearbeiten">
           <span>Auf gleich große Kachel ziehen zum Tauschen, × zum Entfernen</span>
@@ -125,5 +110,10 @@
       </div>
     </div>
   </main>
+
+  <!-- The control center over the dashboard, sized for the window, not the stage -->
+  <div class="cp-overlay" id="control-overlay" hidden>
+    <section class="cp" id="control" role="dialog" aria-modal="true" aria-labelledby="control-title"></section>
+  </div>
 </body>
 </html>

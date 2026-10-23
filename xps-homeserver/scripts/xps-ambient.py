@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Measure room brightness with the webcam, adjust the backlight, keep nothing.
+"""Measure room brightness with the webcam, keep nothing.
 
 Every XPS_AMBIENT_INTERVAL seconds (in the dark XPS_AMBIENT_DARK_INTERVAL) a
 few frames are read at 16×12 grey pixels, the median of the last one is the
@@ -7,6 +7,12 @@ brightness, and the pixels are discarded at once: no image is ever written.
 The exposure is fixed first, otherwise the camera's automatic exposure would
 brighten a dark room until it looks like daylight. The webcam LED lights for
 about a second per measurement.
+
+Only numbers leave this service, in /run/xps-ambient/ambient.json: the
+dashboard switches to the night clock in a dark room, and xps-control sets
+the backlight from them. While the dashboard's host-state.json says
+"camera": false (screen dark or off, or the features that need the reading
+switched off) the camera stays off and its LED never lights.
 """
 import json
 import os
@@ -18,6 +24,7 @@ import time
 from pathlib import Path
 
 CAMERA = os.environ.get("XPS_CAMERA_DEVICE", "/dev/video0")
+HOST_STATE = Path(os.environ.get("XPS_HOST_STATE", "/var/lib/xps-dashboard/host-state.json"))
 OUTPUT_DIR = Path(os.environ.get("XPS_AMBIENT_DIR", "/run/xps-ambient"))
 OUTPUT_FILE = OUTPUT_DIR / "ambient.json"
 INTERVAL = max(10, int(os.environ.get("XPS_AMBIENT_INTERVAL", "45")))
@@ -28,22 +35,18 @@ GAIN = os.environ.get("XPS_CAMERA_GAIN", "0")
 FRAMES = 4  # the first frames after switching the camera on are too dark
 DARK_ON = max(0, min(254, int(os.environ.get("XPS_AMBIENT_DARK_ON", "16"))))
 DARK_OFF = max(DARK_ON + 1, min(255, int(os.environ.get("XPS_AMBIENT_DARK_OFF", "25"))))
-MIN_BACKLIGHT = max(1, min(100, int(os.environ.get("XPS_BACKLIGHT_MIN_PERCENT", "8"))))
-MAX_BACKLIGHT = max(MIN_BACKLIGHT, min(100, int(os.environ.get("XPS_BACKLIGHT_MAX_PERCENT", "85"))))
-GAMMA = max(0.1, min(3.0, float(os.environ.get("XPS_BACKLIGHT_GAMMA", "0.65"))))
 PIXEL_COUNT = 16 * 12
 dark = False
 
 
-def backlight_device():
-    configured = os.environ.get("XPS_BACKLIGHT_PATH")
-    candidates = [Path(configured)] if configured else sorted(Path("/sys/class/backlight").glob("*"))
-    for candidate in candidates:
-        brightness = candidate / "brightness"
-        maximum = candidate / "max_brightness"
-        if brightness.is_file() and maximum.is_file():
-            return brightness, maximum
-    return None, None
+def camera_wanted():
+    """False only when the dashboard explicitly switched the camera off; a
+    missing or broken file keeps the sensor running as before."""
+    try:
+        state = json.loads(HOST_STATE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return True
+    return not (isinstance(state, dict) and state.get("camera") is False)
 
 
 def lock_exposure():
@@ -83,26 +86,6 @@ def measure_camera():
     return level
 
 
-def set_backlight(ambient):
-    brightness, maximum = backlight_device()
-    if brightness is None:
-        return None
-    try:
-        max_value = int(maximum.read_text().strip())
-        if max_value <= 0:
-            return None
-        target_percent = round(MIN_BACKLIGHT + (MAX_BACKLIGHT - MIN_BACKLIGHT) * (ambient / 255) ** GAMMA)
-        target = max(1, round(max_value * target_percent / 100))
-        current = int(brightness.read_text().strip())
-        if abs(current - target) >= max(1, round(max_value * 0.01)):
-            brightness.write_text(f"{target}\n")
-            current = target
-        return round(current * 100 / max_value)
-    except OSError as error:
-        print(f"xps-ambient: Backlight konnte nicht gesetzt werden: {error}", file=sys.stderr, flush=True)
-        return None
-
-
 def write_state(state):
     OUTPUT_DIR.mkdir(mode=0o750, parents=True, exist_ok=True)
     fd, temporary = tempfile.mkstemp(prefix="ambient.", dir=OUTPUT_DIR, text=True)
@@ -122,42 +105,63 @@ def write_state(state):
             os.unlink(temporary)
 
 
-def unavailable_state():
+def unavailable_state(paused=False):
     return {
         "available": False,
+        "paused": paused,
+        "level": None,
         "ambientPercent": None,
-        "backlightPercent": None,
         "dark": dark,
         "capturedAt": round(time.time() * 1000),
         "intervalSeconds": DARK_INTERVAL,
     }
 
 
-def main():
+def measure_once():
     global dark
-    while True:
-        started = time.monotonic()
+    try:
+        level = measure_camera()
+        if dark and level >= DARK_OFF:
+            dark = False
+        elif not dark and level <= DARK_ON:
+            dark = True
+        write_state({
+            "available": True,
+            "paused": False,
+            "level": level,
+            "ambientPercent": round(level * 100 / 255),
+            "dark": dark,
+            "capturedAt": round(time.time() * 1000),
+            "intervalSeconds": DARK_INTERVAL if dark else INTERVAL,
+        })
+    except (OSError, RuntimeError, subprocess.SubprocessError, ValueError) as error:
+        print(f"xps-ambient: {error}", file=sys.stderr, flush=True)
         try:
-            level = measure_camera()
-            if dark and level >= DARK_OFF:
-                dark = False
-            elif not dark and level <= DARK_ON:
-                dark = True
-            write_state({
-                "available": True,
-                "ambientPercent": round(level * 100 / 255),
-                "backlightPercent": set_backlight(level),
-                "dark": dark,
-                "capturedAt": round(time.time() * 1000),
-                "intervalSeconds": DARK_INTERVAL if dark else INTERVAL,
-            })
-        except (OSError, RuntimeError, subprocess.SubprocessError, ValueError) as error:
-            print(f"xps-ambient: {error}", file=sys.stderr, flush=True)
-            try:
-                write_state(unavailable_state())
-            except OSError as write_error:
-                print(f"xps-ambient: {write_error}", file=sys.stderr, flush=True)
-        time.sleep(max(1, (DARK_INTERVAL if dark else INTERVAL) - (time.monotonic() - started)))
+            write_state(unavailable_state())
+        except OSError as write_error:
+            print(f"xps-ambient: {write_error}", file=sys.stderr, flush=True)
+
+
+def main():
+    # Checks the dashboard's wish every second, measures when one is due: a
+    # screen that wakes up gets a fresh reading at once, not after 45 s.
+    next_measurement = 0.0
+    paused = False
+    while True:
+        if not camera_wanted():
+            if not paused:
+                try:
+                    write_state(unavailable_state(paused=True))
+                except OSError as error:
+                    print(f"xps-ambient: {error}", file=sys.stderr, flush=True)
+                paused = True
+            next_measurement = 0.0
+        else:
+            paused = False
+            if time.monotonic() >= next_measurement:
+                measure_once()
+                next_measurement = time.monotonic() + (DARK_INTERVAL if dark else INTERVAL)
+        time.sleep(1)
 
 
 if __name__ == "__main__":
