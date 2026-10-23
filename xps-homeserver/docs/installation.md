@@ -18,9 +18,8 @@ Stunden, das meiste davon Warten. Einzelheiten zum Stick stehen in
 ## 0. Vorher
 
 - [ ] Was du vom XPS noch brauchst, sichern.
-- [ ] Dieser Stand muss auf `master` liegen, denn der XPS lädt `master`: den
-      Pull Request des Branches `claude/determined-lamport-2jjf67` auf GitHub
-      mergen.
+- [ ] Der XPS lädt `master`: Was dort liegt, wird installiert (dieser Stand
+      ist am 23.10.2026 nach `master` gemergt).
 - [ ] Auf GitHub unter *Actions → XPS Umbrel container image* ist der letzte
       Lauf auf `master` grün, und das Paket `xps-homeserver-umbrelos` ist
       öffentlich (beides am 23.10.2026 geprüft: ja). Ändert sich etwas unter
@@ -91,18 +90,24 @@ sudo git -C /opt/xps-homeserver sparse-checkout set xps-homeserver
 sudo /opt/xps-homeserver/xps-homeserver/scripts/setup-xps.sh
 ```
 
-Das Skript braucht 10–30 Minuten (Pakete, Hintergrundvideos, das Umbrel-Image
-mit gut 1 GB). Es richtet Grundsystem-Dienste, Dashboard, Steuerung, Kiosk,
-AirPlay, Webcam-Sensor und Umbrel ein. Am Ende steht „Fertig.“ mit allen
-Adressen. Es lässt sich jederzeit erneut starten.
+Das Skript braucht 10–40 Minuten (Pakete, Hintergrundvideos mit etwa 1 GB,
+das Umbrel-Image mit gut 1 GB). Es richtet Grundsystem-Dienste, Dashboard,
+Steuerung, Kiosk, Lautsprecher (AirPlay und Spotify), Webcam-Sensor und Umbrel
+ein, prüft am Ende alles (`xps-doctor --kurz`) und schreibt „Fertig.“ mit
+allen Adressen, dazu jede Warnung noch einmal. Das ganze Protokoll steht in
+`/var/log/xps-setup.log`. Bricht es ab, nennt es den Schritt; danach einfach
+erneut starten.
 
 ## 6. Erster Check
 
 ```sh
-systemctl --failed            # sollte leer sein
+sudo xps-doctor               # alles auf einen Blick: ✓ gut, ! Hinweis, ✗ Problem
 xps-display                   # Bildschirm: an – Zeitplan (bis 22:30)
-sudo docker ps                # umbrel, umbrel-port-publisher, xps-airplay
+sudo docker ps                # umbrel, umbrel-port-publisher, xps-airplay, xps-spotify
 ```
+
+Direkt nach dem Setup sind noch Hinweise normal: Kacheln mit Beispieldaten
+(Schritt 9) und keine PIN (`DASH_PIN`, ebenfalls Schritt 9).
 
 - [ ] Das Dashboard erscheint auf dem XPS-Display.
 - [ ] `http://xps.local:7777` zeigt es auch im Browser am Mac.

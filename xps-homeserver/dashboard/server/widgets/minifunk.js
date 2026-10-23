@@ -374,6 +374,14 @@ export default {
   intervalMs: 60_000,
   isConfigured: () => true,
 
+  configWarnings(config) {
+    const invite = config.get('DASH_KNUDDL_INVITE', '');
+    if (!invite) return [];
+    if (!secretFromInvite(invite)) return ['DASH_KNUDDL_INVITE ist keine Knuddl-Einladung (Knuddl → Mehr → Verbindung → Kopieren, sieht aus wie ABC123-K7F2…); Minifunk bleibt aus'];
+    if (!config.get('DASH_KNUDDL_URL', '')) return ['DASH_KNUDDL_URL fehlt (die Firebase-Adresse aus Knuddls config.js); Minifunk bleibt aus'];
+    return [];
+  },
+
   watch(ctx, emit) {
     if (!secretFromInvite(ctx.config.get('DASH_KNUDDL_INVITE')) || !ctx.config.get('DASH_KNUDDL_URL')) return () => {};
     const runner = createRunner(ctx, emit);

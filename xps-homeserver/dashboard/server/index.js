@@ -20,6 +20,14 @@ const server = createApp({ hub, store, config, control, webDir: join(DASHBOARD_D
 server.listen(config.port, config.host, () => {
   const { port } = server.address();
   console.log(`Dashboard läuft auf http://localhost:${port}${config.demo ? ' (Beispieldaten)' : ''}`);
+  // Once at start, for journalctl -u xps-dashboard: what shows real data, and
+  // settings that look mistyped (they would otherwise only show as samples)
+  if (!config.demo) {
+    const tiles = widgets.filter((widget) => widget.tile !== false && widget.id !== 'ambient');
+    const ids = (demo) => tiles.filter((widget) => hub.usesDemo(widget) === demo).map((widget) => widget.id).join(', ') || '–';
+    console.log(`Kacheln mit echten Daten: ${ids(false)}; mit Beispieldaten, weil eine Einstellung fehlt: ${ids(true)}`);
+    for (const widget of widgets) for (const warning of widget.configWarnings?.(config) ?? []) console.warn(`Einstellung: ${warning}`);
+  }
   hub.start();
   control.start().catch((error) => console.error('Steuerung:', error));
 });

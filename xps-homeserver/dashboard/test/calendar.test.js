@@ -74,6 +74,12 @@ test('Apple calendar links and Home Assistant end up in one list; a dead link hi
   // Only broken links: the tile says so instead of an empty week
   settings.DASH_CALENDAR_ICS = 'https://kaputt.example/kal.ics';
   delete settings.DASH_HA_CALENDAR_ENTITY;
-  await assert.rejects(calendar.fetch(ctx), /HTTP 404/);
+  await assert.rejects(calendar.fetch(ctx), (error) => {
+    // The tile's error goes to every browser: the secret link stays out of it
+    assert.match(error.message, /Kalender-Link \(kaputt\.example\): HTTP 404/);
+    assert.doesNotMatch(error.message, /kal\.ics/);
+    return true;
+  });
+  assert.deepEqual(calendar.configWarnings({ get: (key) => ({ DASH_CALENDAR_ICS: 'webcal://a.example/x, kalender', DASH_HA_CALENDAR_ENTITY: 'familie' })[key] ?? '' }).length, 2);
   assert.equal(calendar.isConfigured({ get: () => '' }), false);
 });

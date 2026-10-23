@@ -15,6 +15,7 @@
 // the page loads nothing from elsewhere.
 //
 // toState() and sameState() are pure and tested on their own.
+import { networkReason } from '../hub.js';
 import { coverDataUrl, END_DELAY_MS, inactiveState, MAX_COVER_BYTES, PAUSE_TIMEOUT_MS } from './shairport.js';
 
 export const DEFAULT_URL = 'http://127.0.0.1:3678';
@@ -117,7 +118,7 @@ export function createSpotifySource({
       quiet = false;
     } catch (error) {
       // Switched off in the control center, or still starting: no Spotify
-      if (!quiet) log.warn?.(`[spotify] nicht erreichbar (${error.message})`);
+      if (!quiet) log.warn?.(`[spotify] go-librespot unter ${base} nicht erreichbar: ${networkReason(error)} (Lautsprecher aus oder noch nicht gestartet?)`);
       quiet = true;
     }
     const t = now();

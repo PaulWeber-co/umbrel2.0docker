@@ -8,7 +8,7 @@
 #
 # The kiosk browser runs as the user xps-kiosk (no password, no sudo), which
 # this script creates; older versions took a login user as argument.
-set -euo pipefail
+set -Eeuo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 XPS_ROOT=$(cd -- "$SCRIPT_DIR/.." && pwd)
@@ -17,14 +17,29 @@ DEPLOY_ROOT=/opt/xps-homeserver
 CONFIG_DIR=/etc/xps-homeserver
 export DEBIAN_FRONTEND=noninteractive
 
-step() { printf '\n==> %s\n' "$*"; }
-warn() { printf 'Warnung: %s\n' "$*" >&2; }
+LOG=/var/log/xps-setup.log
+CURRENT_STEP="Start"
+WARNINGS=()
+step() {
+	CURRENT_STEP=$*
+	printf '\n==> %s (%s)\n' "$*" "$(date +%H:%M:%S)"
+}
+warn() {
+	WARNINGS+=("$*")
+	printf 'Warnung: %s\n' "$*" >&2
+}
 git_repo() { git -C "$REPO_ROOT" -c safe.directory="$REPO_ROOT" "$@"; }
 
 if [ "$(id -u)" -ne 0 ]; then
 	echo "Bitte mit sudo starten: sudo $0" >&2
 	exit 1
 fi
+
+# Everything also goes to the log, so a failed run can be read afterwards
+exec > >(tee -a "$LOG") 2>&1
+printf '\n===== setup-xps.sh %s, Stand %s =====\n' "$(date '+%Y-%m-%d %H:%M')" \
+	"$(git_repo log -1 --format='%h %s' 2>/dev/null || echo unbekannt)"
+trap 'echo; echo "FEHLER im Schritt \"$CURRENT_STEP\" (Zeile $LINENO). Das ganze Protokoll: $LOG" >&2; echo "Danach einfach erneut starten: sudo $0" >&2' ERR
 if [ "$REPO_ROOT" != "$DEPLOY_ROOT" ]; then
 	cat >&2 <<-EOF
 		Die Dienste erwarten das Repository unter $DEPLOY_ROOT. So holst du es
@@ -99,6 +114,7 @@ install -m 644 "$XPS_ROOT/deploy/tmpfiles/xps-homeserver.conf" /etc/tmpfiles.d/x
 systemd-tmpfiles --create /etc/tmpfiles.d/xps-homeserver.conf
 ln -sfn "$XPS_ROOT/scripts/update-xps.sh" /usr/local/sbin/update-xps
 ln -sfn "$XPS_ROOT/scripts/xps-display.py" /usr/local/bin/xps-display
+ln -sfn "$XPS_ROOT/scripts/xps-doctor.py" /usr/local/sbin/xps-doctor
 systemctl daemon-reload
 systemctl enable --now docker.service
 systemctl enable xps-dashboard.service xps-control.service xps-services.service xps-ambient.service \
@@ -119,12 +135,21 @@ step "Hintergrundvideos (Mixkit-Luftaufnahmen, nur was neu ist)"
 step "Umbrel"
 "$XPS_ROOT/scripts/update-umbrel.sh" || warn "Umbrel ist noch nicht auf dem neuesten Stand (siehe oben)"
 
-cat <<EOF
+step "Prüfung"
+"$XPS_ROOT/scripts/xps-doctor.py" --kurz || true
 
-Fertig.
+if [ "${#WARNINGS[@]}" -gt 0 ]; then
+	printf '\nFertig, mit %d Warnung(en):\n' "${#WARNINGS[@]}"
+	printf '  - %s\n' "${WARNINGS[@]}"
+else
+	printf '\nFertig.\n'
+fi
+cat <<EOF
   Dashboard:  http://xps.local:7777 (und auf dem Display)
   Steuerung:  http://xps.local:7777/steuerung (Bildschirm, Zeitplan, Funktionen)
   Umbrel:     http://umbrel.local
   Einstellen: sudoedit $CONFIG_DIR/dashboard.env, dann sudo systemctl restart xps-dashboard
+  Prüfen:     sudo xps-doctor
   Updates:    sudo update-xps
+  Protokoll:  $LOG
 EOF

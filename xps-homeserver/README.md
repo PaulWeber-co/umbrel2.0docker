@@ -26,6 +26,7 @@ Ein Dell XPS 13 9350 als Homeserver, der jahrelang ohne Pflege läuft:
 Wie die Teile zusammenhängen: [docs/architektur.md](docs/architektur.md).
 Einrichten, Steuerung, Updates, Backup und Notfälle: [docs/betrieb.md](docs/betrieb.md).
 Sicherheitsprüfung und Empfehlungen: [docs/sicherheit.md](docs/sicherheit.md).
+Läuft etwas nicht: `sudo xps-doctor` auf dem XPS prüft alles und sagt, woran es liegt.
 
 ## Stand
 
@@ -47,7 +48,7 @@ Sicherheitsprüfung und Empfehlungen: [docs/sicherheit.md](docs/sicherheit.md).
 | `installer/` | baut den USB-Stick; `installer/iso/xps/host/` ist die Server-Konfiguration des Grundsystems |
 | `dashboard/` | Server (Node.js, ohne Abhängigkeiten) und Oberfläche |
 | `deploy/` | Umbrel-Compose, Lautsprecher-Compose (AirPlay, Spotify), systemd-Units |
-| `scripts/` | `setup-xps.sh` richtet alles ein, `update-xps.sh` aktualisiert, Umbrel-Update/-Rollback, Steuerung (`xps-control.py`, `xps-display.py`), Kiosk-Start, Webcam- und Dienste-Messung |
+| `scripts/` | `setup-xps.sh` richtet alles ein, `update-xps.sh` aktualisiert, `xps-doctor.py` prüft alles, Umbrel-Update/-Rollback, Steuerung (`xps-control.py`, `xps-display.py`), Kiosk-Start, Webcam- und Dienste-Messung |
 | `docs/` | Installation, Architektur, Betrieb und Notfallplan, Sicherheit |
 
 ## Wo das liegt

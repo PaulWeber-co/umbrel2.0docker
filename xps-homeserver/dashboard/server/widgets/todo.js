@@ -56,6 +56,11 @@ export default {
   intervalMs: 60_000,
   isConfigured: (config) => Boolean(remindersList(config)) || (haConfigured(config) && Boolean(entity(config))),
 
+  configWarnings(config) {
+    const value = config.get('DASH_HA_TODO_ENTITY', '');
+    return value && !entity(config) ? [`DASH_HA_TODO_ENTITY=${value} ist keine To-do-Entität (todo.…)`] : [];
+  },
+
   async fetch(ctx) {
     const list = remindersList(ctx.config);
     if (list) return reminders.toWidgetData(await ctx.store.read(reminders.FILE, reminders.emptyState()), list);

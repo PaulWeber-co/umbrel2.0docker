@@ -159,7 +159,12 @@ test('round trip: the app funks, the XPS shows it, deletes it from the cloud and
   const ctx = { config, store, log: quiet, fetchJson: firebase.fetchJson, peek: () => ({ active: false }), now: () => new Date() };
   const stop = minifunk.watch(ctx, (data) => emitted.push(data));
   try {
-    for (let i = 0; i < 50 && !emitted.some((data) => data.items.length); i++) await new Promise((resolve) => setTimeout(resolve, 20));
+    // The browsers hear first, then the status goes out: wait for both (a
+    // loaded machine running every test file at once needs more than a second)
+    const photoReported = async () => (await open(key, firebase.db.get(`${base}/x/status`)))?.photoDay?.ABC123;
+    for (let i = 0; i < 250 && !(emitted.some((data) => data.items.length) && (await photoReported())); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
     const data = emitted.at(-1);
     assert.equal(data.items.length, 1);
     assert.equal(data.items[0].name, 'Lea');

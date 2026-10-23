@@ -232,16 +232,32 @@ Der Rollback tauscht nur das Image; Umbrels Daten (Volume
 
 ## Dienste prüfen
 
+Zuerst immer:
+
+```sh
+sudo xps-doctor
+```
+
+Das prüft WLAN, Uhrzeit, Speicherplatz, alle Dienste, die Container (Umbrel,
+AirPlay, Spotify), jede Kachel und die Einstellungen in der dashboard.env. Was
+nicht stimmt, steht mit ✗ da, mit den letzten Log-Zeilen und dem nächsten
+Schritt; ! sind Hinweise. Das Protokoll des letzten Setups oder Updates steht
+in `/var/log/xps-setup.log`, das Dashboard schreibt beim Start ins Journal,
+welche Kacheln echte Daten haben und welche Einstellung vertippt aussieht
+(`journalctl -u xps-dashboard -b`).
+
+Einzeln:
+
 ```sh
 systemctl --failed                      # alles, was nicht läuft
 xps-display                             # was der Bildschirm zeigt und warum
 systemctl status xps-dashboard          # Dashboard
 systemctl status xps-kiosk              # Display (Kiosk-Browser)
-systemctl status xps-control            # setzt die Steuerung um: Kiosk, AirPlay, Helligkeit
+systemctl status xps-control            # setzt die Steuerung um: Kiosk, Lautsprecher, Helligkeit
 systemctl status xps-airplay            # Lautsprecher (Logs: sudo docker logs xps-airplay bzw. xps-spotify)
 systemctl status xps-ambient            # Webcam-Helligkeit
 systemctl status xps-services           # Dienste-Statistik
-sudo docker ps                          # Umbrel und Co. (Logs: sudo docker logs umbrel)
+sudo docker ps                          # Umbrel, Lautsprecher (Logs: sudo docker logs umbrel)
 cat /var/lib/xps-homeserver/wl-status   # Kernel-Wächter: "ok <Kernel>" oder "pinned …"
 journalctl -u xps-wifi-watchdog         # WLAN-Aussetzer und was der Watchdog tat
 ```

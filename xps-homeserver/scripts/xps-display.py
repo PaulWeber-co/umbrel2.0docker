@@ -1,15 +1,5 @@
 #!/usr/bin/python3
-"""The control center from the command line, e.g. over SSH:
-
-  xps-display                     what the wall display shows and why
-  xps-display aus [Minuten]       screen off (kiosk stopped), default 60 min
-  xps-display schwarz [Minuten]   screen black, a tap wakes it
-  xps-display nacht [Minuten]     only the night clock
-  xps-display an [Minuten]        dashboard on
-  xps-display morgen              screen off until the schedule starts again
-  xps-display auto                back to automatic: ends a temporary state
-                                  and the modes "an" and "aus"
-  xps-display modus auto|an|aus   automatic, always on, or only a server
+"""The control center from the command line, e.g. over SSH (see HELP).
 
 It talks to the dashboard on this machine (http://127.0.0.1:7777), which
 needs no PIN, so any user logged in on the XPS can use it.
@@ -41,6 +31,20 @@ def call(method, path, body=None):
 
 DAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
 
+HELP = """Steuerung des Wandbildschirms von der Kommandozeile:
+
+  xps-display                     was der Bildschirm gerade zeigt und warum
+  xps-display aus [Minuten]       Bildschirm aus (Kiosk gestoppt), sonst 60 Min.
+  xps-display schwarz [Minuten]   Bildschirm schwarz, Antippen weckt ihn
+  xps-display nacht [Minuten]     nur die Nachtuhr
+  xps-display an [Minuten]        Dashboard an
+  xps-display morgen              aus, bis der Zeitplan wieder beginnt
+  xps-display auto                zurück zur Automatik: beendet einen
+                                  vorübergehenden Zustand und die Modi an/aus
+  xps-display modus auto|an|aus   Automatisch, Immer an oder nur Server
+
+Dasselbe gibt es im Browser unter http://xps.local:7777/steuerung."""
+
 
 def clock(ms):
     """22:30 today, else "Sa 07:00", in the XPS's time zone"""
@@ -63,7 +67,7 @@ def show(snapshot):
     print(f"Modus:      {mode}")
     status = snapshot.get("status") or {}
     if status:
-        print(f"Kiosk:      {status.get('kiosk', '?')}   AirPlay: {status.get('airplay', '?')}   Helligkeit: {status.get('backlightPercent', '?')} %")
+        print(f"Kiosk:      {status.get('kiosk', '?')}   Lautsprecher: {status.get('airplay', '?')}   Helligkeit: {status.get('backlightPercent', '?')} %")
 
 
 def main(args):
@@ -71,7 +75,7 @@ def main(args):
         return show(call("GET", "/api/control"))
     word = args[0].lower()
     if word in ("-h", "--help", "hilfe"):
-        print(__doc__)
+        print(HELP)
         return None
     if word == "auto":
         call("POST", "/api/control/override", {"clear": True})
@@ -83,7 +87,7 @@ def main(args):
     if word in STATES:
         minutes = int(args[1]) if len(args) > 1 and args[1].isdigit() else 60
         return show(call("POST", "/api/control/override", {"state": STATES[word], "minutes": minutes}))
-    sys.exit(__doc__)
+    sys.exit(HELP)
 
 
 if __name__ == "__main__":
