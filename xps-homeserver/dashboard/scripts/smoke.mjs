@@ -51,6 +51,12 @@ child.stdout.on('data', async (chunk) => {
       console.log(`  Widgets: ${ids.join(', ')}`);
     });
     await check('/api/layout', async (r) => { if (!Array.isArray((await r.json()).tiles)) throw new Error('/api/layout ohne tiles'); });
+    await check('/steuerung', async (r) => { if (!(await r.text()).includes('id="control"')) throw new Error('/steuerung ist nicht die Steuerung'); });
+    await check('/api/control', async (r) => {
+      const control = await r.json();
+      if (!control.effective?.display) throw new Error('/api/control ohne Bildschirmzustand');
+      console.log(`  Bildschirm: ${control.effective.display} (${control.effective.reason})`);
+    });
     stop(0, '✓ Smoke-Test bestanden');
   } catch (error) {
     stop(1, `✗ ${error.message}`);

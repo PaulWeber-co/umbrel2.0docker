@@ -12,7 +12,7 @@
 .di-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
 .di-name small { margin-left: 8px; font-size: 15px; font-weight: 400; opacity: .65; }
 .di-num { font-variant-numeric: tabular-nums; opacity: .88; white-space: nowrap; }
-.di-problem { grid-column: 2 / -1; min-width: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; color: var(--warn); }
+.di-problem { grid-column: 2 / -1; min-width: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; color: var(--warn); font-weight: 500; }
 .di-down .di-problem { color: inherit; opacity: .6; }
 .di-more { font-size: 15px; opacity: .6; }
 

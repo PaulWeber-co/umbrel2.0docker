@@ -18,6 +18,10 @@ trap 'stop; exit 0' INT TERM
 
 current=""
 while :; do
+	# A publisher that died (avahi restarted, name conflict) is started again
+	for pid in $pids; do
+		kill -0 "$pid" 2>/dev/null || current=""
+	done
 	ip=$(address)
 	if [ "$ip" != "$current" ]; then
 		stop

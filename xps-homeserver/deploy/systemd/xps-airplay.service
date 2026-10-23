@@ -1,5 +1,5 @@
 [Unit]
-Description=AirPlay 2 receiver "XPS Lautsprecher" (shairport-sync in Docker)
+Description=XPS speakers "XPS Lautsprecher": AirPlay 2 (shairport-sync) and Spotify Connect (go-librespot) in Docker
 After=network-online.target docker.service avahi-daemon.service
 Wants=network-online.target
 Requires=docker.service avahi-daemon.service
@@ -8,15 +8,26 @@ Requires=docker.service avahi-daemon.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/opt/xps-homeserver/xps-homeserver/deploy/airplay
+# Switched off in the control center (Steuerung → Funktionen): stays off
+ExecCondition=/usr/bin/python3 /opt/xps-homeserver/xps-homeserver/scripts/xps-control.py --wants airplay
 # The metadata pipe for the dashboard: it reads and writes (group), the
 # container only writes into it.
 ExecStartPre=/usr/bin/install -d -m 0755 /run/shairport-sync
 ExecStartPre=/bin/sh -c '[ -p /run/shairport-sync/metadata ] || mkfifo -m 0662 /run/shairport-sync/metadata; chgrp xps-dashboard /run/shairport-sync/metadata'
+# Spotify Connect runs as xps-spotify, whose IDs setup-xps.sh writes here,
+# with its config in the folder it may write (it keeps its state there)
+EnvironmentFile=/etc/xps-homeserver/spotify.env
+ExecStartPre=/usr/bin/install -d -m 0700 -o xps-spotify -g xps-spotify /var/lib/xps-spotify
+ExecStartPre=/bin/chown -R xps-spotify:xps-spotify /var/lib/xps-spotify
+ExecStartPre=/usr/bin/install -m 0600 -o xps-spotify -g xps-spotify go-librespot.yml /var/lib/xps-spotify/config.yml
 # The headphone jack starts muted on a fresh system
 ExecStartPre=-/bin/sh -c 'amixer -q -c 0 sset Master 85%% unmute; amixer -q -c 0 sset Headphone 100%% unmute; true'
 ExecStart=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml up --detach --remove-orphans
 ExecStop=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml down
 TimeoutStartSec=10min
+# The first start downloads both images; without network yet, try again
+Restart=on-failure
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target

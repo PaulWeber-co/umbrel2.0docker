@@ -33,23 +33,26 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .stage[data-scene="morgen"] .bg { background: linear-gradient(160deg, #6f8f8a, #2e4b47 55%, #142321); }
 .stage[data-scene="tag"] .bg { background: linear-gradient(160deg, #5fa8c9, #2b6f8c 55%, #12384a); }
 .stage[data-scene="abend"] .bg { background: linear-gradient(160deg, #c98a6f, #6b4251 55%, #251a26); }
+.stage[data-scene="spaet"] .bg { background: linear-gradient(160deg, #31455c, #142233 55%, #070c13); }
 .stage[data-scene="nacht"] .bg { background: #000; }
 .bg video { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.8s ease; }
 .bg video.on { opacity: 1; }
-.glow { opacity: 0; transition: opacity 1.4s ease; background: radial-gradient(50% 70% at 17% 66%, rgb(var(--glow) / .62), rgb(var(--glow) / 0) 72%); mix-blend-mode: screen; }
+/* The cover's colour glows behind it, in the side column under the clock */
+.glow { opacity: 0; transition: opacity 1.4s ease; background: radial-gradient(40% 60% at 15% 75%, rgb(var(--glow) / .62), rgb(var(--glow) / 0) 72%); mix-blend-mode: screen; }
 .tint { opacity: 0; transition: opacity 1.4s ease, background-color 1.4s ease; background-color: rgb(var(--glow) / .22); mix-blend-mode: soft-light; }
 .stage[data-music="1"] .glow, .stage[data-music="1"] .tint { opacity: 1; }
 /* Evening: warmer colours, less blue light */
 /* --warm: 0 … 1; evenings 1, the ambient-light feature may set it on #stage */
 .warm { background: rgb(255 146 52 / .2); mix-blend-mode: multiply; opacity: var(--warm, 0); transition: opacity 2.5s ease; pointer-events: none; z-index: 30; }
-.stage[data-scene="abend"] { --warm: 1; }
+.stage[data-scene="abend"], .stage[data-scene="spaet"] { --warm: 1; }
 .scrim { position: absolute; inset: 0; background: linear-gradient(100deg, rgba(4, 10, 16, .38) 0%, rgba(4, 10, 16, 0) 42%), linear-gradient(0deg, rgba(4, 10, 16, .2), rgba(4, 10, 16, 0) 45%); }
 
 /* ---------- fixed header: never moves ---------- */
-.head { position: absolute; left: 96px; top: 74px; width: 640px; text-shadow: 0 2px 30px rgba(0, 0, 0, .28); }
-.greet { font-size: 36px; font-weight: 400; opacity: .94; }
-.time { font-size: 190px; font-weight: 200; letter-spacing: -.05em; line-height: .9; margin: 14px 0 12px -10px; font-variant-numeric: tabular-nums; }
-.date { font-size: 36px; font-weight: 400; opacity: .86; }
+.head { position: absolute; left: 96px; top: 58px; width: 640px; text-shadow: 0 2px 30px rgba(0, 0, 0, .28); }
+/* Two balanced lines, as wide as the clock below */
+.greet { max-width: var(--side-w, 496px); font-size: 30px; font-weight: 400; line-height: 1.16; opacity: .94; text-wrap: balance; }
+.time { font-size: 190px; font-weight: 200; letter-spacing: -.05em; line-height: .9; margin: 4px 0 4px -10px; font-variant-numeric: tabular-nums; }
+.date { font-size: 34px; font-weight: 400; opacity: .86; }
 
 /* ---------- tiles ---------- */
 .dash { position: absolute; inset: 0; transition: opacity 1s ease; }
@@ -60,7 +63,7 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border: 1px solid rgba(255, 255, 255, var(--glass-border));
   box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, var(--glass-shine)), inset 0 -1px 0 rgba(255, 255, 255, .12), 0 24px 60px -28px rgba(0, 10, 20, .55);
-  text-shadow: 0 1px 14px rgba(0, 0, 0, .2);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .22), 0 1px 14px rgba(0, 0, 0, .26);
   transition: opacity .45s ease .1s, visibility 0s, background .25s ease, backdrop-filter .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
 .t::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(130% 70% at 0% 0%, rgba(255, 255, 255, var(--glass-shine)), rgba(255, 255, 255, 0) 48%), radial-gradient(90% 60% at 100% 100%, rgba(255, 255, 255, var(--glass-mid)), rgba(255, 255, 255, 0) 55%); }
@@ -109,20 +112,38 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .hours li b { font-weight: 500; font-size: 22px; font-variant-numeric: tabular-nums; }
 .compact .hours { display: none; }
 
-/* ---------- music mode (player filled by js/music.js) ---------- */
-.player { position: absolute; left: 96px; top: 480px; width: 1180px; height: 520px; display: flex; gap: 56px; align-items: flex-end; opacity: 0; visibility: hidden; transform: translateY(24px); transition: opacity .6s ease, transform .8s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .8s; }
-.stage[data-music="1"] .player { opacity: 1; visibility: visible; transform: none; transition: opacity .7s ease .25s, transform .9s cubic-bezier(.2, .8, .2, 1) .2s; }
-.stage[data-scene="nacht"] .player { opacity: 0; visibility: hidden; }
-.cover { display: block; width: 440px; height: 440px; flex: none; object-fit: cover; border-radius: 30px; background: rgba(255, 255, 255, .1); box-shadow: 0 40px 90px -30px rgb(var(--glow) / .9), 0 0 0 1px rgba(255, 255, 255, .25); }
-.pinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; text-shadow: 0 2px 30px rgba(0, 0, 0, .3); }
-.stage[data-music="1"] .pinfo { box-sizing: border-box; padding: 26px 30px 24px; border: 1px solid rgba(255, 255, 255, var(--glass-border)); border-radius: 32px; background: linear-gradient(145deg, rgba(255, 255, 255, var(--glass-top)), rgba(255, 255, 255, var(--glass-low)) 48%, rgba(10, 20, 32, var(--glass-base))), rgba(12, 22, 34, var(--glass-base)); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--glass-shine)), 0 24px 56px -32px rgba(0, 8, 18, .75); transition: background .25s ease, backdrop-filter .25s ease, border-color .25s ease, box-shadow .25s ease; }
-.eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 22px; opacity: .85; margin-bottom: 10px; }
-.eyebrow .ic { font-size: 26px; }
-.ptitle { font-size: 76px; font-weight: 500; letter-spacing: -.03em; line-height: 1.02; text-wrap: balance; }
-.partist { font-size: 38px; opacity: .92; }
-.palbum { font-size: 26px; opacity: .7; }
-.prog { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; font-size: 21px; }
-.prog .bar { height: 8px; border-radius: 4px; }
+/* ---------- the side column under the clock: music or Minifunk ----------
+   x 96 … 592, y 372 … 998: flush with the clock left and right (--side-w,
+   measured in app.js) and with the bottom row of tiles. Its contents stand
+   at the bottom and grow upwards. */
+.side { position: absolute; left: 96px; top: 372px; width: var(--side-w, 496px); height: 626px; pointer-events: none; }
+.side > * { pointer-events: auto; }
+.stage[data-scene="nacht"] .side { opacity: 0; visibility: hidden; }
+
+/* Shared building blocks: a glass card for the words, a photo under it */
+.side-card {
+  position: relative; box-sizing: border-box; padding: 14px 22px 15px; border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, var(--glass-border));
+  background: linear-gradient(145deg, rgba(255, 255, 255, var(--glass-top)), rgba(255, 255, 255, var(--glass-low)) 48%, rgba(10, 20, 32, var(--glass-base))), rgba(12, 22, 34, var(--glass-base));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, var(--glass-shine)), 0 24px 56px -32px rgba(0, 8, 18, .75);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .22), 0 1px 14px rgba(0, 0, 0, .26);
+  transition: background .25s ease, backdrop-filter .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+.side-photo { display: block; width: 100%; height: auto; aspect-ratio: 1; flex: none; object-fit: cover; border-radius: 30px; background: rgba(255, 255, 255, .1); box-shadow: 0 40px 90px -30px rgb(var(--glow) / .9), 0 0 0 1px rgba(255, 255, 255, .25); }
+
+/* Pops up: rises a little and grows from the cover's corner */
+.player, .funk-view { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: stretch; gap: 10px; opacity: 0; visibility: hidden; transform: translateY(28px) scale(.96); transform-origin: 0 100%; transition: opacity .5s ease, transform .7s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .7s; }
+.stage[data-music="1"] .player, .funk-view.on { opacity: 1; visibility: visible; transform: none; transition: opacity .6s ease .1s, transform .8s cubic-bezier(.2, .9, .25, 1.05) .05s; }
+.stage.no-anim .player { transition: none; }
+
+/* Music: title and progress flush above the cover, exactly as wide */
+.pinfo { display: flex; flex-direction: column; gap: 3px; }
+.psource { position: absolute; top: 16px; right: 20px; font-size: 22px; opacity: .7; }
+.ptitle { padding-right: 34px; font-size: 30px; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; }
+.partist { font-size: 19px; opacity: .88; }
+.prog { margin-top: 9px; display: flex; align-items: center; gap: 12px; font-size: 15px; font-variant-numeric: tabular-nums; opacity: .9; }
+.prog .bar { flex: 1; height: 5px; border-radius: 3px; }
 
 /* ---------- edit mode ---------- */
 .t .x { position: absolute; top: 12px; right: 12px; width: 48px; height: 48px; border-radius: 24px; border: 0; display: none; align-items: center; justify-content: center; font-size: 24px; color: #111; background: rgba(255, 255, 255, .92); cursor: pointer; z-index: 3; }
@@ -139,28 +160,15 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .editbar .add { display: flex; gap: 8px; }
 .editbar .add button { background: rgba(255, 255, 255, .16); color: #fff; }
 .editbar .done { background: #fff; color: #111; }
-.glass-settings-toggle { position: absolute; right: 32px; bottom: 32px; z-index: 31; width: 60px; height: 60px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, .32); border-radius: 50%; color: #fff; background: linear-gradient(145deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .08)), rgba(10, 17, 25, .48); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .32), 0 12px 30px -20px rgba(0, 0, 0, .8); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%); cursor: pointer; }
-.glass-settings-toggle .ic { width: 26px; height: 26px; }
-.glass-settings-toggle:hover { background-color: rgba(255, 255, 255, .18); }
-.glass-settings-toggle:focus-visible, .glass-settings-close:focus-visible { outline: 2px solid #fff; outline-offset: 5px; }
-.glass-settings-overlay { position: absolute; inset: 0; z-index: 45; display: grid; place-items: center; padding: 32px; box-sizing: border-box; background: rgba(3, 8, 13, .48); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
-.glass-settings-overlay[hidden] { display: none; }
-.glass-settings { width: min(560px, 100%); box-sizing: border-box; padding: 32px; border: 1px solid rgba(255, 255, 255, var(--glass-border)); border-radius: 32px; color: #fff; background: linear-gradient(145deg, rgba(255, 255, 255, var(--glass-top)), rgba(255, 255, 255, var(--glass-low)) 55%), rgba(12, 22, 34, var(--glass-base)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--glass-shine)), 0 30px 90px -35px rgba(0, 0, 0, .8); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); text-shadow: 0 1px 12px rgba(0, 0, 0, .28); }
-.glass-settings-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 30px; }
-.glass-settings-head h2 { margin: 0; font-size: 30px; font-weight: 500; letter-spacing: -.02em; }
-.glass-settings-head p { margin: 7px 0 0; font-size: 18px; opacity: .75; }
-.glass-settings-close { all: unset; width: 42px; height: 42px; flex: none; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; cursor: pointer; }
-.glass-settings-close .ic { width: 22px; height: 22px; }
-.glass-settings-label { display: block; margin-bottom: 12px; font-size: 20px; font-weight: 500; }
-.glass-range-row { display: flex; align-items: center; gap: 14px; }
-.glass-edge { font-size: 16px; opacity: .8; }
-.glass-range-row input { appearance: none; flex: 1; min-width: 0; height: 26px; margin: 0; padding: 0; background: transparent; cursor: pointer; }
-.glass-range-row input::-webkit-slider-runnable-track { height: 5px; border-radius: 3px; background: linear-gradient(90deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, .9)); }
-.glass-range-row input::-moz-range-track { height: 5px; border-radius: 3px; background: linear-gradient(90deg, rgba(255, 255, 255, .28), rgba(255, 255, 255, .9)); }
-.glass-range-row input::-webkit-slider-thumb { appearance: none; width: 22px; height: 22px; margin-top: -9px; border: 1px solid rgba(255, 255, 255, .9); border-radius: 50%; background: rgba(255, 255, 255, .95); box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
-.glass-range-row input::-moz-range-thumb { width: 20px; height: 20px; border: 1px solid rgba(255, 255, 255, .9); border-radius: 50%; background: rgba(255, 255, 255, .95); box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
-.glass-range-row input:focus-visible { outline: 2px solid #fff; outline-offset: 6px; border-radius: 8px; }
-.glass-settings-note { margin: 24px 0 0; font-size: 16px; line-height: 1.4; opacity: .74; }
+.settings-toggle { position: absolute; right: 32px; bottom: 32px; z-index: 31; width: 60px; height: 60px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, .32); border-radius: 50%; color: #fff; background: linear-gradient(145deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .08)), rgba(10, 17, 25, .48); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .32), 0 12px 30px -20px rgba(0, 0, 0, .8); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%); cursor: pointer; }
+.settings-toggle .ic { width: 26px; height: 26px; }
+.settings-toggle:hover { background-color: rgba(255, 255, 255, .18); }
+.settings-toggle:focus-visible { outline: 2px solid #fff; outline-offset: 5px; }
+.stage[data-edit="1"] .settings-toggle { display: none; }
+
+/* ---------- sleep: the control center turned the wall black (kiosk only) ---------- */
+.sleep { position: absolute; inset: 0; z-index: 70; background: #000; opacity: 0; visibility: hidden; transition: opacity 1s ease, visibility 0s linear 1s; }
+.stage[data-display="sleep"] .sleep { opacity: 1; visibility: visible; cursor: none; transition: opacity 1.4s ease; }
 
 /* ---------- night view: clock only, very dark ---------- */
 .night { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; background: #000; color: #ff9f5f; opacity: 0; visibility: hidden; transition: opacity 1.2s ease, visibility 0s linear 1.2s; z-index: 40; }

@@ -18,11 +18,13 @@ PrivateNetwork=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
+ProtectKernelTunables=true
 ProtectKernelModules=true
 ProtectControlGroups=true
 DevicePolicy=closed
 DeviceAllow=/dev/video0 rw
-ReadWritePaths=/run/xps-ambient /sys/class/backlight
+# Only numbers go out, to /run/xps-ambient; the backlight is xps-control's
+ReadWritePaths=/run/xps-ambient
 
 [Install]
 WantedBy=multi-user.target

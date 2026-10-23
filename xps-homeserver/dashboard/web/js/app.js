@@ -1,27 +1,40 @@
 // Front end of the dashboard: loads /api/state, builds a tile per layout
 // entry, keeps every tile current through Server-Sent Events, runs the clock
-// and switches scenes by time of day.
+// and switches scenes by time of day. The sliders button opens the control
+// center (control-panel.js) over it. The kiosk on the XPS loads the page as
+// /?kiosk=1; only there the screen goes dark when the control center says so.
+import { bindDialog, createPanel } from './control-panel.js';
 import { applyRects, normalRects } from './layout.js';
-import { createScenes, GREETINGS, sceneAt } from './scene.js';
-import * as ambient from './features/ambient.js';
+import { createScenes, dayNumber, sceneAt } from './scene.js';
+import * as display from './features/display.js';
 import * as edit from './features/edit.js';
+import * as minifunk from './features/minifunk.js';
 import * as music from './features/music.js';
-import { applyGlass, DEFAULT_GLASS, initGlassSettings } from './glass.js';
+import { applyGlass, DEFAULT_GLASS } from './glass.js';
 import { $, $$, esc, icon } from './util.js';
 import widgets from './widgets/index.js';
 
 const stage = $('#stage');
-const state = { name: '', timezone: 'Europe/Berlin', widgets: {}, layout: { tiles: [], hidden: [] }, scale: 1 };
+const kiosk = new URLSearchParams(location.search).has('kiosk');
+const state = {
+  name: '',
+  timezone: 'Europe/Berlin',
+  demo: false,
+  widgets: {},
+  layout: { tiles: [], hidden: [] },
+  control: null,
+  access: null,
+  glassLevel: DEFAULT_GLASS,
+  scale: 1,
+};
 const scenes = createScenes(stage);
 
 /* ---------- glass level: one setting for every browser and the kiosk ---------- */
-const glassControl = $('#glass-level');
 let glassSaveTimer = null;
 
 function applyGlassLevel(value) {
-  const normalized = applyGlass(stage, value);
-  glassControl.value = String(normalized);
-  return normalized;
+  state.glassLevel = applyGlass(stage, value);
+  return state.glassLevel;
 }
 
 async function saveGlassLevel(value) {
@@ -40,19 +53,58 @@ async function saveGlassLevel(value) {
 }
 
 applyGlassLevel(DEFAULT_GLASS);
-initGlassSettings({
-  toggle: $('#glass-settings-toggle'),
-  overlay: $('#glass-settings-overlay'),
-  slider: glassControl,
-  close: $('#glass-settings-close'),
-  keyboard: document,
-});
-glassControl.addEventListener('input', () => {
-  const value = applyGlassLevel(glassControl.value);
+// The slider in the control center: live while dragging, saved shortly after
+function setGlass(value, { save }) {
+  const normalized = applyGlassLevel(value);
   clearTimeout(glassSaveTimer);
-  glassSaveTimer = setTimeout(() => saveGlassLevel(value), 180);
+  if (save) saveGlassLevel(normalized);
+  else glassSaveTimer = setTimeout(() => saveGlassLevel(normalized), 180);
+}
+
+/* ---------- control center ---------- */
+const controlListeners = [];
+function deliverControl(snapshot) {
+  state.control = snapshot;
+  for (const listener of controlListeners) listener(snapshot);
+  panel.update();
+}
+const panel = createPanel($('#control'), {
+  getState: () => state,
+  onControl: deliverControl,
+  onAccess: (access) => {
+    state.access = access;
+    panel.update();
+  },
+  onLayout: (layout) => {
+    state.layout = layout;
+    buildTiles();
+    relayout(true);
+    panel.update();
+  },
+  onGlass: setGlass,
+  onClose: () => dialog.close(),
+  onArrange: () => {
+    dialog.close();
+    stage.dataset.edit = '1';
+  },
 });
-glassControl.addEventListener('change', () => saveGlassLevel(Number(glassControl.value)));
+const dialog = bindDialog({ toggle: $('#settings-toggle'), overlay: $('#control-overlay'), panel: $('#control'), onOpen: () => panel.update() });
+
+/* ---------- the side column ends where the clock ends ----------
+   Cover, photo and their cards are exactly as wide as the time from its left
+   edge to the right edge of the last digit; 496 px in Onest, measured once
+   the font is there (tabular digits: every time is equally wide). */
+function measureClock() {
+  const time = $('.head .time');
+  // Only real digits count: before the first tick it shows "--:--"
+  if (!/^\d\d:\d\d$/.test(time?.textContent ?? '')) return;
+  const range = document.createRange();
+  range.selectNodeContents(time);
+  const right = range.getBoundingClientRect().right;
+  const left = $('.head').getBoundingClientRect().left;
+  const width = Math.round((right - left) / (state.scale || 1));
+  if (width > 300 && width < 640) stage.style.setProperty('--side-w', `${width}px`);
+}
 
 /* ---------- scale the 1920×1080 stage to the window ---------- */
 function fit() {
@@ -87,7 +139,7 @@ export function renderTile(id) {
   const body = el.querySelector('.body');
   try {
     body.innerHTML = module
-      ? module.render(entry?.data ?? null, { compact: stage.dataset.music === '1', entry })
+      ? module.render(entry?.data ?? null, { compact: false, entry })
       : `<div class="lbl">${esc(id)}</div><div class="loading">kommt bald</div>`;
   } catch (error) {
     console.error(`Widget ${id}:`, error);
@@ -98,29 +150,28 @@ export function renderTile(id) {
   el.classList.toggle('is-demo', Boolean(entry?.demo));
 }
 
-// A feature such as music mode can move tiles elsewhere: it registers a
-// provider that returns rects (Map id → [x, y, w, h] | null) or null for "normal".
-let rectsProvider = () => null;
-// The ambient-light feature can force a scene ("nacht" when the room is dark);
-// null means "by time of day".
+// The display feature can force a scene ("nacht" when the control center
+// shows the night clock); null means "by time of day".
 let sceneOverride = () => null;
 
 export function relayout(animate = true) {
-  const rects = rectsProvider(state.layout) ?? normalRects(state.layout);
-  applyRects($$('#tiles .t'), rects, { animate, scale: state.scale });
+  applyRects($$('#tiles .t'), normalRects(state.layout), { animate, scale: state.scale });
 }
 
-/* ---------- features that are not tiles: music mode, edit mode, ambient light ----------
+/* ---------- features that are not tiles: music mode, edit mode, display state ----------
    Each feature module exports init(ctx) and is listed in FEATURES below. */
 const entryListeners = new Map();
 function deliver(entry) {
   state.widgets[entry.id] = entry;
   renderTile(entry.id);
   for (const listener of entryListeners.get(entry.id) ?? []) listener(entry);
+  if (dialog.isOpen()) panel.update();
 }
 const featureContext = {
   stage,
   state,
+  kiosk,
+  scenes,
   relayout,
   renderTile,
   buildTiles: () => buildTiles(),
@@ -131,14 +182,16 @@ const featureContext = {
     entryListeners.get(id).push(listener);
     if (state.widgets[id]) listener(state.widgets[id]);
   },
-  setRectsProvider(provider) {
-    rectsProvider = provider;
-  },
   setSceneOverride(provider) {
     sceneOverride = provider;
   },
+  // Called with every snapshot of the control center (server/control.js)
+  onControl(listener) {
+    controlListeners.push(listener);
+    if (state.control) listener(state.control);
+  },
 };
-const FEATURES = [music, edit, ambient];
+const FEATURES = [music, minifunk, edit, display];
 
 /* ---------- widget actions ----------
    A widget module only writes markup: <button data-action="toggle"
@@ -152,6 +205,11 @@ export async function runAction(id, name, payload = {}) {
     body: JSON.stringify(payload),
   });
   const body = await response.json().catch(() => ({}));
+  if (response.status === 401) {
+    // DASH_PIN is set and this browser is not unlocked: ask for the PIN
+    state.access = { ...(state.access ?? {}), locked: true };
+    dialog.open();
+  }
   if (!response.ok) throw new Error(body.error ?? `HTTP ${response.status}`);
   return body.result;
 }
@@ -185,11 +243,12 @@ function onTileAction(event) {
 $('#tiles').addEventListener('click', onTileAction);
 $('#tiles').addEventListener('submit', onTileAction);
 
-/* ---------- clock, greeting, scene ---------- */
+/* ---------- clock and scene ----------
+   The greeting above the clock never changes (index.html). */
 function tick() {
   const now = new Date();
   const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: state.timezone })
+    new Intl.DateTimeFormat('de-DE', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: state.timezone })
       .formatToParts(now)
       .map((p) => [p.type, p.value]),
   );
@@ -201,9 +260,10 @@ function tick() {
   $$('.js-date').forEach((el) => {
     if (el.textContent !== date) el.textContent = date;
   });
-  scenes.set(sceneOverride() ?? sceneAt(Number(parts.hour) * 60 + Number(parts.minute), state.widgets.wetter?.data?.sun));
-  const greeting = GREETINGS[scenes.scene] + (state.name ? `, ${state.name}` : '');
-  if ($('#greet').textContent !== greeting) $('#greet').textContent = greeting;
+  scenes.set(
+    sceneOverride() ?? sceneAt(Number(parts.hour) * 60 + Number(parts.minute), state.widgets.wetter?.data?.sun),
+    dayNumber(Number(parts.year), Number(parts.month), Number(parts.day)),
+  );
 }
 
 /* ---------- live updates ---------- */
@@ -222,14 +282,17 @@ function connect() {
   events.addEventListener('widget', (event) => deliver(JSON.parse(event.data)));
   events.addEventListener('settings', (event) => {
     const value = Number(JSON.parse(event.data).glassLevel);
-    if (Number.isFinite(value) && document.activeElement !== glassControl) applyGlassLevel(value);
+    if (Number.isFinite(value) && document.activeElement?.dataset?.glass === undefined) applyGlassLevel(value);
+    panel.update();
   });
+  events.addEventListener('control', (event) => deliverControl(JSON.parse(event.data)));
   events.addEventListener('layout', (event) => {
     // Our own edits come back here too; only rebuild for changes made elsewhere.
     if (event.data === JSON.stringify(state.layout)) return;
     state.layout = JSON.parse(event.data);
     buildTiles();
     relayout(true);
+    panel.update();
   });
 }
 
@@ -241,12 +304,24 @@ async function boot() {
   });
   const response = await fetch('/api/state');
   const data = await response.json();
-  Object.assign(state, { name: data.name, timezone: data.timezone, widgets: data.widgets, layout: data.layout });
+  Object.assign(state, {
+    name: data.name,
+    timezone: data.timezone,
+    demo: data.demo,
+    widgets: data.widgets,
+    layout: data.layout,
+    control: data.control,
+    access: data.access,
+  });
   applyGlassLevel(data.settings?.glassLevel ?? DEFAULT_GLASS);
+  scenes.setPool(data.backgrounds);
   buildTiles();
   relayout(false);
   for (const feature of FEATURES) feature.init(featureContext);
+  if (location.hash === '#steuerung') dialog.open();
   tick();
+  measureClock();
+  document.fonts?.ready.then(measureClock);
   setInterval(tick, 1000);
   connect();
 }

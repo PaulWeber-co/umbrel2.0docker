@@ -480,7 +480,7 @@ body {
           <div class="b-time js-time">07:42</div>
           <div class="b-meta"><span class="js-greet">Guten Morgen, Paul</span><span class="sep">·</span><span class="js-date">Donnerstag, 15. Oktober</span></div>
         </header>
-        <div class="b-place js-place">Nebelwald</div>
+        <div class="b-place js-place">Nebel über dem Waldtal</div>
 
         <div class="t first" data-id="wetter">
           <div class="b-lbl">Wetter · Hamburg</div>
@@ -685,12 +685,13 @@ body {
     c: '<b>C · Leitstand</b>: Dunkles Rauchglas, mehr Daten, Live-Werte vom Server. Gut lesbar auch abends.'
   };
   const NAMES = { wetter: 'Wetter', weg: 'Arbeitsweg', fotos: 'Fotos', kal: 'Kalender', server: 'Server', todo: 'To-dos', home: 'Zuhause', termin: 'Termin', rot: 'Server & Fotos', heute: 'Heute' };
-  const PLACES = { morgen: 'Nebelwald am Morgen', tag: 'Küste von oben', tal: 'Flusstal in den Bergen', abend: 'Felsküste bei Sonnenuntergang', nacht: 'See in der Dämmerung' };
+  // Clips from dashboard/scripts/backgrounds.txt (fetch-backgrounds.sh names them <scene>-<id>)
+  const PLACES = { 'morgen-2793': 'Nebel über dem Waldtal', 'tag-50180': 'Stadt am Meer', 'tag-36615': 'Felsküste von oben', 'abend-5002': 'Bergsee im Abendrot', 'spaet-42342': 'Stadt bei Nacht' };
   const SCENES = {
-    morgen: { clips: ['morgen'], at: [7, 42], greet: 'Guten Morgen', accent: '#9fe3d6' },
-    tag: { clips: ['tag', 'tal'], at: [13, 15], greet: 'Hallo', accent: '#a6d8ff' },
-    abend: { clips: ['abend'], at: [19, 48], greet: 'Guten Abend', accent: '#ffb878' },
-    nacht: { clips: ['nacht'], at: [23, 30], greet: 'Gute Nacht', accent: '#ff9f5f' }
+    morgen: { clips: ['morgen-2793'], at: [7, 42], greet: 'Guten Morgen', accent: '#9fe3d6' },
+    tag: { clips: ['tag-50180', 'tag-36615'], at: [13, 15], greet: 'Hallo', accent: '#a6d8ff' },
+    abend: { clips: ['abend-5002'], at: [19, 48], greet: 'Guten Abend', accent: '#ffb878' },
+    nacht: { clips: ['spaet-42342'], at: [23, 30], greet: 'Gute Nacht', accent: '#ff9f5f' }
   };
 
   /* ---------- layouts: [x, y, w, h] on the 1920×1080 display ---------- */

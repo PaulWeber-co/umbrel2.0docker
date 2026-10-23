@@ -24,7 +24,20 @@ ProtectKernelModules=true
 ProtectControlGroups=true
 RestrictSUIDSGID=true
 LockPersonality=true
-ReadWritePaths=/var/lib/xps-dashboard /run/shairport-sync
+# The only service reachable from the network gets no more than it needs
+# (not MemoryDenyWriteExecute: Node's JIT writes code)
+CapabilityBoundingSet=
+PrivateDevices=true
+ProtectClock=true
+ProtectKernelLogs=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallArchitectures=native
+# The AirPlay pipe comes from /etc/tmpfiles.d/xps-homeserver.conf; "-" keeps a
+# missing directory from failing the start (226/NAMESPACE).
+ReadWritePaths=/var/lib/xps-dashboard -/run/shairport-sync
 
 [Install]
 WantedBy=multi-user.target

@@ -1,9 +1,39 @@
-# Background videos for the dashboard: <name> <Mixkit video id> <what it shows>
+# Aerial clips behind the dashboard: <scene> <Mixkit video id> <what it shows>
+#
+# A small pool per scene (morgen, tag, abend, spaet). The wall plays two
+# clips of a scene each day and the next two the day after, so over the days
+# it walks through the whole list (web/js/scene.js). Every clip here exists
+# at 1920×1080 on Mixkit, so nothing is upscaled.
+#
 # Free under the Mixkit Stock Video Free License (https://mixkit.co/license/),
 # which allows using them but not redistributing the files, so they are
-# downloaded instead of committed. The name says when the dashboard shows it.
-morgen 35078 Foggy pine forest, top aerial shot
-tag    31728 Calm sea reaching the beach, top aerial shot
-tal    15919 River valley with snowy mountains
-abend  8657  Sunset drone flyover of a rocky sea coast
-nacht  4998  Lake at dusk from the air
+# downloaded instead of committed: dashboard/scripts/fetch-backgrounds.sh.
+# Remove a line and the next run deletes the clip; add one and it is fetched.
+
+# Morning: mist, first light
+morgen 2793  Fog drifting over a wooded valley
+morgen 50869 Green forest under the morning mist
+morgen 4396  Snowy peaks rising out of the clouds
+morgen 44366 Long beach in low sunlight
+
+# Day: coasts, mountains, cities
+tag    5008  Turquoise bay between forested islands
+tag    36615 Coast with rock towers in the sea
+tag    42495 Turquoise water along a sandy beach, from above
+tag    50145 Lagoon and sandbanks below a mountain
+tag    4132  Alpine peaks under moving clouds
+tag    41401 River canyon in green mountains
+tag    50180 City on the coast, sailboats in the bay
+tag    49825 River and bridges through a city
+
+# Evening: sunsets
+abend  5002  Red sunset over a mountain lake
+abend  5372  Sunset glow on a small gulf
+abend  50154 Calm sea in the last light
+abend  41375 High above a city at dusk
+
+# Late evening and night: city lights
+spaet  42342 City centre at night
+spaet  49878 Big city at night
+spaet  42343 Towers and traffic at night
+spaet  4998  Lake at dusk

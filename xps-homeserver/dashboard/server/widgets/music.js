@@ -1,15 +1,37 @@
-// AirPlay music mode. No tile of its own: while something plays on the XPS
-// speakers (shairport-sync, see server/sources/shairport.js) the front end
-// (web/js/music.js) moves the tiles aside and shows the player.
+// Music mode. No tile of its own: while something plays on the XPS speakers
+// the front end (web/js/features/music.js) shows the player under the clock.
+// Two receivers feed it:
+//   AirPlay   shairport-sync, metadata through a pipe (server/sources/shairport.js)
+//   Spotify   go-librespot as a Spotify Connect speaker, asked over its local
+//             API (server/sources/spotify.js)
+// Whichever plays is shown, with `via` saying which ("airplay", "spotify");
+// if both claim to, the one that started last.
 //
 // Settings:
 //   DASH_SHAIRPORT_PIPE   metadata pipe of shairport-sync, default
 //                         /run/shairport-sync/metadata
-//   DASH_DEMO_MUSIC       "1": in demo mode a sample track plays
+//   DASH_SPOTIFY_URL      go-librespot's API, default http://127.0.0.1:3678;
+//                         "off" leaves Spotify out
+//   DASH_DEMO_MUSIC       "1" (AirPlay) or "spotify": in demo mode a sample
+//                         track plays
 //
-// The pipe pushes, so watch() publishes every change at once; fetch() only
-// repeats the current state. Without shairport-sync the state stays inactive.
+// Both sources push, so watch() publishes every change at once; fetch() only
+// repeats the current state. Without the receivers the state stays inactive.
 import { createShairportSource, DEFAULT_PIPE, inactiveState } from '../sources/shairport.js';
+import { createSpotifySource, DEFAULT_URL as SPOTIFY_URL } from '../sources/spotify.js';
+
+// Of both receivers' states the one to show: the playing one, else the
+// active one; with both playing (or both paused) the one active since later
+export function pickState(airplay, spotify, since = {}) {
+  const tagged = [
+    { ...(airplay ?? inactiveState()), via: 'airplay' },
+    { ...(spotify ?? inactiveState()), via: 'spotify' },
+  ];
+  const active = tagged.filter((state) => state.active);
+  if (!active.length) return { ...inactiveState(), via: null };
+  active.sort((a, b) => Number(b.playing) - Number(a.playing) || (since[b.via] ?? 0) - (since[a.via] ?? 0));
+  return active[0];
+}
 
 // The running source per hub context, so fetch() can read its state
 const sources = new WeakMap();
@@ -36,7 +58,7 @@ export const DEMO_COVER = `data:image/svg+xml;base64,${Buffer.from(DEMO_COVER_SV
 
 const DEMO_TRACK = { title: 'Weites Land', artist: 'Beispiel-Künstlerin', album: 'Demo-Album', source: 'Pauls iPhone', duration: 222 };
 
-const demoEnabled = (config) => typeof config?.get === 'function' && config.get('DASH_DEMO_MUSIC', '0') === '1';
+const demoEnabled = (config) => typeof config?.get === 'function' && ['1', 'spotify'].includes(config.get('DASH_DEMO_MUSIC', '0'));
 
 export default {
   id: 'music',
@@ -45,27 +67,45 @@ export default {
   isConfigured: () => true,
 
   watch(ctx, emit) {
-    const source = createShairportSource({
+    const states = { airplay: inactiveState(), spotify: inactiveState() };
+    const since = {};
+    let shown = null;
+    const update = (via, state) => {
+      if (state.active && !states[via].active) since[via] = Date.now();
+      states[via] = state;
+      shown = pickState(states.airplay, states.spotify, since);
+      emit(shown);
+    };
+    const airplay = createShairportSource({
       path: ctx.config.get('DASH_SHAIRPORT_PIPE', DEFAULT_PIPE),
       log: ctx.log,
-      onChange: (state) => emit(state),
+      onChange: (state) => update('airplay', state),
     });
-    sources.set(ctx, source);
-    source.start();
+    const spotifyUrl = ctx.config.get('DASH_SPOTIFY_URL', SPOTIFY_URL);
+    const spotify =
+      spotifyUrl === 'off'
+        ? null
+        : createSpotifySource({ url: spotifyUrl, fetchImpl: ctx.fetchImpl ?? globalThis.fetch, log: ctx.log, onChange: (state) => update('spotify', state) });
+    const running = { get state() { return shown ?? pickState(states.airplay, states.spotify, since); } };
+    sources.set(ctx, running);
+    airplay.start();
+    spotify?.start();
     return () => {
-      source.stop();
-      if (sources.get(ctx) === source) sources.delete(ctx);
+      airplay.stop();
+      spotify?.stop();
+      if (sources.get(ctx) === running) sources.delete(ctx);
     };
   },
 
   fetch(ctx) {
-    return sources.get(ctx)?.state ?? inactiveState();
+    return sources.get(ctx)?.state ?? { ...inactiveState(), via: null };
   },
 
-  // Inactive unless DASH_DEMO_MUSIC=1; then the sample track plays in a loop,
+  // Inactive unless DASH_DEMO_MUSIC is set; then the sample track plays in a loop,
   // its position follows the clock.
   demo({ config, now } = {}) {
-    if (!demoEnabled(config)) return inactiveState();
+    if (!demoEnabled(config)) return { ...inactiveState(), via: null };
+    const spotify = config.get('DASH_DEMO_MUSIC') === 'spotify';
     const at = (now?.() ?? new Date()).getTime();
     const position = Math.round(((at / 1000 + 48) % DEMO_TRACK.duration) * 1000) / 1000;
     return {
@@ -74,7 +114,8 @@ export default {
       title: DEMO_TRACK.title,
       artist: DEMO_TRACK.artist,
       album: DEMO_TRACK.album,
-      source: DEMO_TRACK.source,
+      source: spotify ? 'Spotify' : DEMO_TRACK.source,
+      via: spotify ? 'spotify' : 'airplay',
       coverUrl: DEMO_COVER,
       position,
       duration: DEMO_TRACK.duration,

@@ -18,7 +18,8 @@ export const DEFAULT_FILE = '/run/xps-services/services.json';
 const STALE_INTERVALS = 4; // this many missed samples: the data counts as stale
 
 // Names for projects the XPS itself brings along
-const KNOWN = { 'xps-airplay': 'AirPlay', 'home-assistant': 'Home Assistant', immich: 'Immich', nextcloud: 'Nextcloud' };
+// (xps-airplay is the speakers' compose project: AirPlay and Spotify Connect)
+const KNOWN = { 'xps-airplay': 'Lautsprecher', 'home-assistant': 'Home Assistant', immich: 'Immich', nextcloud: 'Nextcloud' };
 
 // "a=Eins, b = Zwei" → Map { a → "Eins", b → "Zwei" }
 export function parseNames(text) {
@@ -37,7 +38,7 @@ const parseList = (text) => new Set(String(text ?? '').split(',').map((s) => s.t
 
 // "shop-api_db" → "Shop Api Db"
 export const prettyName = (id) =>
-  KNOWN[id] ?? String(id).replace(/[-_]+/g, ' ').trim().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+  (Object.hasOwn(KNOWN, id) ? KNOWN[id] : null) ?? String(id).replace(/[-_]+/g, ' ').trim().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
 
 // A container that finished its job (an init or migration step) is fine;
 // one that should be up and is not is a problem.
@@ -126,6 +127,7 @@ const demoSample = () => ({
     { scope: 'host', project: 'shop', service: 'api', state: 'running', cpuPercent: 2.1, memBytes: 160 * MIB, startedAt: ago(5 * 3600) },
     { scope: 'host', project: 'shop', service: 'db', state: 'running', health: 'unhealthy', cpuPercent: 0.9, memBytes: 290 * MIB, startedAt: ago(40 * 60) },
     { scope: 'host', project: 'xps-airplay', service: 'shairport-sync', state: 'running', cpuPercent: 0.2, memBytes: 24 * MIB, startedAt: ago(9 * 86_400) },
+    { scope: 'host', project: 'xps-airplay', service: 'spotify', state: 'running', cpuPercent: 0.1, memBytes: 18 * MIB, startedAt: ago(9 * 86_400) },
   ],
 });
 

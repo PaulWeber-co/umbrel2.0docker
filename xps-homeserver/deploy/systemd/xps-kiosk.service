@@ -1,0 +1,34 @@
+[Unit]
+Description=Wall dashboard on the XPS display (Cage + Chromium)
+After=network-online.target systemd-user-sessions.service xps-dashboard.service
+Wants=network-online.target
+Requires=xps-dashboard.service
+Conflicts=getty@tty1.service
+ConditionPathExists=/opt/xps-homeserver/xps-homeserver/scripts/xps-kiosk.sh
+
+[Service]
+Type=simple
+# A user of its own without a password, sudo or shell: the browser shows only
+# the local dashboard, but it is the largest program on the XPS and renders
+# data from the network (AirPlay covers, Home Assistant names).
+User=xps-kiosk
+PAMName=login
+SupplementaryGroups=video input
+TTYPath=/dev/tty1
+StandardInput=tty
+# What the script, Cage and Chromium say: journalctl -u xps-kiosk, not the screen
+StandardOutput=journal
+StandardError=journal
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+# Whether the screen runs at all is the control center's call (Steuerung →
+# "Aus – nur Server"); a skipped start is no failure and no restart.
+ExecCondition=+/usr/bin/python3 /opt/xps-homeserver/xps-homeserver/scripts/xps-control.py --wants kiosk
+ExecStart=/opt/xps-homeserver/xps-homeserver/scripts/xps-kiosk.sh
+Restart=always
+RestartSec=3
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

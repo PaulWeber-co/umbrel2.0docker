@@ -3,7 +3,9 @@
 # router (default gateway, or XPS_WATCHDOG_TARGET); after 3 misses in a row it
 # reconnects, after 6 it reloads the wl driver, after 15 minutes offline it
 # reboots, at most once every 6 hours and never in the first 30 minutes after
-# a boot, so a router outage does not turn into a reboot loop.
+# a boot, so a router outage does not turn into a reboot loop. While the
+# network stays away the cycle repeats every 15 minutes, so a skipped reboot
+# never ends the recovery attempts.
 set -u
 
 TARGET=${XPS_WATCHDOG_TARGET:-}
@@ -27,28 +29,28 @@ while :; do
 		continue
 	fi
 	misses=$((misses + 1))
-	case $misses in
+	case $((misses % 15)) in
 	3)
-		log "kein Netz seit 3 Minuten: WLAN neu verbinden"
+		log "kein Netz seit $misses Minuten: WLAN neu verbinden"
 		nmcli radio wifi off; sleep 3; nmcli radio wifi on
 		;;
 	6)
-		log "kein Netz seit 6 Minuten: wl-Treiber neu laden"
+		log "kein Netz seit $misses Minuten: wl-Treiber neu laden"
 		nmcli radio wifi off
 		modprobe -r wl && sleep 2 && modprobe wl
 		nmcli radio wifi on
 		;;
-	15)
+	0)
 		uptime_s=$(cut -d. -f1 /proc/uptime)
 		last=$(cat "$STATE" 2>/dev/null || echo 0)
 		now=$(date +%s)
 		if [ "$uptime_s" -ge 1800 ] && [ $((now - last)) -ge 21600 ]; then
-			log "kein Netz seit 15 Minuten: Neustart"
+			log "kein Netz seit $misses Minuten: Neustart"
 			mkdir -p "$(dirname "$STATE")"
 			echo "$now" >"$STATE"
 			systemctl reboot
 		else
-			log "kein Netz seit 15 Minuten, Neustart ausgelassen (eben erst gestartet oder schon neu gestartet)"
+			log "kein Netz seit $misses Minuten, Neustart ausgelassen (eben erst gestartet oder schon neu gestartet)"
 		fi
 		;;
 	esac

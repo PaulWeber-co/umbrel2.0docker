@@ -16,7 +16,8 @@
 //                pipe): called once at start unless in demo mode, emit(data)
 //                publishes at once, returns a function that stops watching.
 //                fetch() still runs every intervalMs and returns the current state.
-//   ctx = { config, store, log, now, fetchJson, fetchText }
+//   ctx = { config, store, log, now, fetchJson, fetchText, peek }
+//   peek(id) is the latest data of another widget (Minifunk asks for music)
 //
 // Updates whose data did not change are not sent to the browsers again.
 
@@ -41,6 +42,7 @@ export class Hub {
       now: () => new Date(),
       fetchJson: (url, options) => fetchJson(fetchImpl, url, { timeoutMs, ...options }),
       fetchText: (url, options) => fetchText(fetchImpl, url, { timeoutMs, ...options }),
+      peek: (id) => this.#entries.get(id)?.data ?? null,
     };
   }
 
@@ -111,8 +113,10 @@ export class Hub {
 
   async action(id, name, payload) {
     const widget = this.#widgets.get(id);
-    const run = widget?.actions?.[name];
-    if (!run) {
+    // Only the widget's own actions: names like "constructor" or "toString"
+    // would otherwise reach Object.prototype through the URL
+    const run = widget?.actions && Object.hasOwn(widget.actions, name) ? widget.actions[name] : null;
+    if (typeof run !== 'function') {
       const error = new Error(`Widget ${id} kennt die Aktion ${name} nicht`);
       error.status = 404;
       throw error;
@@ -149,8 +153,30 @@ export function redact(url) {
   return String(url).replace(/([?&](?:key|token|auth|apikey|api_key|access_token)=)[^&]+/gi, '$1…');
 }
 
+// "fetch failed" says nothing; the cause does (ENOTFOUND, ECONNREFUSED, a
+// certificate problem), and the log and the tile's error show it
+export function networkReason(error) {
+  if (error?.name === 'TimeoutError' || error?.name === 'AbortError') return 'keine Antwort (Zeitüberschreitung)';
+  const cause = error?.cause;
+  const code = cause?.code ?? error?.code;
+  const known = {
+    ENOTFOUND: 'Name nicht gefunden (Tippfehler oder kein Internet?)',
+    EAI_AGAIN: 'Name nicht auflösbar (kein Internet?)',
+    ECONNREFUSED: 'Verbindung abgelehnt (läuft der Dienst?)',
+    EHOSTUNREACH: 'Rechner nicht erreichbar',
+    ENETUNREACH: 'kein Netz',
+    ECONNRESET: 'Verbindung abgebrochen',
+  };
+  return known[code] ?? (code ? `${code}${cause?.message ? ` – ${cause.message}` : ''}` : cause?.message || error?.message || String(error));
+}
+
 async function request(fetchImpl, url, { timeoutMs = 15000, method = 'GET', headers = {}, body } = {}) {
-  const response = await fetchImpl(url, { method, headers, body, signal: AbortSignal.timeout(timeoutMs) });
+  let response;
+  try {
+    response = await fetchImpl(url, { method, headers, body, signal: AbortSignal.timeout(timeoutMs) });
+  } catch (error) {
+    throw new Error(`${method} ${redact(url)}: ${networkReason(error)}`, { cause: error });
+  }
   if (!response.ok) throw new Error(`${method} ${redact(url)}: HTTP ${response.status}`);
   return response;
 }

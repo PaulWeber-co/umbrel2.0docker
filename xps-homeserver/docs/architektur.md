@@ -1,9 +1,10 @@
 # Architektur
 
 Stand: Phase 0 ist gebaut und in QEMU getestet. Phase 1 bis 6 sind umgesetzt:
-Basissystem, Umbrel, sieben Widgets in Design A, Kiosk, AirPlay,
-Webcam-Regelung und Betriebsanleitung. WLAN, Display, Audio, Kamera und
-Backlight müssen am XPS praktisch verifiziert werden.
+Basissystem, Umbrel, acht Kacheln in Design A, Kiosk, AirPlay,
+Webcam-Regelung, Steuerung für Bildschirm und Funktionen, Betriebsanleitung
+und Sicherheitsprüfung ([sicherheit.md](sicherheit.md)). WLAN, Display,
+Audio, Kamera und Backlight müssen am XPS praktisch verifiziert werden.
 
 ## Überblick
 
@@ -23,11 +24,17 @@ Dell XPS 13 9350 · Debian 13 ohne Desktop · nur WLAN
 │   └── umbrel-port-publisher . macht App-Ports im Heimnetz erreichbar
 │
 ├── xps-dashboard ............. Backend: sammelt Daten, cached, verteilt sie per
-│                               WebSocket; liefert das Frontend aus
-├── kiosk ..................... cage + Chromium im Vollbild auf dem Display
-├── AirPlay ................... shairport-sync → Kopfhörerbuchse, Metadaten
-│                               ans Dashboard
-└── xps-ambient ............... Webcam → Raumhelligkeit, ohne Netzwerkzugriff
+│                               Server-Sent Events; liefert Frontend und
+│                               Steuerung aus; entscheidet, was das Display zeigt
+├── xps-control ............... root, ohne Netz: setzt die Entscheidung um
+│                               (Kiosk, AirPlay, Backlight, Display aus)
+├── xps-kiosk ................. cage + Chromium im Vollbild auf dem Display,
+│                               als eigener Benutzer ohne Rechte
+├── Lautsprecher .............. shairport-sync (AirPlay) und go-librespot
+│                               (Spotify Connect) → Kopfhörerbuchse,
+│                               Titel und Cover ans Dashboard
+├── xps-ambient ............... Webcam → Raumhelligkeit, ohne Netzwerkzugriff
+└── xps-services .............. Docker-Statistik für die Dienste-Kachel
 ```
 
 ## Entscheidungen
@@ -77,6 +84,10 @@ Umbrel-Updates ab.
 | Umbrel-Apps (installiert, läuft, CPU/RAM je App, Update verfügbar), Umbrel-Version | Umbrels offizielle MCP-Schnittstelle unter `http://umbrel.local/mcp` mit einem Zugangstoken aus den Umbrel-Einstellungen. `get_system_info`, `get_system_resources` und `list_apps` brauchen keine Freigaben. Der Token kann also nur lesen, nichts ändern (geprüft in `packages/umbreld/source/modules/mcp/tools/`). |
 | Anzahl Fotos und Videos, belegter Platz | Immich-API mit eigenem API-Schlüssel |
 | Smart Home, To-dos, Kalender | Home Assistant (Umbrel-App), Long-Lived Access Token |
+| Apple Kalender | iCalendar-Links der Kalender-App (*Öffentlicher Kalender*), Serientermine rechnet `server/sources/ics.js` selbst aus |
+| Apple Erinnerungen | ein Kurzbefehl auf dem iPhone schickt die Liste und holt die Änderungen der Wand ab (`server/sources/reminders.js`) |
+| Minifunk | der verschlüsselte Raum der Knuddl-App in deren Firebase-Datenbank (`server/knuddl.js`) |
+| Hintergrundvideos | Mixkit-Luftaufnahmen, beim Setup geladen (`dashboard/scripts/backgrounds.txt`) |
 | Wetter | Open-Meteo, ohne Schlüssel |
 | Songinfos und Cover | Metadaten von shairport-sync |
 | Raumhelligkeit | `xps-ambient`, nur eine Zahl |
@@ -148,6 +159,52 @@ einmal in einen Kernel ohne `wl`, bootet er einmalig in den letzten guten
 neu. Deshalb darf unattended-upgrades nach Kernel-Updates um 04:30 neu
 starten.
 
+### Steuerung: wer den Bildschirm schaltet
+
+Was das Display zeigt (an, Nachtuhr, schwarz, aus), entscheidet das
+Dashboard in `server/control.js`: Modus, Zeitplan, Schnellaktionen und die
+Regeln (dunkler Raum über die Webcam, AirPlay, Antippen, Akkubetrieb,
+Anwesenheit aus Home Assistant). Dort laufen alle Eingaben zusammen, und dort
+ist die Logik testbar. Die Einstellungen liegen in `control.json`, die
+Entscheidung schreibt das Dashboard nach `host-state.json`, beide im
+Datenordner `/var/lib/xps-dashboard`.
+
+Umsetzen braucht root (systemctl, `/sys/class/backlight`), das Dashboard
+bekommt aber nie Rechte. Deshalb liest `xps-control` (`scripts/xps-control.py`)
+die Datei jede Sekunde, nimmt daraus nur fünf geprüfte Schalter an und
+handelt: Kiosk und AirPlay starten oder stoppen, beim gestoppten Kiosk das
+Panel über den Framebuffer abschalten, die Helligkeit setzen (automatisch
+nach der Webcam, fest oder aus). Eine fehlende oder kaputte Datei heißt
+„alles an“. Ein Schalter wird nur bei einer Änderung umgesetzt, ein von Hand
+gestarteter Dienst wird also nicht heimlich wieder gestoppt. `xps-kiosk` und
+`xps-airplay` fragen in `ExecCondition=` dieselbe Datei, so bleibt ein
+ausgeschalteter Bildschirm auch nach einem Neustart aus.
+
+`xps-ambient` misst nur noch und schreibt Zahlen; ist der Bildschirm schwarz
+oder aus, bleibt die Kamera aus. Die Helligkeitskurve liegt in `xps-control`,
+der einzigen Stelle, die das Backlight schreibt.
+
+Nur der Kiosk (`http://127.0.0.1:7777/?kiosk=1`) wird schwarz und lässt sich
+durch Antippen wecken; ein Browser am Mac oder Handy zeigt immer die Kacheln
+und nennt den Zustand der Wand. `/steuerung` ist dieselbe Steuerung als
+eigene Seite fürs Handy, `xps-display` dasselbe für die Kommandozeile.
+
+### Kiosk als eigener Benutzer
+
+Chromium ist das größte Programm auf dem XPS und zeigt Daten aus dem Netz
+(AirPlay-Cover, Namen aus Home Assistant). Es läuft deshalb als `xps-kiosk`:
+ein normales Konto, damit logind ihm den Bildschirm gibt, aber ohne Passwort,
+sudo und Shell. `scripts/xps-kiosk.sh` setzt HOME und den Laufzeitordner
+selbst, weil `%h` und `%U` in Systemunits immer root meinen.
+
+### Dashboard-Zugriff
+
+Ansehen geht im Heimnetz ohne Anmeldung. Änderungen nimmt das Dashboard nur
+als JSON vom eigenen Origin an (CSRF), Anfragen nur unter Heimnetz-, IP- und
+Tailscale-Namen (DNS-Rebinding), optional mit PIN für andere Geräte
+(`DASH_PIN`); der Kiosk auf 127.0.0.1 fragt nie. Jede Seite hat eine
+Content-Security-Policy, die Schrift liegt lokal.
+
 ### Dienste-Statistik
 
 `xps-services` fragt alle 30 Sekunden beide Docker-Daemons ab (den des Hosts
@@ -176,11 +233,50 @@ kommen über eine Named Pipe unter `/run/shairport-sync/`, die das Dashboard
 liest (`server/sources/shairport.js`); Start, Pause und Ende des Streams
 steuern den Musikmodus.
 
+### Minifunk über den Knuddl-Raum
+
+Die Knuddl-App spricht ohne eigenen Server direkt mit einer Firebase-Datenbank,
+und alles darin ist mit einem Geheimnis verschlüsselt, das nur die beiden
+Handys kennen. Der XPS wird mit derselben Einladung zum dritten Teilnehmer:
+Er leitet daraus Raum und Schlüssel genauso ab wie die App und nutzt zwei
+eigene Pfade. Unter `x/status` meldet er jede Minute, ob das Dashboard
+gerade zu sehen ist (nur dann bietet die App den Minifunk an). Unter
+`x/funk` holt er Nachrichten über einen Live-Stream ab und löscht sie sofort.
+So braucht es weder einen Port nach außen noch einen Dienst in der Cloud,
+und die Datenbank sieht nur Zufallsdaten.
+
+### Erinnerungen über einen Kurzbefehl
+
+Für Erinnerungen gibt es keine Schnittstelle, die ein Server erreicht
+(CalDAV kennt iCloud-Erinnerungen seit Jahren nicht mehr). Kurzbefehle auf dem
+iPhone dürfen sie aber lesen und ändern. Ein Kurzbefehl schickt deshalb die
+Liste an die Wand und bekommt in derselben Antwort zurück, was dort
+abgehakt oder eingetippt wurde. Das bleibt offen, bis ein späterer Abgleich
+es bestätigt, damit ein abgebrochener Lauf nichts verliert oder verdoppelt.
+
+### Spotify Connect
+
+go-librespot macht den XPS in der Spotify-App zum Gerät „XPS Lautsprecher“,
+neben AirPlay und in derselben Compose-Datei, also mit demselben Schalter in
+der Steuerung. Es meldet sich wie shairport-sync über den avahi-daemon des
+XPS an (D-Bus), braucht keine Anmeldung (Zeroconf: wer es auswählt, bringt
+sein Konto mit) und darf im Container nur die Soundkarte und seinen eigenen
+Ordner `/var/lib/xps-spotify`. Es läuft als Benutzer `xps-spotify` mit der
+Gruppe audio, nicht als root: Wer als root am System-D-Bus hängt, kann systemd
+alles starten lassen. setup-xps.sh legt den Benutzer an und schreibt seine
+Nummern nach `/etc/xps-homeserver/spotify.env`, die `xps-airplay.service` an
+Compose weitergibt. Beide Empfänger nutzen das ALSA-Gerät
+`default`. go-librespot gibt es beim Pausieren frei, shairport-sync nach dem
+Ende einer Sitzung, so wechseln sie sich ab. Das Dashboard fragt die lokale
+API von go-librespot (`127.0.0.1:3678/status`) alle zwei Sekunden, solange
+etwas spielt, sonst alle fünf, und zeigt die Quelle, die gerade spielt
+(`server/widgets/music.js`).
+
 ## Offen
 
-- GHCR-Paket `xps-homeserver-umbrelos` nach dem ersten Build auf öffentlich
-  stellen.
 - Dashboard-Integrationen am XPS konfigurieren und physisch prüfen.
-- AirPlay-Audio am XPS prüfen.
-- Webcam-Regelung und Backlight am XPS prüfen.
+- AirPlay- und Spotify-Ton am XPS prüfen.
+- Webcam-Regelung, Backlight und „Bildschirm aus“ am XPS prüfen.
 - Installer, Ausfall und Wiederherstellung am XPS praktisch durchspielen.
+
+Die Abnahmeliste dafür: [installation.md](installation.md), Schritt 10.

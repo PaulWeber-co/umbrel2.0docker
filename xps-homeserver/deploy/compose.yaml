@@ -2,7 +2,7 @@ name: xps-homeserver
 
 services:
   umbrel:
-    image: ${XPS_UMBREL_IMAGE:?Run xps-homeserver/scripts/install-umbrel.sh first}
+    image: ${XPS_UMBREL_IMAGE:?Run xps-homeserver/scripts/setup-xps.sh first}
     container_name: umbrel
     hostname: umbrel
     privileged: true
@@ -32,7 +32,7 @@ services:
       dev.orbstack.http-port: "80"
 
   port-publisher:
-    image: ${XPS_UMBREL_IMAGE:?Run xps-homeserver/scripts/install-umbrel.sh first}
+    image: ${XPS_UMBREL_IMAGE:?Run xps-homeserver/scripts/setup-xps.sh first}
     container_name: umbrel-port-publisher
     depends_on:
       umbrel:

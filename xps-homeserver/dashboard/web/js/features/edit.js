@@ -103,7 +103,6 @@ export function init(ctx) {
     endPress(null);
     if (on) renderAddList();
     else clearMessage();
-    // A rects provider (music mode) may arrange tiles differently in edit mode
     if (!wasDragging) ctx.relayout(true);
   }
   new MutationObserver(sync).observe(stage, { attributes: true, attributeFilter: ['data-edit'] });
@@ -383,7 +382,7 @@ export function init(ctx) {
             ctx.relayout(true);
             renderAddList();
           }
-          flash('Speichern fehlgeschlagen');
+          flash(/^Gesperrt/.test(error.message) ? 'Gesperrt: PIN in der Steuerung eingeben' : 'Speichern fehlgeschlagen');
         } finally {
           pending--;
         }

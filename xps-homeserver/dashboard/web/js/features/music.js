@@ -1,52 +1,13 @@
-// Music mode: while AirPlay plays (server/widgets/music.js, data from
-// shairport-sync) the tiles glide into a narrow column on the right, the
-// player with cover, title, artist, album and a smoothly running progress bar
-// appears bottom left, and the background glows in the cover's colour. The
-// clock header never moves. Edit mode pauses music mode until it ends.
+// Music mode: while AirPlay or Spotify plays (server/widgets/music.js, data
+// from shairport-sync or go-librespot) the player pops up in the free space
+// under the clock, with the receiver's mark in its corner:
+// title, artist and a smoothly running progress bar flush above the cover,
+// and the background glows in the cover's colour. The tiles never move.
+// Edit mode pauses music mode until it ends.
 //
-// musicRects, progressAt, formatTime and averageColour are pure and run in
-// Node for the tests; the DOM is only touched inside init().
+// progressAt, formatTime and averageColour are pure and run in Node for the
+// tests; the DOM is only touched inside init().
 import { $ } from '../util.js';
-
-/* ---------- layout ---------- */
-
-// The narrow column on the 1920×1080 stage: [x, y, w, h]
-export const SLOTS = {
-  wide: [
-    [1336, 80, 488, 290],
-    [1336, 708, 488, 290],
-  ],
-  small: [
-    [1336, 394, 232, 290],
-    [1592, 394, 232, 290],
-  ],
-};
-const PREFERRED = { wide: ['wetter', 'dienste'], small: ['weg', 'home'] };
-const FITS = { wide: (tile) => tile.w >= 2, small: (tile) => tile.w === 1 && tile.h === 1 };
-
-// Layout → Map id → [x, y, w, h] | null. Four tiles stay: two wide ones
-// (preferably weather and server) and two small ones (preferably commute and
-// home), every other tile is hidden.
-export function musicRects(layout) {
-  const hidden = new Set(layout?.hidden ?? []);
-  const tiles = (layout?.tiles ?? []).filter((tile) => !hidden.has(tile.id));
-  const rects = new Map((layout?.tiles ?? []).map((tile) => [tile.id, null]));
-  for (const id of hidden) rects.set(id, null);
-  const taken = new Set();
-  for (const kind of ['wide', 'small']) {
-    const fitting = tiles.filter((tile) => FITS[kind](tile) && !taken.has(tile.id));
-    const ranked = [
-      ...PREFERRED[kind].map((id) => fitting.find((tile) => tile.id === id)).filter(Boolean),
-      ...fitting.filter((tile) => !PREFERRED[kind].includes(tile.id)),
-    ];
-    SLOTS[kind].forEach((slot, i) => {
-      if (!ranked[i]) return;
-      rects.set(ranked[i].id, [...slot]);
-      taken.add(ranked[i].id);
-    });
-  }
-  return rects;
-}
 
 /* ---------- progress ---------- */
 
@@ -111,11 +72,11 @@ export function init(ctx) {
     cover: $('#cover'),
     title: $('#ptitle'),
     artist: $('#partist'),
-    album: $('#palbum'),
     bar: $('#pbar'),
     pos: $('#ppos'),
     dur: $('#pdur'),
     night: $('#ntitle'), // optional: the "♪ title" line of the night view
+    source: $('#psource'),
   };
   const prog = el.bar?.closest('.prog') ?? null;
   const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -133,14 +94,13 @@ export function init(ctx) {
   };
   const resetGlow = () => stage.style.removeProperty('--glow');
 
-  ctx.setRectsProvider((layout) => (shown ? musicRects(layout) : null));
-
   el.cover?.addEventListener('load', paintGlow);
   el.cover?.addEventListener('error', () => {
     if (coverSrc !== PLACEHOLDER) setCover(null);
   });
-  // Edit mode arranges the normal grid: music mode waits until it is done
-  new MutationObserver(() => safely(apply)).observe(stage, { attributes: true, attributeFilter: ['data-edit'] });
+  // Edit mode arranges the normal grid: music mode waits until it is done.
+  // data-musicmode="0": switched off in the control center (features/display.js)
+  new MutationObserver(() => safely(apply)).observe(stage, { attributes: true, attributeFilter: ['data-edit', 'data-musicmode'] });
   reducedMotion?.addEventListener?.('change', () => safely(apply));
 
   ctx.onEntry('music', (entry) => safely(() => update(entry)));
@@ -161,11 +121,13 @@ export function init(ctx) {
 
   // Texts, cover and the static parts of the progress display
   function fill() {
-    const title = data.title || 'AirPlay';
+    const spotify = data.via === 'spotify';
+    const title = data.title || (spotify ? 'Spotify' : 'AirPlay');
+    el.source?.querySelector('use')?.setAttribute('href', spotify ? '#i-spotify' : '#i-airplay');
+    el.source?.setAttribute('aria-label', `${spotify ? 'Spotify' : 'AirPlay'} auf XPS Lautsprecher`);
     setText(el.title, title);
-    el.title?.classList.toggle('long', title.length > 28);
-    setText(el.artist, data.artist ?? '');
-    setText(el.album, data.album ?? '');
+    el.title?.classList.toggle('long', title.length > 22);
+    setText(el.artist, [data.artist, data.album].filter(Boolean).join(' · '));
     setText(el.night, title);
     el.player?.classList.toggle('is-paused', !data.playing);
     setCover(data.coverUrl);
@@ -203,12 +165,12 @@ export function init(ctx) {
 
   // Music mode on or off, then the progress loop
   function apply() {
-    const next = Boolean(data?.active) && stage.dataset.edit !== '1';
+    const next = Boolean(data?.active) && stage.dataset.edit !== '1' && stage.dataset.musicmode !== '0';
     if (next !== shown) {
       shown = next;
       stage.dataset.music = shown ? '1' : '0';
-      for (const tile of ctx.state.layout?.tiles ?? []) ctx.renderTile(tile.id); // compact or not
-      ctx.relayout(!first);
+      // Without an animation on the first state after loading
+      stage.classList.toggle('no-anim', first);
     }
     first = false;
     startLoop();

@@ -14,8 +14,9 @@ und die Einstellungen in `dashboard.env.example`. Das vollständige Vorbild ist
 das Wetter: `server/widgets/weather.js`, `web/js/widgets/wetter.js` und
 `test/weather.test.js`. Ein Hintergrund-Datenstrom ohne eigene Kachel braucht
 kein Frontend-Widget; ein Modul unter `web/js/features/` abonniert ihn über
-`ctx.onEntry()`, wie der Musikmodus (`music`) und die Nachtansicht über die
-Webcam (`ambient`). Braucht ein Widget Rechte, die das Dashboard nicht hat
+`ctx.onEntry()`, wie der Musikmodus (`music`), oder die Steuerung auf dem
+Server liest ihn, wie die Raumhelligkeit der Webcam (`ambient` →
+`server/control.js`). Braucht ein Widget Rechte, die das Dashboard nicht hat
 (Docker, Kamera), schreibt ein eigener kleiner Dienst eine JSON-Datei unter
 `/run/`, und das Widget liest nur diese, wie `services.js` und `ambient.js`.
 
@@ -97,6 +98,10 @@ oder Zeilen weglassen.
 `.check` mit `.box` und `aria-pressed`, `.bar > i` (Balken, Breite über
 `transform: scaleX(0.6)`). Eigene Regeln für ein Widget stehen in
 `web/css/w-<id>.css` und werden in `web/index.html` eingebunden.
+
+Kacheln dürfen nur `esc()`-te Werte und keine Inline-Skripte enthalten: Die
+Seite läuft mit einer Content-Security-Policy (`server/http.js`), die nur
+eigene Skripte zulässt; Inline-`style`-Attribute gehen.
 
 Icons (`icon('name')`): sun, cloud, cloudsun, rain, snow, storm, fog, car,
 train, cal, check, list, cpu, temp, photo, home, bulb, washer, note, trend,

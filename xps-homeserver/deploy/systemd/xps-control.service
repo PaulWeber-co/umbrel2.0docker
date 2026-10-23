@@ -1,0 +1,28 @@
+[Unit]
+Description=Applies the dashboard's control center: screen, kiosk, AirPlay, backlight
+After=xps-dashboard.service
+
+[Service]
+Type=simple
+# Root for systemctl and the backlight; it only reads the dashboard's
+# host-state.json, accepts nothing but the few known switches in it, and has
+# no network. The dashboard reads /run/xps-control/status.json (group).
+User=root
+Group=xps-dashboard
+RuntimeDirectory=xps-control
+RuntimeDirectoryMode=0750
+EnvironmentFile=-/etc/xps-homeserver/host.env
+ExecStart=/usr/bin/python3 /opt/xps-homeserver/xps-homeserver/scripts/xps-control.py
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateNetwork=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadWritePaths=/run/xps-control /run/systemd/private
+
+[Install]
+WantedBy=multi-user.target
