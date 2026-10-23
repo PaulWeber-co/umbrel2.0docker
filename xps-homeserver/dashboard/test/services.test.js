@@ -67,7 +67,7 @@ test('stale data and a broken file are errors; an unreachable Umbrel is reported
 
 test('names: settings, known projects and readable fallbacks', () => {
   assert.deepEqual([...parseNames('a=Eins, b = Zwei ,=x,c=')], [['a', 'Eins'], ['b', 'Zwei']]);
-  assert.equal(prettyName('xps-airplay'), 'AirPlay');
+  assert.equal(prettyName('xps-airplay'), 'Lautsprecher', 'AirPlay and Spotify Connect');
   assert.equal(prettyName('shop-api_db'), 'Shop Api Db');
 });
 

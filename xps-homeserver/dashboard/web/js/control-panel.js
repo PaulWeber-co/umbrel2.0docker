@@ -270,7 +270,7 @@ export function createPanel(root, { getState, onControl, onAccess = () => {}, on
         </label>
         ${toggle('features.airplay', f.airplay, 'Lautsprecher', 'AirPlay und Spotify Connect, „XPS Lautsprecher“ an der Kopfhörerbuchse')}
         ${toggle('features.musicMode', f.musicMode, 'Musikansicht', 'Cover, Titel und Fortschritt unter der Uhr')}
-        ${toggle('features.videos', f.videos, 'Hintergrundvideos', 'aus: ruhige Farbverläufe, spart Strom')}
+        ${toggle('features.videos', f.videos, 'Hintergrundvideos', 'aus: Standbild statt Video, spart Strom')}
         <label class="cp-row cp-range">
           <span class="cp-text"><span>Glas-Effekt</span><small data-live="glass">${state.glassLevel ?? 55} · klar bis milchig</small></span>
           <input type="range" min="0" max="100" step="1" value="${state.glassLevel ?? 55}" data-glass data-key="glass" aria-label="Glas-Effekt von klar bis milchig">

@@ -159,7 +159,7 @@ sudo systemctl restart xps-dashboard
 
 | Kachel | Eintragen | Woher |
 | --- | --- | --- |
-| Begrüßung, Wetter | `DASH_NAME`, `DASH_PLACE`, `DASH_LAT`, `DASH_LON` | Koordinaten z. B. aus Google Maps (Rechtsklick) |
+| Wetter | `DASH_PLACE`, `DASH_LAT`, `DASH_LON` | Koordinaten z. B. aus Google Maps (Rechtsklick) |
 | Arbeitsweg | `DASH_TOMTOM_KEY`, `DASH_HOME_ADDRESS`, `DASH_WORK_ADDRESS`, Zeitfenster | [developer.tomtom.com](https://developer.tomtom.com), kostenlos |
 | Fotos | `DASH_IMMICH_KEY` | Immich in Umbrel installieren → Kontoeinstellungen → API-Schlüssel |
 | Kalender (Apple) | `DASH_CALENDAR_ICS` | Kalender-App → Kalender → ⓘ → *Öffentlicher Kalender* → Link ([betrieb.md](betrieb.md#apple-kalender-und-erinnerungen)) |
