@@ -98,7 +98,7 @@ Dokumentation).
 
 Hinter den Kacheln laufen Luftaufnahmen wie die Bildschirmschoner des Apple TV:
 Städte, Küsten, Berge, Nebel am Morgen, Lichter in der Nacht.
-`scripts/backgrounds.txt` ist die kleine Auswahl dafür, vier bis neun Clips
+`scripts/backgrounds.txt` ist die kleine Auswahl dafür, vier bis acht Clips
 je Tageszeit (morgen, tag, abend, spaet), alle von Mixkit in echtem 1080p. Pro
 Tag spielt die Wand zwei Clips jeder Tageszeit und wechselt zwischen ihnen
 einmal pro Minute. Am nächsten Tag kommen die nächsten zwei dran, so läuft sie

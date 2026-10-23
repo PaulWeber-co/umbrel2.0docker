@@ -22,7 +22,7 @@ command -v ffmpeg >/dev/null || { echo "ffmpeg fehlt (Mac: brew install ffmpeg)"
 
 FADE=2    # seconds of the clip's start crossfaded onto its end
 LONGEST=22
-SHORTEST=8
+SHORTEST=12
 
 mkdir -p "$OUT"
 tmp=$(mktemp -d)

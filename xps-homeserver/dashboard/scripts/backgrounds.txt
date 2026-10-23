@@ -25,11 +25,9 @@ tag    4132  Alpine peaks under moving clouds
 tag    41401 River canyon in green mountains
 tag    50180 City on the coast, sailboats in the bay
 tag    49825 River and bridges through a city
-tag    49861 Modern architecture in a city centre
 
 # Evening: sunsets
 abend  5002  Red sunset over a mountain lake
-abend  4999  Sun going down behind a bay
 abend  5372  Sunset glow on a small gulf
 abend  50154 Calm sea in the last light
 abend  41375 High above a city at dusk
@@ -37,6 +35,5 @@ abend  41375 High above a city at dusk
 # Late evening and night: city lights
 spaet  42342 City centre at night
 spaet  49878 Big city at night
-spaet  42041 Streets of light in a huge city
 spaet  42343 Towers and traffic at night
 spaet  4998  Lake at dusk
