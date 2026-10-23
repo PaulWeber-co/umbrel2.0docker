@@ -110,11 +110,11 @@ systemctl restart xps-airplay.service || warn "AirPlay startet nicht: journalctl
 systemctl restart xps-kiosk.service || warn "Der Kiosk startet nicht: journalctl -u xps-kiosk"
 systemctl start xps-kiosk-restart.timer
 
-media=$XPS_ROOT/dashboard/web/media
-if [ -z "$(ls -A "$media" 2>/dev/null)" ]; then
-	step "Hintergrundvideos laden (Mixkit, einmalig)"
-	"$XPS_ROOT/dashboard/scripts/fetch-backgrounds.sh" "$media" 1080 || warn "Videos fehlen; das Dashboard zeigt Farbverläufe"
-fi
+# The first run downloads about 1 GB and takes a while; later runs only fetch
+# clips new to backgrounds.txt (and remove the ones taken off it).
+step "Hintergrundvideos (Mixkit-Luftaufnahmen, nur was neu ist)"
+"$XPS_ROOT/dashboard/scripts/fetch-backgrounds.sh" "$XPS_ROOT/dashboard/web/media" 1080 ||
+	warn "Nicht alle Videos sind da; das Dashboard nimmt die vorhandenen, sonst Farbverläufe. Später nochmal: sudo update-xps"
 
 step "Umbrel"
 "$XPS_ROOT/scripts/update-umbrel.sh" || warn "Umbrel ist noch nicht auf dem neuesten Stand (siehe oben)"

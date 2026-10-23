@@ -94,10 +94,26 @@ Eine neue Kachel: [WIDGETS.md](WIDGETS.md). Echte Daten lokal: im Ordner
 
 `mockup/wand-dashboard.html` zeigt die drei Design-Richtungen, aus denen
 Design A gewählt wurde (B · Panorama und C · Leitstand bleiben zur
-Dokumentation). `scripts/backgrounds.txt` listet die Clips von Mixkit; sie
-dürfen genutzt, aber nicht weiterverteilt werden und liegen deshalb nicht im
-Repo. `scripts/fetch-backgrounds.sh` lädt sie und macht nahtlose Schleifen
-daraus (setup-xps.sh erledigt das auf dem XPS einmalig):
+Dokumentation).
+
+Hinter den Kacheln laufen Luftaufnahmen wie die Bildschirmschoner des Apple TV:
+Städte, Küsten, Berge, Nebel am Morgen, Lichter in der Nacht.
+`scripts/backgrounds.txt` ist die kleine Auswahl dafür, vier bis neun Clips
+je Tageszeit (morgen, tag, abend, spaet), alle von Mixkit in echtem 1080p. Pro
+Tag spielt die Wand zwei Clips jeder Tageszeit und wechselt zwischen ihnen
+einmal pro Minute. Am nächsten Tag kommen die nächsten zwei dran, so läuft sie
+über die Tage durch die ganze Liste (`web/js/scene.js`). Damit das XPS kühl
+bleibt, dekodiert immer nur ein Video (beim Überblenden kurz zwei), in genau
+der Displaygröße, mit 24 Bildern pro Sekunde und begrenzter Bitrate, also in
+der Hardware der Grafik. Sind Videos in der Steuerung aus, bleibt das
+Standbild des Clips stehen, ohne ein einziges Bild zu dekodieren.
+
+Die Clips dürfen genutzt, aber nicht weiterverteilt werden, und liegen deshalb
+nicht im Repo. `scripts/fetch-backgrounds.sh` lädt sie und macht nahtlose
+Schleifen mit Standbild daraus (`<tageszeit>-<id>.mp4/.jpg`). Was schon da
+ist, bleibt; was aus der Liste fliegt, wird gelöscht. setup-xps.sh ruft es bei
+jedem Update auf. Das erste Mal lädt es etwa 1 GB, danach nur Neues. Das
+Dashboard nimmt, was im Ordner liegt (`server/backgrounds.js`):
 
 ```sh
 dashboard/scripts/fetch-backgrounds.sh dashboard/mockup/media 720

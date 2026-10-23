@@ -4,7 +4,8 @@
 //   GET  /steuerung                the control center as a page of its own (phone, Mac)
 //   GET  /media/<file>             background videos (with Range support for Safari)
 //   GET  /api/state                settings, the latest data of every widget, the layout,
-//                                  the control center and this browser's access
+//                                  the control center, this browser's access and the
+//                                  background clips on disk
 //   GET  /api/events               Server-Sent Events: "widget", "layout", "settings"
 //                                  and "control" updates
 //   PUT  /api/settings             save shared dashboard appearance settings
@@ -25,6 +26,7 @@ import { stat } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join, normalize, sep } from 'node:path';
 import { createAccess, isSameOrigin } from './access.js';
+import { listBackgrounds } from './backgrounds.js';
 import { validateLayout } from './layout.js';
 import { PHOTO_ID } from './widgets/minifunk.js';
 
@@ -134,6 +136,7 @@ export function createApp({ hub, store, config, webDir, defaultLayout, control =
         layout: await loadLayout(),
         control: control?.snapshot() ?? null,
         access: await access.status(req),
+        backgrounds: await listBackgrounds(config.mediaDir),
       });
     }
 

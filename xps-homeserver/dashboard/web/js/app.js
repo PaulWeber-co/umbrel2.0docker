@@ -5,7 +5,7 @@
 // /?kiosk=1; only there the screen goes dark when the control center says so.
 import { bindDialog, createPanel } from './control-panel.js';
 import { applyRects, normalRects } from './layout.js';
-import { createScenes, sceneAt } from './scene.js';
+import { createScenes, dayNumber, sceneAt } from './scene.js';
 import * as display from './features/display.js';
 import * as edit from './features/edit.js';
 import * as minifunk from './features/minifunk.js';
@@ -248,7 +248,7 @@ $('#tiles').addEventListener('submit', onTileAction);
 function tick() {
   const now = new Date();
   const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: state.timezone })
+    new Intl.DateTimeFormat('de-DE', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: state.timezone })
       .formatToParts(now)
       .map((p) => [p.type, p.value]),
   );
@@ -260,7 +260,10 @@ function tick() {
   $$('.js-date').forEach((el) => {
     if (el.textContent !== date) el.textContent = date;
   });
-  scenes.set(sceneOverride() ?? sceneAt(Number(parts.hour) * 60 + Number(parts.minute), state.widgets.wetter?.data?.sun));
+  scenes.set(
+    sceneOverride() ?? sceneAt(Number(parts.hour) * 60 + Number(parts.minute), state.widgets.wetter?.data?.sun),
+    dayNumber(Number(parts.year), Number(parts.month), Number(parts.day)),
+  );
 }
 
 /* ---------- live updates ---------- */
@@ -311,6 +314,7 @@ async function boot() {
     access: data.access,
   });
   applyGlassLevel(data.settings?.glassLevel ?? DEFAULT_GLASS);
+  scenes.setPool(data.backgrounds);
   buildTiles();
   relayout(false);
   for (const feature of FEATURES) feature.init(featureContext);
