@@ -17,7 +17,7 @@ export function glassProperties(value) {
   return {
     '--glass-blur': `${Math.round(interpolate(14, 40))}px`,
     '--glass-saturate': `${Math.round(interpolate(120, 210))}%`,
-    '--glass-base': opacity(.04, .22),
+    '--glass-base': opacity(.12, .3),
     '--glass-top': opacity(.10, .46),
     '--glass-mid': opacity(.04, .15),
     '--glass-low': opacity(.02, .093),
