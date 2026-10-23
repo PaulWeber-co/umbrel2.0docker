@@ -170,6 +170,44 @@ der Kurzbefehl auf beiden iPhones laufen. Abgeglichen wird über den Titel,
 weil Kurzbefehle keine feste Kennung einer Erinnerung kennen. Änderungen, die
 eine Woche lang kein Kurzbefehl abholt, verfallen.
 
+## Minifunk
+
+Aus der Knuddl-App (*Wir* → *Heute*, unter der Frage des Tages) schickt ihr
+einen Satz, eine Liste oder eine Erinnerung an die Wand, dazu höchstens ein
+Foto pro Person und Tag. Es geht nur an den Bildschirm, nicht aufs andere
+Handy. Die Wand zeigt es unter der Uhr, solange keine Musik läuft: Text in
+einer Glaskarte, deren Schrift sich nach der Länge richtet, ein Foto an der
+Stelle des Covers mit dem Text darüber. Ein Tipp auf × entfernt eine
+Nachricht.
+
+Einrichten: in Knuddl *Mehr* → *Verbindung* die Einladung kopieren (sieht aus
+wie `ABC123-K7F2M9QX…`) und eintragen:
+
+```sh
+sudoedit /etc/xps-homeserver/dashboard.env   # DASH_KNUDDL_INVITE=ABC123-…
+sudo systemctl restart xps-dashboard
+journalctl -u xps-dashboard | grep minifunk  # "verbunden mit dem Knuddl-Raum"
+```
+
+In der App erscheint der Minifunk nur, solange die Wand das Dashboard zeigt.
+Die Wand meldet sich dafür jede Minute verschlüsselt im Raum. Ist sie aus, im
+Nachtmodus oder offline, verschwindet die Karte nach spätestens zweieinhalb
+Minuten. Text bleibt 24 Stunden an der Wand, Fotos 6 Stunden, dann löscht der
+XPS die Datei (`DASH_MINIFUNK_HOURS`, `DASH_MINIFUNK_PHOTO_HOURS`). Aus der
+Datenbank verschwindet jede Nachricht, sobald sie auf dem XPS ist.
+
+Abschalten: `DASH_KNUDDL_INVITE` leeren. Verbindet ihr euch in Knuddl neu,
+gibt es ein neues Geheimnis, und die neue Einladung gehört hier hinein.
+
+## Hintergrundvideos
+
+Die Luftaufnahmen lädt `setup-xps.sh` bei jedem Update (anfangs etwa 1 GB,
+danach nur Neues) nach `dashboard/web/media/`. Die Auswahl steht in
+`dashboard/scripts/backgrounds.txt`: Zeile dazu oder weg, `sudo update-xps`,
+fertig. Pro Tag laufen zwei Clips je Tageszeit, am nächsten Tag die nächsten
+zwei. In der Steuerung schaltet *Videos* sie ab, dann bleibt das Standbild des
+Clips stehen und die Grafik hat Ruhe.
+
 ## Updates
 
 | Was | Wie |

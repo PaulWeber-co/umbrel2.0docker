@@ -159,10 +159,11 @@ export async function connectRoom({ url, namespace = 'knuddl', secret, fetchJson
 }
 
 async function readEvents(body, onChange, alive) {
+  const decoder = new TextDecoder(); // its own: it keeps state between chunks
   let buffer = '';
   for await (const chunk of body) {
     alive();
-    buffer += dec.decode(chunk, { stream: true });
+    buffer += decoder.decode(chunk, { stream: true });
     let end;
     while ((end = buffer.indexOf('\n\n')) >= 0) {
       const block = buffer.slice(0, end);

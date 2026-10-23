@@ -27,6 +27,8 @@ tun kannst.
 | Steuerung | Was der Bildschirm macht, entscheidet das Dashboard ohne Rechte; der Root-Dienst `xps-control` nimmt aus `host-state.json` nur fünf geprüfte Schalter an (Kiosk, AirPlay, Helligkeit, Webcam, Anzeige) und hat kein Netz. |
 | Webcam | `xps-ambient` hat kein Netzwerk (`PrivateNetwork=yes`), darf nur `/dev/video0`, liest 16×12 Graupunkte, verwirft sie sofort und schreibt nur Zahlen. Bei dunklem oder ausgeschaltetem Bildschirm ist die Kamera aus. |
 | Docker | Nur `xps-services` (ohne Netz) fragt die Docker-Sockets und schreibt Namen und Zahlen in eine Datei; das Dashboard bekommt nie Docker-Zugriff. |
+| Minifunk | Das Dashboard kennt das gemeinsame Knuddl-Geheimnis (nur in der dashboard.env) und nutzt im Raum nur `x/status` und `x/funk`, nie eure Postfächer. Alles darin ist Ende-zu-Ende verschlüsselt (AES-GCM, wie in der App). Was ankommt, wird geprüft: Text höchstens 500 Zeichen und maskiert angezeigt, Fotos nur als echtes JPEG bis 1,5 MB, eins pro Person und Tag. Fotos liegen nur im Datenordner des Dashboards und werden nach 6 Stunden gelöscht. |
+| Kalender und Erinnerungen | Die Kalender-Links stehen nur in der dashboard.env. Der Kurzbefehl für Erinnerungen geht durch dieselben Prüfungen wie jede Änderung, mit `DASH_PIN` per Header `x-dashboard-pin`. |
 | Geheimnisse | Nichts davon im öffentlichen Repo (`.gitignore`); das öffentliche Umbrel-Image enthält nur Code. |
 
 ## In dieser Prüfung behoben
@@ -52,12 +54,15 @@ Nach Wichtigkeit:
 
 1. **Diebstahl des Laptops.** Die SSD ist nicht verschlüsselt, damit der XPS
    nach einem Stromausfall ohne Eingabe wieder startet. Wer ihn mitnimmt, kann
-   Umbrel-Daten, Fotos, Tokens und das WLAN-Passwort lesen. Ihn nicht sichtbar
-   ans Fenster stellen; Backups nur auf ein verschlüsseltes Laufwerk; nach
-   einem Diebstahl WLAN-Passwort, Home-Assistant-Token und Immich-Schlüssel
-   ändern.
+   Umbrel-Daten, Fotos, Tokens, das WLAN-Passwort und das Knuddl-Geheimnis
+   lesen. Ihn nicht sichtbar ans Fenster stellen; Backups nur auf ein
+   verschlüsseltes Laufwerk; nach einem Diebstahl WLAN-Passwort,
+   Home-Assistant-Token und Immich-Schlüssel ändern, in Knuddl neu verbinden
+   (neues Geheimnis) und die Kalender-Freigaben aus- und wieder einschalten
+   (neue Links).
 2. **Geräte im eigenen WLAN.** Das Dashboard ist im Heimnetz ohne Anmeldung
-   lesbar (es hängt ja auch sichtbar an der Wand). **`DASH_PIN` setzen**,
+   lesbar (es hängt ja auch sichtbar an der Wand), auch Minifunk-Fotos,
+   solange sie angezeigt werden. **`DASH_PIN` setzen**,
    sobald Gäste oder unbekannte Geräte im WLAN sind, und Gäste ins
    Gäste-WLAN des Speedport schicken. AirPlay kann jeder im WLAN benutzen
    (shairport-sync kennt bei AirPlay 2 kein Passwort); schaltbar in der
@@ -85,9 +90,11 @@ Nach Wichtigkeit:
 ## Wie geprüft wurde
 
 - Code-Durchsicht aller Skripte, Units und des Dashboards.
-- 150 automatische Tests des Dashboards (`npm test`), darunter Tests für
+- 175 automatische Tests des Dashboards (`npm test`), darunter Tests für
   CSRF, DNS-Rebinding, PIN mit Sperre nach fünf Fehlversuchen,
-  Eingabeprüfung und die Regeln der Steuerung; Smoke-Test des echten Servers.
+  Eingabeprüfung, die Regeln der Steuerung, die Verschlüsselung des Minifunks
+  gegen die der Knuddl-App und den Abgleich der Erinnerungen über HTTP;
+  Smoke-Test des echten Servers.
 - Tests der Root-Dienste gegen nachgebaute `/sys`-Dateien und ein falsches
   `systemctl` (`python3 -m unittest discover -s scripts/tests`), u. a. dass
   ungültige Wünsche nie mehr als die erlaubten Schalter bewirken.

@@ -83,6 +83,10 @@ Umbrel-Updates ab.
 | Umbrel-Apps (installiert, läuft, CPU/RAM je App, Update verfügbar), Umbrel-Version | Umbrels offizielle MCP-Schnittstelle unter `http://umbrel.local/mcp` mit einem Zugangstoken aus den Umbrel-Einstellungen. `get_system_info`, `get_system_resources` und `list_apps` brauchen keine Freigaben. Der Token kann also nur lesen, nichts ändern (geprüft in `packages/umbreld/source/modules/mcp/tools/`). |
 | Anzahl Fotos und Videos, belegter Platz | Immich-API mit eigenem API-Schlüssel |
 | Smart Home, To-dos, Kalender | Home Assistant (Umbrel-App), Long-Lived Access Token |
+| Apple Kalender | iCalendar-Links der Kalender-App (*Öffentlicher Kalender*), Serientermine rechnet `server/sources/ics.js` selbst aus |
+| Apple Erinnerungen | ein Kurzbefehl auf dem iPhone schickt die Liste und holt die Änderungen der Wand ab (`server/sources/reminders.js`) |
+| Minifunk | der verschlüsselte Raum der Knuddl-App in deren Firebase-Datenbank (`server/knuddl.js`) |
+| Hintergrundvideos | Mixkit-Luftaufnahmen, beim Setup geladen (`dashboard/scripts/backgrounds.txt`) |
 | Wetter | Open-Meteo, ohne Schlüssel |
 | Songinfos und Cover | Metadaten von shairport-sync |
 | Raumhelligkeit | `xps-ambient`, nur eine Zahl |
@@ -227,6 +231,27 @@ denselben Namen ankündigen. Titel, Interpret, Album, Cover und Fortschritt
 kommen über eine Named Pipe unter `/run/shairport-sync/`, die das Dashboard
 liest (`server/sources/shairport.js`); Start, Pause und Ende des Streams
 steuern den Musikmodus.
+
+### Minifunk über den Knuddl-Raum
+
+Die Knuddl-App spricht ohne eigenen Server direkt mit einer Firebase-Datenbank,
+und alles darin ist mit einem Geheimnis verschlüsselt, das nur die beiden
+Handys kennen. Der XPS wird mit derselben Einladung zum dritten Teilnehmer:
+Er leitet daraus Raum und Schlüssel genauso ab wie die App und nutzt zwei
+eigene Pfade. Unter `x/status` meldet er jede Minute, ob das Dashboard
+gerade zu sehen ist (nur dann bietet die App den Minifunk an). Unter
+`x/funk` holt er Nachrichten über einen Live-Stream ab und löscht sie sofort.
+So braucht es weder einen Port nach außen noch einen Dienst in der Cloud,
+und die Datenbank sieht nur Zufallsdaten.
+
+### Erinnerungen über einen Kurzbefehl
+
+Für Erinnerungen gibt es keine Schnittstelle, die ein Server erreicht
+(CalDAV kennt iCloud-Erinnerungen seit Jahren nicht mehr). Kurzbefehle auf dem
+iPhone dürfen sie aber lesen und ändern. Ein Kurzbefehl schickt deshalb die
+Liste an die Wand und bekommt in derselben Antwort zurück, was dort
+abgehakt oder eingetippt wurde. Das bleibt offen, bis ein späterer Abgleich
+es bestätigt, damit ein abgebrochener Lauf nichts verliert oder verdoppelt.
 
 ## Offen
 

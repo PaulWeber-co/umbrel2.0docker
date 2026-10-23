@@ -156,6 +156,7 @@ sudo systemctl restart xps-dashboard
 | Kalender (Apple) | `DASH_CALENDAR_ICS` | Kalender-App → Kalender → ⓘ → *Öffentlicher Kalender* → Link ([betrieb.md](betrieb.md#apple-kalender-und-erinnerungen)) |
 | To-dos (Apple Erinnerungen) | `DASH_REMINDERS_LIST` | Name der Liste, dazu der Kurzbefehl „Wand-Abgleich“ ([betrieb.md](betrieb.md#erinnerungen-z-b-die-einkaufsliste)) |
 | Zuhause, Kalender, To-dos | `DASH_HA_TOKEN`, `DASH_HA_ENTITIES`, `DASH_HA_CALENDAR_ENTITY`, `DASH_HA_TODO_ENTITY` | Home Assistant in Umbrel → Profil → Sicherheit → Langlebige Zugriffstoken |
+| Minifunk | `DASH_KNUDDL_INVITE` | Knuddl-App → *Mehr* → *Verbindung* → Einladung kopieren ([betrieb.md](betrieb.md#minifunk)) |
 | Dienste, XPS | nichts | kommt von selbst |
 | Sperre | `DASH_PIN` (empfohlen) | eine Zahl deiner Wahl |
 
