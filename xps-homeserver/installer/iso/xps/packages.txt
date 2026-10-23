@@ -32,9 +32,15 @@ ca-certificates
 curl
 git
 docker.io
+# Since Debian 13 the docker command is a package of its own (docker.io only
+# recommends it), like the AppArmor tools Docker needs on Debian's kernel
+docker-cli
+apparmor
 docker-compose
 nodejs
 chromium
+# Emoji in Minifunk messages, song titles and calendar entries
+fonts-noto-color-emoji
 cage
 seatd
 alsa-utils

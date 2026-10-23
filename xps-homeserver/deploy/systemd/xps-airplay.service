@@ -22,6 +22,9 @@ ExecStartPre=-/bin/sh -c 'amixer -q -c 0 sset Master 85%% unmute; amixer -q -c 0
 ExecStart=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml up --detach --remove-orphans
 ExecStop=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml down
 TimeoutStartSec=10min
+# The first start downloads both images; without network yet, try again
+Restart=on-failure
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target
