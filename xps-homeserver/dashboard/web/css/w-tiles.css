@@ -8,6 +8,7 @@
 .todo-list li { min-height: 0; }
 .todo-check { font-size: 19px; padding: 5px 0; }
 .todo-readonly { cursor: default; }
+.todo-check.is-pending > span:last-child { opacity: .62; }
 .todo-check .box { width: 22px; height: 22px; }
 .todo-check .box .ic { width: 16px; height: 16px; }
 .todo-add { display: flex; align-items: center; gap: 8px; margin-top: auto; }

@@ -13,9 +13,9 @@ dem XPS-Display und in jedem Browser unter `http://xps.local:7777`.
 | Wetter | Open-Meteo, ohne Schlüssel | `DASH_PLACE`, `DASH_LAT`, `DASH_LON` |
 | Arbeitsweg | TomTom mit Verkehrslage, nur im eingestellten Zeitfenster | `DASH_TOMTOM_KEY`, `DASH_HOME_*`, `DASH_WORK_*`, `DASH_COMMUTE_*` |
 | Fotos | Immich: Fotos, Videos, diese Woche neu | `DASH_IMMICH_URL`, `DASH_IMMICH_KEY` |
-| Kalender | Home-Assistant-Kalender (z. B. iCloud über CalDAV) | `DASH_HA_CALENDAR_ENTITY` |
+| Kalender | Apple-Kalender über ihren Link (webcal), Home-Assistant-Kalender, beides zusammen | `DASH_CALENDAR_ICS`, `DASH_HA_CALENDAR_ENTITY` |
 | Dienste | Umbrel-Apps und eigene docker-compose-Projekte: Status, CPU, RAM, Laufzeit | `DASH_SERVICES_NAMES`, `DASH_SERVICES_HIDE` |
-| To-dos | Home-Assistant-Liste, abhaken und hinzufügen | `DASH_HA_TODO_ENTITY` |
+| To-dos | eine Liste aus Apple Erinnerungen (über einen Kurzbefehl, [betrieb.md](../docs/betrieb.md#erinnerungen-z-b-die-einkaufsliste)) oder aus Home Assistant, abhaken und hinzufügen | `DASH_REMINDERS_LIST`, `DASH_HA_TODO_ENTITY` |
 | XPS | CPU, RAM, SSD, Temperatur des XPS selbst | – |
 | Zuhause | Home-Assistant-Entitäten, Licht und Schalter tippbar | `DASH_HA_ENTITIES` |
 
