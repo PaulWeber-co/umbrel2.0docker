@@ -42,16 +42,23 @@ write_env() {
 
 # Waits for Umbrel's healthcheck (docker, umbreld and the web UI)
 wait_healthy() {
-	local deadline=$((SECONDS + HEALTH_TIMEOUT_SECONDS)) status=""
+	local deadline=$((SECONDS + HEALTH_TIMEOUT_SECONDS)) status="" said=$SECONDS
+	log "Warte, bis Umbrel bereit ist (der erste Start dauert einige Minuten) …"
 	while ((SECONDS < deadline)); do
 		status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' umbrel 2>/dev/null || true)
 		case "$status" in
 		healthy) return 0 ;;
 		unhealthy | exited | dead)
-			log "Umbrel meldet '$status'."
+			log "Umbrel meldet '$status'. Die letzten Zeilen aus 'docker logs umbrel':"
+			docker logs --tail 15 umbrel 2>&1 | sed 's/^/    /' || true
 			return 1
 			;;
 		esac
+		# A sign of life every minute, so a long first start does not look stuck
+		if ((SECONDS - said >= 60)); then
+			log "… noch nicht bereit (${status:-startet}), $(((SECONDS - deadline + HEALTH_TIMEOUT_SECONDS) / 60)) min"
+			said=$SECONDS
+		fi
 		sleep 10
 	done
 	log "Nach ${HEALTH_TIMEOUT_SECONDS} s noch nicht gesund (zuletzt: ${status:-unbekannt})."
