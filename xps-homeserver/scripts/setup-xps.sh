@@ -85,6 +85,8 @@ step "Dienste: Dashboard, Kiosk, AirPlay, Webcam, Dienste-Statistik"
 for unit in "$XPS_ROOT"/deploy/systemd/*.service "$XPS_ROOT"/deploy/systemd/*.timer; do
 	install -m 644 "$unit" /etc/systemd/system/
 done
+install -m 644 "$XPS_ROOT/deploy/tmpfiles/xps-homeserver.conf" /etc/tmpfiles.d/xps-homeserver.conf
+systemd-tmpfiles --create /etc/tmpfiles.d/xps-homeserver.conf
 ln -sfn "$XPS_ROOT/scripts/update-xps.sh" /usr/local/sbin/update-xps
 systemctl daemon-reload
 systemctl enable --now docker.service

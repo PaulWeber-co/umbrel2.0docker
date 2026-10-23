@@ -24,7 +24,9 @@ ProtectKernelModules=true
 ProtectControlGroups=true
 RestrictSUIDSGID=true
 LockPersonality=true
-ReadWritePaths=/var/lib/xps-dashboard /run/shairport-sync
+# The AirPlay pipe comes from /etc/tmpfiles.d/xps-homeserver.conf; "-" keeps a
+# missing directory from failing the start (226/NAMESPACE).
+ReadWritePaths=/var/lib/xps-dashboard -/run/shairport-sync
 
 [Install]
 WantedBy=multi-user.target
