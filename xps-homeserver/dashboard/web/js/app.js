@@ -122,7 +122,7 @@ export function renderTile(id) {
   const body = el.querySelector('.body');
   try {
     body.innerHTML = module
-      ? module.render(entry?.data ?? null, { compact: stage.dataset.music === '1', entry })
+      ? module.render(entry?.data ?? null, { compact: false, entry })
       : `<div class="lbl">${esc(id)}</div><div class="loading">kommt bald</div>`;
   } catch (error) {
     console.error(`Widget ${id}:`, error);
@@ -133,16 +133,12 @@ export function renderTile(id) {
   el.classList.toggle('is-demo', Boolean(entry?.demo));
 }
 
-// A feature such as music mode can move tiles elsewhere: it registers a
-// provider that returns rects (Map id → [x, y, w, h] | null) or null for "normal".
-let rectsProvider = () => null;
 // The display feature can force a scene ("nacht" when the control center
 // shows the night clock); null means "by time of day".
 let sceneOverride = () => null;
 
 export function relayout(animate = true) {
-  const rects = rectsProvider(state.layout) ?? normalRects(state.layout);
-  applyRects($$('#tiles .t'), rects, { animate, scale: state.scale });
+  applyRects($$('#tiles .t'), normalRects(state.layout), { animate, scale: state.scale });
 }
 
 /* ---------- features that are not tiles: music mode, edit mode, display state ----------
@@ -168,9 +164,6 @@ const featureContext = {
     if (!entryListeners.has(id)) entryListeners.set(id, []);
     entryListeners.get(id).push(listener);
     if (state.widgets[id]) listener(state.widgets[id]);
-  },
-  setRectsProvider(provider) {
-    rectsProvider = provider;
   },
   setSceneOverride(provider) {
     sceneOverride = provider;

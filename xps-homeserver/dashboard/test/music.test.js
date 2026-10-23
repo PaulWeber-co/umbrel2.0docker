@@ -5,7 +5,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { Hub } from '../server/hub.js';
-import { DEFAULT_LAYOUT } from '../server/layout.js';
 import {
   coverDataUrl,
   createPipeReader,
@@ -24,7 +23,8 @@ import {
 } from '../server/sources/shairport.js';
 import music, { DEMO_COVER } from '../server/widgets/music.js';
 import { rectFor } from '../web/js/layout.js';
-import { averageColour, brighten, formatTime, musicRects, progressAt, SLOTS } from '../web/js/features/music.js';
+import * as musicFeature from '../web/js/features/music.js';
+import { averageColour, brighten, formatTime, progressAt } from '../web/js/features/music.js';
 
 const FIXTURE = new URL('./fixtures/shairport-metadata.txt', import.meta.url);
 const stream = readFileSync(FIXTURE);
@@ -310,36 +310,20 @@ test('a new track drops the old cover unless its own arrives', () => {
 
 /* ---------- front end: layout, progress, colour ---------- */
 
-test('music mode keeps weather, commute, home and services in the right column', () => {
-  const rects = musicRects(DEFAULT_LAYOUT);
-  assert.equal(rects.size, DEFAULT_LAYOUT.tiles.length);
-  assert.deepEqual(rects.get('wetter'), [1336, 80, 488, 290]);
-  assert.deepEqual(rects.get('weg'), [1336, 394, 232, 290]);
-  assert.deepEqual(rects.get('home'), [1592, 394, 232, 290]);
-  assert.deepEqual(rects.get('dienste'), [1336, 708, 488, 290]);
-  for (const id of ['fotos', 'kal', 'todo', 'server']) assert.equal(rects.get(id), null, id);
-  // Narrower than in normal mode, and right of the player (x 96 … 1276)
-  for (const tile of DEFAULT_LAYOUT.tiles) {
-    const rect = rects.get(tile.id);
-    if (!rect) continue;
-    assert.ok(rect[2] < rectFor(tile)[2], `${tile.id} schmaler`);
-    assert.ok(rect[0] > 1276 && rect[0] + rect[2] <= 1920 - 96, `${tile.id} rechts`);
-  }
-  assert.deepEqual([...SLOTS.wide, ...SLOTS.small].length, 4);
-});
-
-test('music mode fills the slots with other tiles when the preferred ones are gone', () => {
-  const layout = { tiles: DEFAULT_LAYOUT.tiles.filter((tile) => !['wetter', 'weg'].includes(tile.id)), hidden: ['wetter', 'weg'] };
-  const rects = musicRects(layout);
-  assert.deepEqual(rects.get('dienste'), SLOTS.wide[0]);
-  assert.deepEqual(rects.get('kal'), SLOTS.wide[1], 'first other wide tile');
-  assert.deepEqual(rects.get('home'), SLOTS.small[0]);
-  assert.deepEqual(rects.get('fotos'), SLOTS.small[1], 'first other small tile');
-  assert.equal(rects.get('wetter'), null);
-  assert.equal(rects.get('todo'), null);
-  assert.equal(rects.get('server'), null);
-  assert.deepEqual(musicRects({ tiles: [] }), new Map());
-  assert.deepEqual(musicRects(undefined), new Map());
+test('music mode leaves every tile where it is and pops up under the clock', () => {
+  assert.equal(musicFeature.musicRects, undefined, 'no rearranged layout any more');
+  const html = readFileSync(new URL('../web/index.html', import.meta.url), 'utf8');
+  const side = html.slice(html.indexOf('id="side"'), html.indexOf('id="funk"'));
+  // Title and progress come first, the cover under them, in the same column
+  assert.ok(side.indexOf('id="ptitle"') < side.indexOf('id="cover"'));
+  assert.ok(side.indexOf('id="pbar"') < side.indexOf('id="cover"'));
+  const css = readFileSync(new URL('../web/css/dashboard.css', import.meta.url), 'utf8');
+  // The side column ends where the bottom row of tiles ends (y 998) and stays left of the grid (x 760)
+  const box = css.match(/\.side \{[^}]*left: (\d+)px; top: (\d+)px; width: (\d+)px; height: (\d+)px;/);
+  assert.ok(box, 'side column geometry');
+  const [left, top, width, height] = box.slice(1).map(Number);
+  assert.equal(top + height, rectFor({ col: 0, row: 2, w: 1, h: 1 })[1] + rectFor({ col: 0, row: 2, w: 1, h: 1 })[3]);
+  assert.ok(left + width <= rectFor({ col: 0, row: 0, w: 1, h: 1 })[0]);
 });
 
 test('progress display: extrapolated while playing, still while paused', () => {

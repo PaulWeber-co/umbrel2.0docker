@@ -1,11 +1,11 @@
 /* Music mode extras (web/js/music.js); the player itself is in dashboard.css.
    Long texts are shortened instead of running into the clock or off screen. */
 
-/* At most three lines of title, long titles a size smaller */
-.ptitle { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
-.ptitle.long { font-size: 58px; letter-spacing: -.02em; }
-.partist, .palbum { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.partist:empty, .palbum:empty { display: none; }
+/* At most two lines of title, long titles a size smaller */
+.ptitle { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.ptitle.long { font-size: 28px; letter-spacing: -.01em; }
+.partist { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.partist:empty { display: none; }
 
 /* Paused: the progress rests a little dimmer */
 .prog { transition: opacity .6s ease; }

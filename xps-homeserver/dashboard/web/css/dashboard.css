@@ -37,7 +37,8 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .stage[data-scene="nacht"] .bg { background: #000; }
 .bg video { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.8s ease; }
 .bg video.on { opacity: 1; }
-.glow { opacity: 0; transition: opacity 1.4s ease; background: radial-gradient(50% 70% at 17% 66%, rgb(var(--glow) / .62), rgb(var(--glow) / 0) 72%); mix-blend-mode: screen; }
+/* The cover's colour glows behind it, in the side column under the clock */
+.glow { opacity: 0; transition: opacity 1.4s ease; background: radial-gradient(40% 60% at 15% 75%, rgb(var(--glow) / .62), rgb(var(--glow) / 0) 72%); mix-blend-mode: screen; }
 .tint { opacity: 0; transition: opacity 1.4s ease, background-color 1.4s ease; background-color: rgb(var(--glow) / .22); mix-blend-mode: soft-light; }
 .stage[data-music="1"] .glow, .stage[data-music="1"] .tint { opacity: 1; }
 /* Evening: warmer colours, less blue light */
@@ -110,20 +111,38 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .hours li b { font-weight: 500; font-size: 22px; font-variant-numeric: tabular-nums; }
 .compact .hours { display: none; }
 
-/* ---------- music mode (player filled by js/music.js) ---------- */
-.player { position: absolute; left: 96px; top: 480px; width: 1180px; height: 520px; display: flex; gap: 56px; align-items: flex-end; opacity: 0; visibility: hidden; transform: translateY(24px); transition: opacity .6s ease, transform .8s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .8s; }
-.stage[data-music="1"] .player { opacity: 1; visibility: visible; transform: none; transition: opacity .7s ease .25s, transform .9s cubic-bezier(.2, .8, .2, 1) .2s; }
-.stage[data-scene="nacht"] .player { opacity: 0; visibility: hidden; }
-.cover { display: block; width: 440px; height: 440px; flex: none; object-fit: cover; border-radius: 30px; background: rgba(255, 255, 255, .1); box-shadow: 0 40px 90px -30px rgb(var(--glow) / .9), 0 0 0 1px rgba(255, 255, 255, .25); }
-.pinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; padding-bottom: 8px; text-shadow: 0 2px 30px rgba(0, 0, 0, .3); }
-.stage[data-music="1"] .pinfo { box-sizing: border-box; padding: 26px 30px 24px; border: 1px solid rgba(255, 255, 255, var(--glass-border)); border-radius: 32px; background: linear-gradient(145deg, rgba(255, 255, 255, var(--glass-top)), rgba(255, 255, 255, var(--glass-low)) 48%, rgba(10, 20, 32, var(--glass-base))), rgba(12, 22, 34, var(--glass-base)); backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, var(--glass-shine)), 0 24px 56px -32px rgba(0, 8, 18, .75); transition: background .25s ease, backdrop-filter .25s ease, border-color .25s ease, box-shadow .25s ease; }
-.eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 22px; opacity: .85; margin-bottom: 10px; }
-.eyebrow .ic { font-size: 26px; }
-.ptitle { font-size: 76px; font-weight: 500; letter-spacing: -.03em; line-height: 1.02; text-wrap: balance; }
-.partist { font-size: 38px; opacity: .92; }
-.palbum { font-size: 26px; opacity: .7; }
-.prog { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; font-size: 21px; }
-.prog .bar { height: 8px; border-radius: 4px; }
+/* ---------- the side column under the clock: music or Minifunk ----------
+   x 96 … 736, y 392 … 998: flush with the clock on the left and with the
+   bottom row of tiles. Its contents stand at the bottom and grow upwards. */
+.side { position: absolute; left: 96px; top: 392px; width: 640px; height: 606px; pointer-events: none; }
+.side > * { pointer-events: auto; }
+.stage[data-scene="nacht"] .side { opacity: 0; visibility: hidden; }
+
+/* Shared building blocks: a glass card for the words, a photo under it */
+.side-card {
+  box-sizing: border-box; padding: 22px 26px 22px; border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, var(--glass-border));
+  background: linear-gradient(145deg, rgba(255, 255, 255, var(--glass-top)), rgba(255, 255, 255, var(--glass-low)) 48%, rgba(10, 20, 32, var(--glass-base))), rgba(12, 22, 34, var(--glass-base));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, var(--glass-shine)), 0 24px 56px -32px rgba(0, 8, 18, .75);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .22), 0 1px 14px rgba(0, 0, 0, .26);
+  transition: background .25s ease, backdrop-filter .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+.side-photo { display: block; width: 380px; height: 380px; flex: none; object-fit: cover; border-radius: 30px; background: rgba(255, 255, 255, .1); box-shadow: 0 40px 90px -30px rgb(var(--glow) / .9), 0 0 0 1px rgba(255, 255, 255, .25); }
+
+/* Pops up: rises a little and grows from the cover's corner */
+.player, .funk-view { position: absolute; left: 0; bottom: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; opacity: 0; visibility: hidden; transform: translateY(28px) scale(.96); transform-origin: 0 100%; transition: opacity .5s ease, transform .7s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .7s; }
+.stage[data-music="1"] .player, .funk-view.on { opacity: 1; visibility: visible; transform: none; transition: opacity .6s ease .1s, transform .8s cubic-bezier(.2, .9, .25, 1.05) .05s; }
+.stage.no-anim .player { transition: none; }
+
+/* Music: title and progress flush above the cover, exactly as wide */
+.pinfo { width: 380px; display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 17px; letter-spacing: .02em; opacity: .8; margin-bottom: 4px; }
+.eyebrow .ic { font-size: 21px; }
+.ptitle { font-size: 34px; font-weight: 500; letter-spacing: -.02em; line-height: 1.08; text-wrap: balance; }
+.partist { font-size: 21px; opacity: .88; }
+.prog { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: 16px; opacity: .9; }
+.prog .bar { height: 6px; border-radius: 3px; }
 
 /* ---------- edit mode ---------- */
 .t .x { position: absolute; top: 12px; right: 12px; width: 48px; height: 48px; border-radius: 24px; border: 0; display: none; align-items: center; justify-content: center; font-size: 24px; color: #111; background: rgba(255, 255, 255, .92); cursor: pointer; z-index: 3; }

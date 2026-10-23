@@ -115,10 +115,10 @@ test('glass preference clamps values and adjusts surface properties', async () =
   assert.equal(applyGlass(stage, -10), 0);
 });
 
-test('tile and music glass effects read the adjustable surface variables', () => {
+test('tiles and the side cards (music, Minifunk) read the adjustable surface variables', () => {
   const dashboardCss = readFileSync(new URL('../web/css/dashboard.css', import.meta.url), 'utf8');
   const tile = dashboardCss.match(/\.t\s*\{([^}]*)\}/)?.[1] ?? '';
-  const info = dashboardCss.match(/\.stage\[data-music="1"\]\s+\.pinfo\s*\{([^}]*)\}/)?.[1] ?? '';
+  const info = dashboardCss.match(/\.side-card\s*\{([^}]*)\}/)?.[1] ?? '';
 
   assert.match(tile, /blur\(var\(--glass-blur\)\)/);
   assert.match(tile, /var\(--glass-base\)/);

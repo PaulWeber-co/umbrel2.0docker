@@ -70,15 +70,18 @@
           </header>
           <div id="tiles"></div>
 
-          <div class="player" id="player" aria-label="Läuft gerade">
-            <img class="cover" id="cover" alt="" width="440" height="440">
-            <div class="pinfo">
-              <div class="eyebrow"><svg class="ic"><use href="#i-airplay"/></svg>Läuft auf XPS Lautsprecher</div>
-              <div class="ptitle" id="ptitle"></div>
-              <div class="partist" id="partist"></div>
-              <div class="palbum" id="palbum"></div>
-              <div class="prog"><div class="bar"><i id="pbar"></i></div><div class="times"><span id="ppos">0:00</span><span id="pdur">0:00</span></div></div>
+          <!-- The free space under the clock: music, else Minifunk (features/music.js, minifunk.js) -->
+          <div class="side" id="side">
+            <div class="player" id="player" aria-label="Läuft gerade">
+              <div class="pinfo side-card">
+                <div class="eyebrow"><svg class="ic"><use href="#i-airplay"/></svg>XPS Lautsprecher</div>
+                <div class="ptitle" id="ptitle"></div>
+                <div class="partist" id="partist"></div>
+                <div class="prog"><div class="bar"><i id="pbar"></i></div><div class="times"><span id="ppos">0:00</span><span id="pdur">0:00</span></div></div>
+              </div>
+              <img class="cover side-photo" id="cover" alt="" width="380" height="380">
             </div>
+            <div class="funk" id="funk" aria-live="polite"></div>
           </div>
         </section>
 
