@@ -193,4 +193,9 @@ test('the PIN locks changes from other devices, not from the kiosk', async () =>
   await assert.rejects(access.unlock(remote(), '4711'), (error) => error.status === 429);
   clock += 10 * 60_000 + 1;
   assert.match(await access.unlock(remote(), '4711'), /^xps_dash=/);
+
+  // Home Assistant sends the PIN as a header instead of a cookie
+  const automation = (pin) => ({ socket: { remoteAddress: '172.17.0.5' }, headers: { 'x-dashboard-pin': pin } });
+  assert.equal(await access.canChange(automation('4711')), true);
+  assert.equal(await access.canChange(automation('1234')), false);
 });

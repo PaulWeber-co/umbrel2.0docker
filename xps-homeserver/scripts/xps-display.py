@@ -7,7 +7,8 @@
   xps-display nacht [Minuten]     only the night clock
   xps-display an [Minuten]        dashboard on
   xps-display morgen              screen off until the schedule starts again
-  xps-display auto                end a temporary state
+  xps-display auto                back to automatic: ends a temporary state
+                                  and the modes "an" and "aus"
   xps-display modus auto|an|aus   automatic, always on, or only a server
 
 It talks to the dashboard on this machine (http://127.0.0.1:7777), which
@@ -38,8 +39,16 @@ def call(method, path, body=None):
         sys.exit(f"xps-display: Dashboard nicht erreichbar ({error}); systemctl status xps-dashboard")
 
 
+DAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+
+
 def clock(ms):
-    return time.strftime("%a %H:%M", time.localtime(ms / 1000)) if ms else ""
+    """22:30 today, else "Sa 07:00", in the XPS's time zone"""
+    if not ms:
+        return ""
+    at = time.localtime(ms / 1000)
+    text = time.strftime("%H:%M", at)
+    return text if at.tm_yday == time.localtime().tm_yday else f"{DAYS[at.tm_wday]} {text}"
 
 
 def show(snapshot):
@@ -65,7 +74,8 @@ def main(args):
         print(__doc__)
         return None
     if word == "auto":
-        return show(call("POST", "/api/control/override", {"clear": True}))
+        call("POST", "/api/control/override", {"clear": True})
+        return show(call("PUT", "/api/control", {"mode": "auto"}))
     if word == "morgen":
         return show(call("POST", "/api/control/override", {"state": "off", "until": "morning"}))
     if word in ("modus", "mode") and len(args) == 2 and args[1].lower() in MODES:

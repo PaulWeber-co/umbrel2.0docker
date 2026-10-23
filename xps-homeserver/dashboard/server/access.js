@@ -10,7 +10,8 @@
 //              dashboard's own origin. A page on another site cannot send
 //              JSON without the browser asking first, and nobody answers.
 //   PIN        optional, DASH_PIN: changes from other devices need the PIN
-//              once per browser (a cookie). The kiosk on the XPS itself
+//              once per browser (a cookie), or in the header x-dashboard-pin
+//              (Home Assistant's rest_command). The kiosk on the XPS itself
 //              (127.0.0.1) never asks.
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
@@ -92,6 +93,22 @@ export function createAccess({ config, store, now = () => Date.now() }) {
     return Boolean(value) && timingSafeEqual(digest(value), digest(await token()));
   }
 
+  // Five wrong PINs from one address lock it out for ten minutes
+  function checkPin(address, attempt) {
+    const record = failures.get(address);
+    if (record && record.until > now()) {
+      throw Object.assign(new Error('Zu viele Versuche, bitte in 10 Minuten noch einmal'), { status: 429 });
+    }
+    if (typeof attempt === 'string' && timingSafeEqual(digest(attempt.trim()), digest(pin))) {
+      failures.delete(address);
+      return true;
+    }
+    // A lockout that has run out starts the count again
+    const count = (record && !record.until ? record.count : 0) + 1;
+    failures.set(address, { count, until: count >= MAX_FAILURES ? now() + LOCKOUT_MS : 0 });
+    return false;
+  }
+
   return {
     allowedHosts,
     pinSet: Boolean(pin),
@@ -104,24 +121,15 @@ export function createAccess({ config, store, now = () => Date.now() }) {
     },
 
     async canChange(req) {
-      return !pin || isLoopback(req.socket.remoteAddress) || unlocked(req);
+      if (!pin || isLoopback(req.socket.remoteAddress) || (await unlocked(req))) return true;
+      const header = req.headers['x-dashboard-pin'];
+      return header !== undefined && checkPin(req.socket.remoteAddress, header);
     },
 
     // → the Set-Cookie value; throws 401 for a wrong PIN, 429 after five
     async unlock(req, attempt) {
       if (!pin) return null;
-      const address = req.socket.remoteAddress;
-      const record = failures.get(address);
-      if (record && record.until > now()) {
-        throw Object.assign(new Error('Zu viele Versuche, bitte in 10 Minuten noch einmal'), { status: 429 });
-      }
-      if (typeof attempt !== 'string' || !timingSafeEqual(digest(attempt.trim()), digest(pin))) {
-        // A lockout that has run out starts the count again
-        const count = (record && !record.until ? record.count : 0) + 1;
-        failures.set(address, { count, until: count >= MAX_FAILURES ? now() + LOCKOUT_MS : 0 });
-        throw Object.assign(new Error('Falsche PIN'), { status: 401 });
-      }
-      failures.delete(address);
+      if (!checkPin(req.socket.remoteAddress, attempt)) throw Object.assign(new Error('Falsche PIN'), { status: 401 });
       return `${COOKIE}=${await token()}; Path=/; HttpOnly; SameSite=Strict; Max-Age=31536000`;
     },
   };
