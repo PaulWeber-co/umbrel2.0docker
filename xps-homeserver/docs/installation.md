@@ -110,6 +110,10 @@ sudo docker ps                # umbrel, umbrel-port-publisher, xps-airplay
       unter *Einstellungen* die **Zwei-Faktor-Anmeldung** einschalten.
 - [ ] Auf dem iPhone im Kontrollzentrum AirPlay → „XPS Lautsprecher“; die
       Musik kommt aus der Kopfhörerbuchse, das Dashboard zeigt Cover und Titel.
+- [ ] In der Spotify-App unter *Geräte* „XPS Lautsprecher“ wählen
+      (Spotify Connect); auch hier erscheinen Cover und Titel, oben rechts
+      im Player das Spotify-Zeichen. Danach wieder AirPlay: beides wechselt
+      sich ab.
 
 ## 7. Speedport
 
@@ -129,7 +133,7 @@ Home-Bildschirm*. Dort stellst du ein, was der Wandbildschirm wann zeigt:
 | Schnell | An / Schwarz / Aus für 1 Std., Aus bis morgen früh; „Zurück zur Automatik“ beendet es | – |
 | Zeitplan | Mo–Fr und Sa/So je an/aus; außerhalb Nachtuhr, Schwarz oder Aus | 06:00–22:30, Sa/So 07:00–23:30, Nachtuhr |
 | Automatik | dunkler Raum → Nachtuhr; Musik weckt; Antippen weckt (Minuten); Akkubetrieb → aus; niemand zu Hause → schwarz/aus | alles an, Antippen 5 Min., Anwesenheit aus |
-| Funktionen | automatische oder feste Helligkeit, AirPlay, Musikansicht, Hintergrundvideos, Glas-Effekt | alles an |
+| Funktionen | automatische oder feste Helligkeit, Lautsprecher (AirPlay und Spotify), Musikansicht, Hintergrundvideos, Glas-Effekt | alles an |
 | Kacheln | jede Kachel ein/aus, „Beispiel“ = Einstellung fehlt | alle an |
 
 Dieselbe Steuerung öffnet sich auf dem Wandbildschirm über den runden Knopf
@@ -179,7 +183,7 @@ Was sich ohne den echten XPS nicht prüfen ließ, einmal durchgehen:
       kommt die Nachtuhr (`cat /run/xps-ambient/ambient.json`). Feste Helligkeit
       in der Steuerung ändert das Display sofort.
 - [ ] **Webcam-LED** ist aus, solange der Bildschirm schwarz oder aus ist.
-- [ ] **Ton** über AirPlay; Lautstärke ggf. mit `alsamixer`, dann `sudo alsactl store`.
+- [ ] **Ton** über AirPlay und Spotify; Lautstärke ggf. mit `alsamixer`, dann `sudo alsactl store`.
 - [ ] **Zuklappen**: Server und Dashboard laufen weiter.
 - [ ] **Netzteil ziehen**: nach etwa 30 Sekunden geht der Bildschirm aus
       (Akkubetrieb), Umbrel läuft weiter; Netzteil wieder dran → Bildschirm an.

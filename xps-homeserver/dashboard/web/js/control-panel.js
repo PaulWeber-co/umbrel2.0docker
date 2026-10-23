@@ -236,7 +236,7 @@ export function createPanel(root, { getState, onControl, onAccess = () => {}, on
       <section class="cp-card">
         <h3>Automatik</h3>
         ${toggle('rules.darkRoom', r.darkRoom, 'Dunkler Raum → Nachtuhr', 'misst die Webcam, ohne Bilder zu speichern')}
-        ${toggle('rules.musicWakes', r.musicWakes, 'Musik weckt den Bildschirm', 'AirPlay zeigt Cover und Titel, auch nachts', { disabled: !settings.features.musicMode })}
+        ${toggle('rules.musicWakes', r.musicWakes, 'Musik weckt den Bildschirm', 'AirPlay oder Spotify zeigt Cover und Titel, auch nachts', { disabled: !settings.features.musicMode })}
         ${toggle('rules.batterySaver', r.batterySaver, 'Bei Akkubetrieb aus', 'Stromausfall: Umbrel läuft länger')}
         <label class="cp-row">
           <span class="cp-text"><span>Antippen weckt</span><small>dunklen Bildschirm kurz einschalten</small></span>
@@ -268,8 +268,8 @@ export function createPanel(root, { getState, onControl, onAccess = () => {}, on
           <span class="cp-text"><span>Helligkeit</span><small data-live="brightness">${f.brightness} %${f.autoBrightness ? ' · nur ohne Automatik' : ''}</small></span>
           <input type="range" min="5" max="100" step="5" value="${f.brightness}" data-path="features.brightness" data-key="features.brightness" data-number${f.autoBrightness ? ' disabled' : ''} aria-label="Helligkeit in Prozent">
         </label>
-        ${toggle('features.airplay', f.airplay, 'AirPlay-Lautsprecher', '„XPS Lautsprecher“ an der Kopfhörerbuchse')}
-        ${toggle('features.musicMode', f.musicMode, 'Musikansicht', 'Kacheln rücken zur Seite, Cover groß')}
+        ${toggle('features.airplay', f.airplay, 'Lautsprecher', 'AirPlay und Spotify Connect, „XPS Lautsprecher“ an der Kopfhörerbuchse')}
+        ${toggle('features.musicMode', f.musicMode, 'Musikansicht', 'Cover, Titel und Fortschritt unter der Uhr')}
         ${toggle('features.videos', f.videos, 'Hintergrundvideos', 'aus: ruhige Farbverläufe, spart Strom')}
         <label class="cp-row cp-range">
           <span class="cp-text"><span>Glas-Effekt</span><small data-live="glass">${state.glassLevel ?? 55} · klar bis milchig</small></span>
@@ -314,7 +314,7 @@ export function createPanel(root, { getState, onControl, onAccess = () => {}, on
     const ambient = state.widgets?.ambient?.data;
     const rows = [
       ['Kiosk-Browser', status ? unitState(status.kiosk) : '–'],
-      ['AirPlay', status ? unitState(status.airplay) : '–'],
+      ['Lautsprecher', status ? unitState(status.airplay) : '–'],
       ['Webcam', !host.camera ? 'aus' : ambient?.available ? `misst · Raum ${ambient.ambientPercent} %` : 'an'],
       ['Helligkeit', Number.isFinite(status?.backlightPercent) ? `${status.backlightPercent} %` : '–'],
       ['Strom', inputs.onBattery === true ? 'Akku' : inputs.onBattery === false ? 'Netzteil' : '–'],

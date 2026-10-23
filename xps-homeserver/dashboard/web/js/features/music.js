@@ -1,5 +1,6 @@
-// Music mode: while AirPlay plays (server/widgets/music.js, data from
-// shairport-sync) the player pops up in the free space under the clock:
+// Music mode: while AirPlay or Spotify plays (server/widgets/music.js, data
+// from shairport-sync or go-librespot) the player pops up in the free space
+// under the clock, with the receiver's mark in its corner:
 // title, artist and a smoothly running progress bar flush above the cover,
 // and the background glows in the cover's colour. The tiles never move.
 // Edit mode pauses music mode until it ends.
@@ -75,6 +76,7 @@ export function init(ctx) {
     pos: $('#ppos'),
     dur: $('#pdur'),
     night: $('#ntitle'), // optional: the "♪ title" line of the night view
+    source: $('#psource'),
   };
   const prog = el.bar?.closest('.prog') ?? null;
   const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -119,7 +121,10 @@ export function init(ctx) {
 
   // Texts, cover and the static parts of the progress display
   function fill() {
-    const title = data.title || 'AirPlay';
+    const spotify = data.via === 'spotify';
+    const title = data.title || (spotify ? 'Spotify' : 'AirPlay');
+    el.source?.querySelector('use')?.setAttribute('href', spotify ? '#i-spotify' : '#i-airplay');
+    el.source?.setAttribute('aria-label', `${spotify ? 'Spotify' : 'AirPlay'} auf XPS Lautsprecher`);
     setText(el.title, title);
     el.title?.classList.toggle('long', title.length > 22);
     setText(el.artist, [data.artist, data.album].filter(Boolean).join(' · '));

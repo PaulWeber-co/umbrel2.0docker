@@ -26,6 +26,7 @@ tun kannst.
 | Kiosk-Browser | Läuft als eigener Benutzer `xps-kiosk` ohne Passwort, ohne sudo, ohne Shell. |
 | Steuerung | Was der Bildschirm macht, entscheidet das Dashboard ohne Rechte; der Root-Dienst `xps-control` nimmt aus `host-state.json` nur fünf geprüfte Schalter an (Kiosk, AirPlay, Helligkeit, Webcam, Anzeige) und hat kein Netz. |
 | Webcam | `xps-ambient` hat kein Netzwerk (`PrivateNetwork=yes`), darf nur `/dev/video0`, liest 16×12 Graupunkte, verwirft sie sofort und schreibt nur Zahlen. Bei dunklem oder ausgeschaltetem Bildschirm ist die Kamera aus. |
+| Spotify Connect | go-librespot läuft im Container ohne Linux-Capabilities, mit schreibgeschütztem Dateisystem und nur seinem eigenen Ordner; seine Steuer-API lauscht nur auf 127.0.0.1. Das Dashboard holt Cover nur per HTTPS von Spotifys Bildservern. |
 | Docker | Nur `xps-services` (ohne Netz) fragt die Docker-Sockets und schreibt Namen und Zahlen in eine Datei; das Dashboard bekommt nie Docker-Zugriff. |
 | Minifunk | Das Dashboard kennt das gemeinsame Knuddl-Geheimnis (nur in der dashboard.env) und nutzt im Raum nur `x/status` und `x/funk`, nie eure Postfächer. Alles darin ist Ende-zu-Ende verschlüsselt (AES-GCM, wie in der App). Was ankommt, wird geprüft: Text höchstens 500 Zeichen und maskiert angezeigt, Fotos nur als echtes JPEG bis 1,5 MB, eins pro Person und Tag. Fotos liegen nur im Datenordner des Dashboards und werden nach 6 Stunden gelöscht. |
 | Kalender und Erinnerungen | Die Kalender-Links stehen nur in der dashboard.env. Der Kurzbefehl für Erinnerungen geht durch dieselben Prüfungen wie jede Änderung, mit `DASH_PIN` per Header `x-dashboard-pin`. |
@@ -64,8 +65,9 @@ Nach Wichtigkeit:
    lesbar (es hängt ja auch sichtbar an der Wand), auch Minifunk-Fotos,
    solange sie angezeigt werden. **`DASH_PIN` setzen**,
    sobald Gäste oder unbekannte Geräte im WLAN sind, und Gäste ins
-   Gäste-WLAN des Speedport schicken. AirPlay kann jeder im WLAN benutzen
-   (shairport-sync kennt bei AirPlay 2 kein Passwort); schaltbar in der
+   Gäste-WLAN des Speedport schicken. AirPlay und Spotify Connect kann jeder
+   im WLAN benutzen (shairport-sync kennt bei AirPlay 2 kein Passwort,
+   Spotify Connect meldet sich ohne Konto an); beides gemeinsam schaltbar in der
    Steuerung.
 3. **Umbrel-Apps.** Umbrel läuft als privilegierter Container; eine
    bösartige App hätte praktisch den ganzen XPS. Nur bekannte Apps aus dem

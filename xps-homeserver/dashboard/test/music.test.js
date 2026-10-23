@@ -432,24 +432,25 @@ test('widget: the hub publishes every change from the pipe', onLinux, async () =
   try {
     hub.start();
     await waitFor(() => seen.length > 0, 'erster Stand');
-    assert.deepEqual(seen[0], inactiveState());
+    assert.deepEqual(seen[0], { ...inactiveState(), via: null });
     await writeTo(path, stream.toString('latin1'));
     await waitFor(() => seen.at(-1)?.position === 10, 'Stand aus der Pipe');
     assert.ok(seen.some((data) => data.active && data.title === 'Weites Land' && !data.coverUrl), 'cover follows later');
+    assert.equal(seen.at(-1).via, 'airplay');
     assert.deepEqual(await music.fetch(hub.ctx), seen.at(-1), 'fetch() repeats the current state');
   } finally {
     hub.stop();
     rmSync(dir, { recursive: true, force: true });
   }
-  assert.deepEqual(await music.fetch(hub.ctx), inactiveState(), 'stopped: inactive');
+  assert.deepEqual(await music.fetch(hub.ctx), { ...inactiveState(), via: null }, 'stopped: inactive');
 });
 
 test('widget: no reader, no pipe, no crash', async () => {
-  assert.deepEqual(await music.fetch({}), inactiveState());
+  assert.deepEqual(await music.fetch({}), { ...inactiveState(), via: null });
   assert.equal(music.isConfigured({}), true);
-  const ctx = { config: { get: (key, fallback) => (key === 'DASH_SHAIRPORT_PIPE' ? '/nonexistent/shairport' : fallback) }, log: quiet };
+  const ctx = { config: { get: (key, fallback) => ({ DASH_SHAIRPORT_PIPE: '/nonexistent/shairport', DASH_SPOTIFY_URL: 'http://127.0.0.1:9' })[key] ?? fallback }, log: quiet };
   const stop = music.watch(ctx, () => assert.fail('nothing to publish'));
-  assert.deepEqual(await music.fetch(ctx), inactiveState());
+  assert.deepEqual(await music.fetch(ctx), { ...inactiveState(), via: null });
   stop();
 });
 
@@ -460,7 +461,7 @@ test('demo data has the same shape as real data', () => {
   const at = new Date('2026-10-16T20:15:00+02:00');
   const demo = music.demo({ config, now: () => at });
   const shape = (value) => (value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, shape(value[key])])) : typeof value);
-  assert.deepEqual(shape(demo), shape(real.state.state));
+  assert.deepEqual(shape(demo), shape({ ...real.state.state, via: 'airplay' }));
   assert.equal(demo.active && demo.playing, true);
   assert.equal(demo.title, 'Weites Land');
   assert.equal(demo.positionAt, at.getTime());
@@ -476,6 +477,10 @@ test('demo data has the same shape as real data', () => {
   assert.ok(positions.some((p, i) => i > 0 && p < positions[i - 1]), 'wraps around');
 
   // Without DASH_DEMO_MUSIC the demo stays quiet
-  assert.deepEqual(music.demo({ config: { get: (_, fallback) => fallback }, now: () => at }), inactiveState());
-  assert.deepEqual(music.demo({ config: { place: 'Hamburg' } }), inactiveState(), 'config without get()');
+  assert.deepEqual(music.demo({ config: { get: (_, fallback) => fallback }, now: () => at }), { ...inactiveState(), via: null });
+  assert.deepEqual(music.demo({ config: { place: 'Hamburg' } }), { ...inactiveState(), via: null }, 'config without get()');
+  // DASH_DEMO_MUSIC=spotify: the same track from Spotify
+  const fromSpotify = music.demo({ config: { get: (key, fallback) => (key === 'DASH_DEMO_MUSIC' ? 'spotify' : fallback) }, now: () => at });
+  assert.equal(fromSpotify.via, 'spotify');
+  assert.equal(fromSpotify.source, 'Spotify');
 });

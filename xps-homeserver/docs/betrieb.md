@@ -34,7 +34,9 @@ Danach:
 - Steuerung: `http://xps.local:7777/steuerung` (aufs Handy legen) oder der
   runde Knopf unten rechts auf dem Display
 - Umbrel: `http://umbrel.local` (beim ersten Mal Konto anlegen)
-- AirPlay: auf dem iPhone „XPS Lautsprecher“ wählen
+- Musik: auf dem iPhone über AirPlay oder in der Spotify-App unter
+  *Geräte* „XPS Lautsprecher“ wählen (Spotify Connect braucht Premium; so
+  geht es auch vom Mac oder vom Handy eines Gasts im WLAN)
 - Tailscale für unterwegs: `sudo xps-setup-tailscale`
 
 ## Steuerung: was der Bildschirm wann zeigt
@@ -236,7 +238,7 @@ xps-display                             # was der Bildschirm zeigt und warum
 systemctl status xps-dashboard          # Dashboard
 systemctl status xps-kiosk              # Display (Kiosk-Browser)
 systemctl status xps-control            # setzt die Steuerung um: Kiosk, AirPlay, Helligkeit
-systemctl status xps-airplay            # AirPlay (Logs: sudo docker logs xps-airplay)
+systemctl status xps-airplay            # Lautsprecher (Logs: sudo docker logs xps-airplay bzw. xps-spotify)
 systemctl status xps-ambient            # Webcam-Helligkeit
 systemctl status xps-services           # Dienste-Statistik
 sudo docker ps                          # Umbrel und Co. (Logs: sudo docker logs umbrel)

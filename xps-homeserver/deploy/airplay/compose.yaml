@@ -1,6 +1,9 @@
-# AirPlay 2 needs the host network (mDNS, PTP via nqptp in the image). The
-# container uses the XPS's own avahi-daemon instead of starting a second one,
-# so xps.local and umbrel.local stay unique on the network.
+# The XPS speakers: AirPlay 2 (shairport-sync) and Spotify Connect
+# (go-librespot), both "XPS Lautsprecher" on the headphone jack. Both need the
+# host network for discovery (and AirPlay 2 for PTP via nqptp in the image).
+# They use the XPS's own avahi-daemon instead of starting another one, so
+# xps.local and umbrel.local stay unique on the network. One switch in the
+# control center (xps-airplay.service) starts and stops both.
 name: xps-airplay
 
 services:
@@ -20,6 +23,29 @@ services:
       - /run/shairport-sync:/run/shairport-sync
       - /var/run/dbus:/var/run/dbus
       - /var/run/avahi-daemon:/var/run/avahi-daemon
+    logging:
+      options:
+        max-size: "200k"
+        max-file: "5"
+
+  spotify:
+    image: ghcr.io/devgianlu/go-librespot:v0.10.5
+    container_name: xps-spotify
+    network_mode: host
+    restart: unless-stopped
+    # Needs nothing but the sound card, D-Bus for avahi and its own folder
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    devices:
+      - /dev/snd:/dev/snd
+    volumes:
+      - /var/lib/xps-spotify:/config
+      - /var/run/dbus:/var/run/dbus
+    tmpfs:
+      - /tmp
     logging:
       options:
         max-size: "200k"

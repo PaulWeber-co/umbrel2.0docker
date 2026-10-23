@@ -50,10 +50,14 @@ sind, zählen nicht als Problem.
 - **Glas-Effekt**: in der Steuerung unter Funktionen, von klar bis milchig.
   Der Wert gilt für alle Browser und den Kiosk (`DASH_DATA_DIR/settings.json`;
   `DASH_GLASS` ist nur der Startwert).
-- **Musikmodus**: Sobald etwas per AirPlay läuft, gleiten die Kacheln zur
-  Seite, Cover, Titel und Fortschritt erscheinen, der Hintergrund nimmt die
-  Farbe des Covers an. Nach dem Ende oder fünf Minuten Pause geht es zurück.
+- **Musikmodus**: Sobald etwas per AirPlay oder Spotify Connect läuft,
+  erscheinen unter der Uhr Cover, Titel und Fortschritt (mit dem Zeichen der
+  Quelle), der Hintergrund nimmt die Farbe des Covers an; die Kacheln bleiben,
+  wo sie sind. Nach dem Ende oder fünf Minuten Pause geht es zurück.
   Abschaltbar in der Steuerung; auf Wunsch weckt Musik den Bildschirm.
+  Spotify: go-librespot meldet sich unter `DASH_SPOTIFY_URL`
+  (Standard `http://127.0.0.1:3678`), Cover holt das Dashboard selbst von
+  Spotifys Bildservern.
 - **Tageszeiten**: Morgen, Tag, Abend und später Abend haben eigene Videos
   und Farben (in der Steuerung abschaltbar). Außerhalb des Zeitplans bleibt
   nur eine gedimmte Uhr, ein schwarzer oder ein ausgeschalteter Bildschirm;
@@ -68,7 +72,7 @@ Der Webcam-Dienst liest wenige Bilder in 16×12 Graupunkten in den Speicher,
 nimmt den Median und verwirft die Pixel sofort; er hat keinen
 Netzwerkzugang und schreibt nur Zahlen nach `/run/xps-ambient/ambient.json`.
 Bei schwarzem oder ausgeschaltetem Bildschirm bleibt die Kamera aus.
-AirPlay-Metadaten bleiben im Speicher des Dashboard-Prozesses.
+AirPlay- und Spotify-Metadaten bleiben im Speicher des Dashboard-Prozesses.
 
 Die Dashboard-Seite ist im Heimnetz ohne Anmeldung lesbar (von unterwegs
 über Tailscale). Änderungen (Licht, To-dos, Kacheln, Steuerung) nimmt der

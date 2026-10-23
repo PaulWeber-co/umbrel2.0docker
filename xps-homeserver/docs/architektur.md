@@ -30,8 +30,9 @@ Dell XPS 13 9350 · Debian 13 ohne Desktop · nur WLAN
 │                               (Kiosk, AirPlay, Backlight, Display aus)
 ├── xps-kiosk ................. cage + Chromium im Vollbild auf dem Display,
 │                               als eigener Benutzer ohne Rechte
-├── AirPlay ................... shairport-sync → Kopfhörerbuchse, Metadaten
-│                               ans Dashboard
+├── Lautsprecher .............. shairport-sync (AirPlay) und go-librespot
+│                               (Spotify Connect) → Kopfhörerbuchse,
+│                               Titel und Cover ans Dashboard
 ├── xps-ambient ............... Webcam → Raumhelligkeit, ohne Netzwerkzugriff
 └── xps-services .............. Docker-Statistik für die Dienste-Kachel
 ```
@@ -253,10 +254,24 @@ Liste an die Wand und bekommt in derselben Antwort zurück, was dort
 abgehakt oder eingetippt wurde. Das bleibt offen, bis ein späterer Abgleich
 es bestätigt, damit ein abgebrochener Lauf nichts verliert oder verdoppelt.
 
+### Spotify Connect
+
+go-librespot macht den XPS in der Spotify-App zum Gerät „XPS Lautsprecher“,
+neben AirPlay und in derselben Compose-Datei, also mit demselben Schalter in
+der Steuerung. Es meldet sich wie shairport-sync über den avahi-daemon des
+XPS an (D-Bus), braucht keine Anmeldung (Zeroconf: wer es auswählt, bringt
+sein Konto mit) und darf im Container nur die Soundkarte und seinen eigenen
+Ordner `/var/lib/xps-spotify`. Beide Empfänger nutzen das ALSA-Gerät
+`default`. go-librespot gibt es beim Pausieren frei, shairport-sync nach dem
+Ende einer Sitzung, so wechseln sie sich ab. Das Dashboard fragt die lokale
+API von go-librespot (`127.0.0.1:3678/status`) alle zwei Sekunden, solange
+etwas spielt, sonst alle fünf, und zeigt die Quelle, die gerade spielt
+(`server/widgets/music.js`).
+
 ## Offen
 
 - Dashboard-Integrationen am XPS konfigurieren und physisch prüfen.
-- AirPlay-Audio am XPS prüfen.
+- AirPlay- und Spotify-Ton am XPS prüfen.
 - Webcam-Regelung, Backlight und „Bildschirm aus“ am XPS prüfen.
 - Installer, Ausfall und Wiederherstellung am XPS praktisch durchspielen.
 

@@ -1,0 +1,28 @@
+# Spotify Connect speaker "XPS Lautsprecher" (go-librespot), next to the
+# AirPlay receiver on the same headphone jack. xps-airplay.service copies this
+# file to /var/lib/xps-spotify/config.yml, the container's writable config
+# directory, where go-librespot also keeps its state.
+#
+# Anyone in the home network with Spotify Premium can pick the speaker in the
+# Spotify app (Zeroconf, like AirPlay); nothing is logged in permanently. The
+# API only listens on 127.0.0.1: the dashboard asks it what plays
+# (dashboard/server/sources/spotify.js). go-librespot lets go of the sound card
+# whenever it pauses, so AirPlay and Spotify take turns.
+device_name: XPS Lautsprecher
+device_type: speaker
+audio_backend: alsa
+audio_device: default
+bitrate: 320
+initial_volume: 70
+zeroconf_enabled: true
+zeroconf_backend: avahi
+credentials:
+  type: zeroconf
+  zeroconf:
+    persist_credentials: false
+server:
+  enabled: true
+  address: 127.0.0.1
+  port: 3678
+  image_size: large
+log_level: info

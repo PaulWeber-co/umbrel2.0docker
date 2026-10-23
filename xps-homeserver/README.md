@@ -5,8 +5,9 @@ Ein Dell XPS 13 9350 als Homeserver, der jahrelang ohne Pflege läuft:
 - **Umbrel** mit allen Apps, als Container aus diesem Fork (Image baut GitHub)
 - ein **Wand-Dashboard** (Design A · Glas) im Vollbild auf dem eingebauten
   Display, auch im Browser unter `http://xps.local:7777`
-- ein **AirPlay-2-Lautsprecher** „XPS Lautsprecher“ über die Kopfhörerbuchse,
-  mit Cover, Fortschritt und Farbschein im Musikmodus des Dashboards
+- ein **Lautsprecher für AirPlay 2 und Spotify Connect** „XPS Lautsprecher“
+  über die Kopfhörerbuchse, mit Cover, Fortschritt und Farbschein im
+  Musikmodus des Dashboards
 - **automatische Helligkeit und Nachtansicht** über die Webcam, ohne dass je
   ein Bild gespeichert wird
 - **Luftaufnahmen** wie beim Apple TV hinter den Kacheln: Städte, Küsten,
@@ -36,7 +37,7 @@ Sicherheitsprüfung und Empfehlungen: [docs/sicherheit.md](docs/sicherheit.md).
 | [Dashboard](dashboard/README.md) | Wetter, Arbeitsweg mit Stau, Fotos, Kalender (Apple, Home Assistant), Dienste, To-dos (Apple Erinnerungen, Home Assistant), XPS-Werte, Zuhause, Minifunk; Bearbeiten-Modus, Glas-Regler, täglich wechselnde Luftaufnahmen, Kiosk als eigener Benutzer | fertig, getestet; Display am XPS abzunehmen |
 | Steuerung | Modi, Zeitplan, Schnellaktionen, Regeln, Funktionsschalter; `xps-control` setzt sie um, `xps-display` auf der Kommandozeile | fertig, getestet; Backlight und „Aus“ am XPS abzunehmen |
 | Sicherheit | CSRF- und DNS-Rebinding-Schutz, optionale PIN, CSP, Schrift lokal, Dienste ohne Rechte und ohne Netz | geprüft am 23.10.2026 |
-| AirPlay | Shairport Sync 5.5 mit AirPlay 2, Metadaten-Pipe, Musikmodus | eingebaut; Ton am XPS abzunehmen |
+| Lautsprecher | Shairport Sync 5.5 mit AirPlay 2 (Metadaten-Pipe) und go-librespot 0.10 für Spotify Connect (lokale API), Musikmodus | eingebaut; Ton am XPS abzunehmen |
 | Webcam | Helligkeit messen, Display regeln, Nachtansicht im Dunkeln | eingebaut; Kamera am XPS abzunehmen |
 
 ## Ordner
@@ -45,7 +46,7 @@ Sicherheitsprüfung und Empfehlungen: [docs/sicherheit.md](docs/sicherheit.md).
 | --- | --- |
 | `installer/` | baut den USB-Stick; `installer/iso/xps/host/` ist die Server-Konfiguration des Grundsystems |
 | `dashboard/` | Server (Node.js, ohne Abhängigkeiten) und Oberfläche |
-| `deploy/` | Umbrel-Compose, AirPlay-Compose, systemd-Units |
+| `deploy/` | Umbrel-Compose, Lautsprecher-Compose (AirPlay, Spotify), systemd-Units |
 | `scripts/` | `setup-xps.sh` richtet alles ein, `update-xps.sh` aktualisiert, Umbrel-Update/-Rollback, Steuerung (`xps-control.py`, `xps-display.py`), Kiosk-Start, Webcam- und Dienste-Messung |
 | `docs/` | Installation, Architektur, Betrieb und Notfallplan, Sicherheit |
 
