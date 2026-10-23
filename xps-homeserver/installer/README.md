@@ -1,5 +1,8 @@
 # Installer-Stick für den XPS
 
+Die ganze Installation in einer Liste zum Abhaken:
+[docs/installation.md](../docs/installation.md). Hier die Einzelheiten zum Stick.
+
 Ein USB-Stick, der Debian 13 ohne Rückfragen und ohne Netzwerk auf den XPS
 installiert. Nach dem ersten Start ist der XPS schon im WLAN und per
 `ssh <user>@xps.local` erreichbar, mit deinem Mac-Schlüssel und ohne Passwort.

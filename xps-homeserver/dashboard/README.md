@@ -19,6 +19,9 @@ dem XPS-Display und in jedem Browser unter `http://xps.local:7777`.
 | XPS | CPU, RAM, SSD, Temperatur des XPS selbst | – |
 | Zuhause | Home-Assistant-Entitäten, Licht und Schalter tippbar | `DASH_HA_ENTITIES` |
 
+Zugriff: `DASH_PIN` (Sperre für Änderungen von anderen Geräten),
+`DASH_ALLOWED_HOSTS` (eigene Hostnamen).
+
 Alle Einstellungen mit Beispielen stehen in
 [`dashboard.env.example`](../dashboard.env.example). Fehlt einer Kachel eine
 Pflicht-Einstellung, zeigt sie Beispieldaten und oben rechts die Marke
@@ -35,28 +38,43 @@ sind, zählen nicht als Problem.
 
 ## Bedienung
 
-- **Bearbeiten**: lange auf eine Kachel drücken. Dann Kacheln gleicher Größe
+- **Steuerung**: der runde Knopf unten rechts, oder `http://xps.local:7777/steuerung`
+  am Handy. Bildschirm automatisch, immer an oder aus (nur Server),
+  Schnellaktionen, Zeitplan, Regeln, Funktionen, Kacheln ein/aus und der
+  Systemzustand; alles gilt sofort für alle Geräte. Was wann gilt, steht in
+  [docs/betrieb.md](../docs/betrieb.md#steuerung-was-der-bildschirm-wann-zeigt).
+- **Bearbeiten**: lange auf eine Kachel drücken (oder Steuerung → „Kacheln
+  anordnen“). Dann Kacheln gleicher Größe
   tauschen, auf freie Felder ziehen, mit × entfernen und unten wieder
   hinzufügen; „Fertig“ speichert die Anordnung für alle Bildschirme.
-- **Glas-Effekt**: Reglersymbol unten rechts, von klar bis milchig. Der Wert
-  gilt für alle Browser und den Kiosk (`DASH_DATA_DIR/settings.json`;
+- **Glas-Effekt**: in der Steuerung unter Funktionen, von klar bis milchig.
+  Der Wert gilt für alle Browser und den Kiosk (`DASH_DATA_DIR/settings.json`;
   `DASH_GLASS` ist nur der Startwert).
 - **Musikmodus**: Sobald etwas per AirPlay läuft, gleiten die Kacheln zur
   Seite, Cover, Titel und Fortschritt erscheinen, der Hintergrund nimmt die
   Farbe des Covers an. Nach dem Ende oder fünf Minuten Pause geht es zurück.
-- **Tageszeiten**: Morgen, Tag, Abend und Nacht haben eigene Videos und
-  Farben; nachts bleibt nur eine gedimmte Uhr. Ist der Raum dunkel (Webcam),
-  kommt die Nachtansicht auch tagsüber.
+  Abschaltbar in der Steuerung; auf Wunsch weckt Musik den Bildschirm.
+- **Tageszeiten**: Morgen, Tag, Abend und später Abend haben eigene Videos
+  und Farben (in der Steuerung abschaltbar). Außerhalb des Zeitplans bleibt
+  nur eine gedimmte Uhr, ein schwarzer oder ein ausgeschalteter Bildschirm;
+  ist der Raum dunkel (Webcam), kommt die Nachtuhr auch tagsüber. Antippen
+  zeigt das Dashboard für ein paar Minuten.
+- **Andere Geräte**: Ein Browser am Mac oder Handy zeigt immer die Kacheln,
+  auch wenn die Wand schwarz ist; oben steht dann „Wandbildschirm aus“.
 
-## Datenschutz
+## Datenschutz und Sicherheit
 
 Der Webcam-Dienst liest wenige Bilder in 16×12 Graupunkten in den Speicher,
-nimmt den Mittelwert und verwirft die Pixel sofort; er hat keinen
-Netzwerkzugang und schreibt nur Prozentwerte nach
-`/run/xps-ambient/ambient.json`. AirPlay-Metadaten bleiben im Speicher des
-Dashboard-Prozesses. Die Dashboard-Seite und ihre Aktionen sind im Heimnetz
-ohne Anmeldung erreichbar; das Netz muss also vertrauenswürdig sein (von
-unterwegs über Tailscale).
+nimmt den Median und verwirft die Pixel sofort; er hat keinen
+Netzwerkzugang und schreibt nur Zahlen nach `/run/xps-ambient/ambient.json`.
+Bei schwarzem oder ausgeschaltetem Bildschirm bleibt die Kamera aus.
+AirPlay-Metadaten bleiben im Speicher des Dashboard-Prozesses.
+
+Die Dashboard-Seite ist im Heimnetz ohne Anmeldung lesbar (von unterwegs
+über Tailscale). Änderungen (Licht, To-dos, Kacheln, Steuerung) nimmt der
+Server nur als JSON vom Dashboard selbst und nur unter Heimnetz-Namen an; mit
+`DASH_PIN` brauchen andere Geräte zusätzlich einmal die PIN, der Kiosk nie.
+Mehr in [docs/sicherheit.md](../docs/sicherheit.md).
 
 ## Entwickeln
 

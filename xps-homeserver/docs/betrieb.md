@@ -1,7 +1,8 @@
 # Betrieb und Notfallplan
 
 Alles, was nach dem [Installer-Stick](../installer/README.md) kommt. Befehle
-laufen per SSH vom Mac (`ssh paul@xps.local`).
+laufen per SSH vom Mac (`ssh paul@xps.local`). Die erste Installation von
+Anfang bis Ende: [installation.md](installation.md).
 
 ## Einmalig auf GitHub
 
@@ -17,28 +18,85 @@ Code aus dem öffentlichen Fork, keine Geheimnisse.
 ```sh
 sudo git clone --filter=blob:none --sparse https://github.com/PaulWeber-co/umbrel2.0docker.git /opt/xps-homeserver
 sudo git -C /opt/xps-homeserver sparse-checkout set xps-homeserver
-sudo /opt/xps-homeserver/xps-homeserver/scripts/setup-xps.sh paul
+sudo /opt/xps-homeserver/xps-homeserver/scripts/setup-xps.sh
 ```
 
-`paul` ist der Benutzer, der auf dem Display angemeldet wird. Das Skript
-installiert fehlende Pakete, die Grundsystem-Dienste (Kernel-Wächter,
-Watchdogs, `umbrel.local`, Akku), Dashboard, Kiosk, AirPlay, Webcam-Sensor
-und Dienste-Statistik, lädt einmalig die Hintergrundvideos und startet
-Umbrel. Es lässt sich jederzeit erneut ausführen.
+Das Skript installiert fehlende Pakete, die Grundsystem-Dienste
+(Kernel-Wächter, Watchdogs, `umbrel.local`, Akku), Dashboard, Steuerung,
+Kiosk, AirPlay, Webcam-Sensor und Dienste-Statistik, lädt einmalig die
+Hintergrundvideos und startet Umbrel. Den Kiosk-Browser startet es als
+eigenen Benutzer `xps-kiosk` ohne Rechte. Es lässt sich jederzeit erneut
+ausführen.
 
 Danach:
 
 - Dashboard: auf dem Display und unter `http://xps.local:7777`
+- Steuerung: `http://xps.local:7777/steuerung` (aufs Handy legen) oder der
+  runde Knopf unten rechts auf dem Display
 - Umbrel: `http://umbrel.local` (beim ersten Mal Konto anlegen)
 - AirPlay: auf dem iPhone „XPS Lautsprecher“ wählen
 - Tailscale für unterwegs: `sudo xps-setup-tailscale`
+
+## Steuerung: was der Bildschirm wann zeigt
+
+Bildschirm, Zeitplan, Automatik und Funktionen stellst du in der Steuerung
+ein; das gilt sofort, für alle Geräte und über Neustarts hinweg. Der
+Wandbildschirm kennt vier Zustände:
+
+| Zustand | Was passiert |
+| --- | --- |
+| An | das Dashboard, je nach Tageszeit mit eigenem Video |
+| Nachtuhr | nur die gedimmte Uhr |
+| Schwarz | schwarz, Hintergrundbeleuchtung und Webcam aus; Antippen weckt |
+| Aus | Kiosk-Browser gestoppt, Display aus; der XPS ist nur Server |
+
+Wer entscheidet, von oben nach unten (das Erste, das zutrifft, gilt):
+
+1. eine **Schnellaktion** („Aus · 1 Std.“, „Aus bis morgen“) bis zu ihrem Ende
+2. **Akkubetrieb** (Netzteil weg, z. B. Stromausfall): Aus, damit Umbrel länger läuft
+3. Modus **Immer an** oder **Aus (nur Server)**
+4. im Modus **Automatisch**: angetippt → einige Minuten an; AirPlay spielt →
+   an; niemand zu Hause (Home-Assistant-Entität) → schwarz oder aus;
+   außerhalb des Zeitplans → Nachtuhr, schwarz oder aus; dunkler Raum →
+   Nachtuhr; sonst an
+
+Auf einem Mac oder Handy zeigt das Dashboard immer die Kacheln; ein Hinweis
+oben nennt den Zustand der Wand. Von der Kommandozeile:
+
+```sh
+xps-display                  # Zustand, Grund, nächster Wechsel
+xps-display aus 120          # zwei Stunden aus
+xps-display schwarz          # eine Stunde schwarz
+xps-display morgen           # aus bis zum Zeitplan morgen früh
+xps-display auto             # zurück zur Automatik (beendet auch "modus aus")
+xps-display modus aus        # dauerhaft nur Server
+```
+
+Home Assistant kann den Bildschirm genauso schalten, z. B. beim Verlassen
+des Hauses. In `configuration.yaml`:
+
+```yaml
+rest_command:
+  xps_bildschirm:
+    url: http://xps.local:7777/api/control/override
+    method: POST
+    content_type: application/json
+    headers:
+      x-dashboard-pin: !secret xps_dashboard_pin   # nur nötig mit DASH_PIN
+    payload: '{"state": "{{ state }}", "minutes": {{ minutes | default(60) }}}'
+```
+
+`state` ist `on`, `night`, `sleep` oder `off` (Aufruf z. B. mit
+`state: off, minutes: 120`); ein zweiter `rest_command` mit dem Payload
+`{"clear": true}` beendet es wieder.
 
 ## Einstellungen
 
 | Datei | Inhalt | Danach |
 | --- | --- | --- |
 | `/etc/xps-homeserver/dashboard.env` | Name, Ort, Schlüssel und Tokens der Kacheln (Vorlage `dashboard.env.example`) | `sudo systemctl restart xps-dashboard` |
-| `/etc/xps-homeserver/host.env` | Watchdog-Ziel, mDNS-Namen, Akkugrenze, Webcam-Kalibrierung, Messabstände (Vorlage `host.env.example`) | betroffenen Dienst neu starten |
+| `/etc/xps-homeserver/host.env` | Watchdog-Ziel, mDNS-Namen, Akkugrenze, Webcam-Kalibrierung, Helligkeitskurve, Messabstände (Vorlage `host.env.example`) | betroffenen Dienst neu starten |
+| `/var/lib/xps-dashboard/control.json` | alles aus der Steuerung; pflegt das Dashboard | – |
 | `/etc/xps-homeserver/umbrel.env` | welches Umbrel-Image läuft; pflegt `update-umbrel.sh` | – |
 
 Bearbeiten mit `sudoedit /etc/xps-homeserver/dashboard.env`. Die Dateien sind
@@ -81,8 +139,10 @@ Der Rollback tauscht nur das Image; Umbrels Daten (Volume
 
 ```sh
 systemctl --failed                      # alles, was nicht läuft
+xps-display                             # was der Bildschirm zeigt und warum
 systemctl status xps-dashboard          # Dashboard
-systemctl status "xps-kiosk@paul"       # Display
+systemctl status xps-kiosk              # Display (Kiosk-Browser)
+systemctl status xps-control            # setzt die Steuerung um: Kiosk, AirPlay, Helligkeit
 systemctl status xps-airplay            # AirPlay (Logs: sudo docker logs xps-airplay)
 systemctl status xps-ambient            # Webcam-Helligkeit
 systemctl status xps-services           # Dienste-Statistik
@@ -96,11 +156,23 @@ Typische Fälle:
 - **Kein Ton**: `sudo docker logs xps-airplay`, `aplay -l`, dann
   `alsamixer` (Master und Headphone nicht stumm, `M` schaltet um) und
   `sudo alsactl store`.
-- **Display bleibt schwarz**: `journalctl -u "xps-kiosk@paul" -b`. Vom Mac aus
-  lässt sich das Dashboard jederzeit im Browser öffnen.
-- **Nachtansicht kommt zu früh oder zu spät**: in `host.env` die Schwellen
-  `XPS_AMBIENT_DARK_ON`/`_OFF` anpassen;
-  `cat /run/xps-ambient/ambient.json` zeigt den aktuellen Messwert.
+- **Display bleibt schwarz**: zuerst `xps-display`: steht dort „aus“ oder
+  „schwarz“, ist das die Steuerung (Grund steht dabei; `xps-display auto`
+  oder Modus Automatisch). Sonst `journalctl -u xps-kiosk -b` und
+  `journalctl -u xps-control -b`. Vom Mac aus lässt sich das Dashboard
+  jederzeit im Browser öffnen.
+- **Display geht nachts nicht aus / tagsüber nicht an**: Zeitplan und
+  Modus in der Steuerung prüfen; `xps-display` nennt den Grund.
+- **Nachtuhr bei Dunkelheit kommt zu früh oder zu spät**: in `host.env` die
+  Schwellen `XPS_AMBIENT_DARK_ON`/`_OFF` anpassen und
+  `sudo systemctl restart xps-ambient`; `cat /run/xps-ambient/ambient.json`
+  zeigt den aktuellen Messwert. Ganz abschalten: Steuerung → Automatik →
+  „Dunkler Raum → Nachtuhr“.
+- **Display zu hell oder zu dunkel**: Steuerung → Funktionen (feste
+  Helligkeit), oder die Kurve in `host.env` (`XPS_BACKLIGHT_*`) und
+  `sudo systemctl restart xps-control`.
+- **Änderungen vom Handy gehen nicht („Gesperrt“)**: `DASH_PIN` ist gesetzt;
+  die PIN oben in der Steuerung eingeben.
 - **`wl-status` meldet `pinned`**: Der neueste Kernel hat keinen WLAN-Treiber,
   der XPS bootet weiter den alten. `sudo dkms autoinstall` und danach
   `sudo xps-wl-guard`; Ausgabe an Claude schicken, falls es nicht klappt.
@@ -154,7 +226,9 @@ verwenden, das löscht das Volume.
    falls `xps.local` nicht auflöst.
 3. Am Gerät: `Strg+Alt+F2` öffnet eine Konsole neben dem Kiosk, Anmeldung mit
    Benutzer und Passwort. Dort `nmcli device wifi list`,
-   `cat /var/lib/xps-homeserver/wl-status`, `systemctl --failed`.
+   `cat /var/lib/xps-homeserver/wl-status`, `systemctl --failed`. Steht die
+   Steuerung auf „Aus“, ist das Display dunkel: blind anmelden und
+   `xps-display auto` tippen, dann wird es wieder hell.
 4. Startet der XPS gar nicht mehr: im GRUB-Menü (beim Start `Esc`) unter
    *Advanced options* einen älteren Kernel wählen.
 5. Im schlimmsten Fall neu installieren und das Backup zurückspielen; Umbrel,
