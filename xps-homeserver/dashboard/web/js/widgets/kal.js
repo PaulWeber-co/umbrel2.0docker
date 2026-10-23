@@ -2,9 +2,22 @@ import { esc, icon } from '../util.js';
 
 export const label = 'Kalender';
 
-function when(event) {
-  if (event.allDay) return new Date(`${event.start}T12:00:00`).toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
-  return new Date(event.start).toLocaleString('de-DE', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const dayKey = (date) => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+
+// "Heute 09:30", "Morgen 14:00", "So 25.10." (all day) or "Mi 28.10. 18:00":
+// short enough for one line in the tile, in the browser's (the kiosk's) time zone.
+export function when(event, now = new Date()) {
+  const start = event.allDay ? new Date(`${event.start}T12:00:00`) : new Date(event.start);
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const day =
+    dayKey(start) === dayKey(now)
+      ? 'Heute'
+      : dayKey(start) === dayKey(tomorrow)
+        ? 'Morgen'
+        : `${start.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '')} ${start.getDate()}.${start.getMonth() + 1}.`;
+  if (event.allDay) return day;
+  return `${day} ${start.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 export function render(data) {

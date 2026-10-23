@@ -25,3 +25,12 @@ test('events without an end, broken entries and the limit of five', () => {
   assert.equal(toWidgetData([...many, { summary: 'kaputt' }, null], now).length, 5);
   assert.deepEqual(toWidgetData('nope', now), []);
 });
+
+test('calendar tile names days the short way', async () => {
+  const { when } = await import('../web/js/widgets/kal.js');
+  const now = new Date(2026, 9, 21, 12, 0);
+  assert.equal(when({ start: new Date(2026, 9, 21, 18, 30).toISOString(), allDay: false }, now), 'Heute 18:30');
+  assert.equal(when({ start: new Date(2026, 9, 22, 9, 5).toISOString(), allDay: false }, now), 'Morgen 09:05');
+  assert.equal(when({ start: '2026-10-25', allDay: true }, now), 'So 25.10.');
+  assert.equal(when({ start: '2026-10-21', allDay: true }, now), 'Heute');
+});
