@@ -119,6 +119,9 @@ for unit in "$XPS_ROOT"/deploy/systemd/*.service "$XPS_ROOT"/deploy/systemd/*.ti
 	install -m 644 "$unit" /etc/systemd/system/
 done
 install -m 644 "$XPS_ROOT/deploy/tmpfiles/xps-homeserver.conf" /etc/tmpfiles.d/xps-homeserver.conf
+# Chromium ignores --disable-features=TranslateUI since about version 120;
+# only the policy keeps the translation bubble off the German dashboard
+install -D -m 644 "$XPS_ROOT/deploy/chromium/xps-kiosk.json" /etc/chromium/policies/managed/xps-kiosk.json
 systemd-tmpfiles --create /etc/tmpfiles.d/xps-homeserver.conf
 ln -sfn "$XPS_ROOT/scripts/update-xps.sh" /usr/local/sbin/update-xps
 ln -sfn "$XPS_ROOT/scripts/xps-display.py" /usr/local/bin/xps-display

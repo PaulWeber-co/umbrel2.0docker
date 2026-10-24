@@ -218,6 +218,12 @@ RUN rm -rf /build-steps
 COPY packages/os/overlay-container /
 RUN systemctl enable umbrel-container-data.service
 
+# A privileged container sees the host's /dev. A getty here would take over
+# the host's tty1 (on the XPS: the wall display's kiosk, which it hangs up),
+# and udev's coldplug would re-add every host device, so the kiosk loses the
+# GPU. The host runs both itself.
+RUN systemctl mask getty@tty1.service console-getty.service getty.target systemd-udev-trigger.service
+
 
 #########################################################################
 # watchman build stage (amd64 and arm64)

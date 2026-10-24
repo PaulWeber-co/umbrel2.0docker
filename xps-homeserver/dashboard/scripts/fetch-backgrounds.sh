@@ -13,6 +13,9 @@
 # it again (setup-xps.sh does on every update) only fetches what is new.
 # Needs curl and ffmpeg.
 set -euo pipefail
+# awk prints decimals with the locale's separator; under de_DE that is "12,71",
+# which ffmpeg's filter graph reads as a second filter
+export LC_ALL=C
 
 OUT="${1:?Ausgabeordner fehlt, z. B. dashboard/mockup/media}"
 HEIGHT="${2:-720}"
@@ -54,8 +57,10 @@ while read -r scene id _; do
 		continue
 	fi
 	offset=$(awk -v t="$take" -v f="$FADE" 'BEGIN { printf "%.2f", t - 2 * f }')
+	# fps again after each trim: since ffmpeg 7 (Debian 13) trim leaves the frame
+	# rate unknown, and xfade refuses inputs without a constant one
 	if ! ffmpeg -nostdin -v error -y -i "$tmp/src.mp4" -filter_complex \
-		"[0:v]trim=0:$take,setpts=PTS-STARTPTS,fps=24,scale=$WIDTH:$HEIGHT:force_original_aspect_ratio=increase:flags=lanczos,crop=$WIDTH:$HEIGHT,setsar=1,split[a][b];[a]trim=$FADE:$take,setpts=PTS-STARTPTS[main];[b]trim=0:$FADE,setpts=PTS-STARTPTS[head];[main][head]xfade=transition=fade:duration=$FADE:offset=$offset,format=yuv420p[v]" \
+		"[0:v]trim=0:$take,setpts=PTS-STARTPTS,fps=24,scale=$WIDTH:$HEIGHT:force_original_aspect_ratio=increase:flags=lanczos,crop=$WIDTH:$HEIGHT,setsar=1,split[a][b];[a]trim=$FADE:$take,setpts=PTS-STARTPTS,fps=24[main];[b]trim=0:$FADE,setpts=PTS-STARTPTS,fps=24[head];[main][head]xfade=transition=fade:duration=$FADE:offset=$offset,format=yuv420p[v]" \
 		-map "[v]" -an -c:v libx264 -profile:v main -preset medium -crf 24 -maxrate 6M -bufsize 12M -g 48 \
 		-movflags +faststart "$tmp/out.mp4" ||
 		! ffmpeg -nostdin -v error -y -i "$tmp/out.mp4" -vframes 1 -q:v 3 "$tmp/out.jpg"; then

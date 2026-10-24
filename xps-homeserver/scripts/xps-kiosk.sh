@@ -47,7 +47,7 @@ fi
 # wall display: only here a dark screen goes black and a tap wakes it.
 exec /usr/bin/cage -s -- /usr/bin/chromium --kiosk --ozone-platform=wayland \
 	--enable-features=AcceleratedVideoDecodeLinuxGL,AcceleratedVideoDecodeLinuxZeroCopyGL,VaapiVideoDecoder \
-	--disable-features=TranslateUI --autoplay-policy=no-user-gesture-required \
+	--disable-features=TranslateUI --lang=de --autoplay-policy=no-user-gesture-required \
 	--no-first-run --no-default-browser-check --disable-infobars --disable-session-crashed-bubble --noerrdialogs \
 	--password-store=basic --overscroll-history-navigation=0 --check-for-update-interval=31536000 \
 	--user-data-dir="$HOME/chromium" "$start"
