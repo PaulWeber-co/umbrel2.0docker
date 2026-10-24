@@ -3,7 +3,8 @@
 # host network for discovery (and AirPlay 2 for PTP via nqptp in the image).
 # They use the XPS's own avahi-daemon instead of starting another one, so
 # xps.local and umbrel.local stay unique on the network. One switch in the
-# control center (xps-airplay.service) starts and stops both.
+# control center (xps-airplay.service) starts and stops both; XPS_SPOTIFY=aus
+# in /etc/xps-homeserver/host.env leaves out Spotify Connect (profile spotify).
 name: xps-airplay
 
 services:
@@ -31,6 +32,7 @@ services:
   spotify:
     image: ghcr.io/devgianlu/go-librespot:v0.10.5
     container_name: xps-spotify
+    profiles: ["spotify"]
     network_mode: host
     restart: unless-stopped
     # Needs nothing but the sound card, D-Bus for avahi and its own folder

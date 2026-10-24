@@ -22,8 +22,12 @@ ExecStartPre=/bin/chown -R xps-spotify:xps-spotify /var/lib/xps-spotify
 ExecStartPre=/usr/bin/install -m 0600 -o xps-spotify -g xps-spotify go-librespot.yml /var/lib/xps-spotify/config.yml
 # The headphone jack starts muted on a fresh system
 ExecStartPre=-/bin/sh -c 'amixer -q -c 0 sset Master 85%% unmute; amixer -q -c 0 sset Headphone 100%% unmute; true'
-ExecStart=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml up --detach --remove-orphans
-ExecStop=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml down
+# XPS_SPOTIFY=aus in host.env: AirPlay only, a running Spotify container goes
+Environment=XPS_SPOTIFY=an
+EnvironmentFile=-/etc/xps-homeserver/host.env
+# ($$: the shell expands these, not systemd)
+ExecStart=/bin/sh -c 'if [ "$$XPS_SPOTIFY" = aus ]; then /usr/bin/docker compose --project-name xps-airplay -f compose.yaml --profile spotify rm --stop --force spotify; profile=; else profile="--profile spotify"; fi; exec /usr/bin/docker compose --project-name xps-airplay -f compose.yaml $$profile up --detach --remove-orphans'
+ExecStop=/usr/bin/docker compose --project-name xps-airplay -f compose.yaml --profile spotify down
 TimeoutStartSec=10min
 # The first start downloads both images; without network yet, try again
 Restart=on-failure

@@ -266,7 +266,9 @@ def check_containers(report, wish):
             rows[parts[0]] = (parts[1], parts[2])
     for name, label in CONTAINERS.items():
         if name not in rows:
-            if name in SPEAKER_CONTAINERS and wish.get("airplay") is False:
+            if name == "xps-spotify" and (read_env(CONFIG_DIR / "host.env") or {}).get("XPS_SPOTIFY") == "aus":
+                report.add(OK, f"{label}: aus (XPS_SPOTIFY=aus in host.env)")
+            elif name in SPEAKER_CONTAINERS and wish.get("airplay") is False:
                 report.add(OK, f"{label}: in der Steuerung ausgeschaltet")
             elif name in SPEAKER_CONTAINERS:
                 report.add(PROBLEM, f"{label}: kein Container", "sudo systemctl restart xps-airplay; journalctl -u xps-airplay -n 30")
