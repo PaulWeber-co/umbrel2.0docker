@@ -2,9 +2,18 @@
 # Announces the Umbrel container as umbrel.local (and any XPS_MDNS_ALIASES)
 # with the XPS's own address: Umbrel's mDNS inside the container does not
 # reach the home network. Follows address changes (new DHCP lease).
+#
+# Two more things for the same reason:
+# - The container's own avahi claims umbrel.local for its internal address on
+#   Docker's bridge. Seen there, the XPS's claim collides and dies, so the XPS's
+#   avahi stays off Docker's bridges.
+# - The Umbrel app finds Umbrel by its _umbrel._tcp service, which the container
+#   announces only on its bridge. The XPS announces a copy (same id, port 80).
 set -u
 
 ALIASES=${XPS_MDNS_ALIASES:-umbrel.local}
+AVAHI_CONF=/etc/avahi/avahi-daemon.conf
+SERVICE=/etc/avahi/services/umbrel.service
 pids=""
 
 address() { ip -4 route get 1.1.1.1 2>/dev/null | awk '{ for (i = 1; i < NF; i++) if ($i == "src") { print $(i + 1); exit } }'; }
@@ -16,8 +25,46 @@ stop() {
 }
 trap 'stop; exit 0' INT TERM
 
+# Restarts avahi when the bridges it has to skip changed. That restarts this
+# service too (Requires=), which then finds the setting in place.
+deny_docker_bridges() {
+	command -v docker >/dev/null || return 0
+	bridges=docker0
+	for id in $(docker network ls --quiet --filter driver=bridge 2>/dev/null); do
+		name=$(docker network inspect --format '{{ index .Options "com.docker.network.bridge.name" }}' "$id" 2>/dev/null)
+		[ -n "$name" ] || name="br-$(printf %.12s "$id")"
+		[ "$name" = docker0 ] || bridges="$bridges,$name"
+	done
+	grep -qx "deny-interfaces=$bridges" "$AVAHI_CONF" && return 0
+	if grep -qE '^#?deny-interfaces=' "$AVAHI_CONF"; then
+		sed -i -E "s/^#?deny-interfaces=.*/deny-interfaces=$bridges/" "$AVAHI_CONF"
+	else
+		sed -i -E "s/^\[server\]$/[server]\ndeny-interfaces=$bridges/" "$AVAHI_CONF"
+	fi
+	echo "xps-mdns-alias: avahi übergeht jetzt $bridges"
+	# The speakers register through this avahi and have to again
+	systemctl --no-block restart avahi-daemon.service xps-airplay.service
+}
+
+copy_umbrel_service() {
+	command -v docker >/dev/null || return 0
+	if docker exec umbrel cat "$SERVICE" >"$SERVICE.new" 2>/dev/null && [ -s "$SERVICE.new" ]; then
+		if cmp -s "$SERVICE.new" "$SERVICE"; then
+			rm -f "$SERVICE.new"
+		else
+			# avahi watches the folder, no restart needed
+			mv "$SERVICE.new" "$SERVICE"
+			echo "xps-mdns-alias: Umbrel-Dienst (_umbrel._tcp) angekündigt"
+		fi
+	else
+		rm -f "$SERVICE.new"
+	fi
+}
+
 current=""
 while :; do
+	deny_docker_bridges
+	copy_umbrel_service
 	# A publisher that died (avahi restarted, name conflict) is started again
 	for pid in $pids; do
 		kill -0 "$pid" 2>/dev/null || current=""
