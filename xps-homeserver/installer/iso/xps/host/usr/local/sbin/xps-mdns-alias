@@ -48,17 +48,14 @@ deny_docker_bridges() {
 
 copy_umbrel_service() {
 	command -v docker >/dev/null || return 0
-	if docker exec umbrel cat "$SERVICE" >"$SERVICE.new" 2>/dev/null && [ -s "$SERVICE.new" ]; then
-		if cmp -s "$SERVICE.new" "$SERVICE"; then
-			rm -f "$SERVICE.new"
-		else
-			# avahi watches the folder, no restart needed
-			mv "$SERVICE.new" "$SERVICE"
-			echo "xps-mdns-alias: Umbrel-Dienst (_umbrel._tcp) angekündigt"
-		fi
-	else
-		rm -f "$SERVICE.new"
+	# Fetched outside avahi's folder: avahi reloads on any change in there
+	new=/run/xps-mdns-alias.service
+	if docker exec umbrel cat "$SERVICE" >"$new" 2>/dev/null && [ -s "$new" ] &&
+		! cmp -s "$new" "$SERVICE"; then
+		install -m 644 "$new" "$SERVICE"
+		echo "xps-mdns-alias: Umbrel-Dienst (_umbrel._tcp) angekündigt"
 	fi
+	rm -f "$new"
 }
 
 current=""
