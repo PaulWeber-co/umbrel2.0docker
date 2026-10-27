@@ -10,6 +10,13 @@ dashboard (server/widgets/services.js) groups and shows.
 This runs as root because the Docker socket is root-equivalent; the dashboard
 itself never gets access to Docker. Only names, states and resource figures are
 written, never environment variables, logs or other container details.
+
+Every XPS_PHOTOS_INTERVAL seconds it also counts what the Umbrel app's photo
+backup holds for each Umbrel account (photos, videos, bytes) and writes it to
+/run/xps-services/photos.json for the "Fotos-Backup" tile
+(server/widgets/backup.js). Only account names and these three figures leave,
+never file names. Live Photos count as one photo and one video: the files are
+named by their content, so the halves cannot be paired.
 """
 import json
 import os
@@ -25,6 +32,13 @@ UMBREL_CONTAINER = os.environ.get("XPS_UMBREL_CONTAINER", "umbrel")
 OUTPUT_DIR = Path(os.environ.get("XPS_SERVICES_DIR", "/run/xps-services"))
 OUTPUT_FILE = OUTPUT_DIR / "services.json"
 INTERVAL = max(10, int(os.environ.get("XPS_SERVICES_INTERVAL", "30")))
+# Umbrel's data in its Docker volume, as seen from the host
+UMBREL_DATA = Path(os.environ.get(
+    "XPS_UMBREL_DATA", "/var/lib/docker/volumes/xps-homeserver_umbrel-data/_data/umbrel-os/home/umbrel/umbrel"))
+PHOTOS_FILE = OUTPUT_DIR / "photos.json"
+PHOTOS_INTERVAL = max(60, int(os.environ.get("XPS_PHOTOS_INTERVAL", "600")))
+PHOTO_TYPES = {"jpg", "jpeg", "heic", "heif", "png", "gif", "webp", "tif", "tiff", "dng", "raw", "avif"}
+VIDEO_TYPES = {"mov", "mp4", "m4v", "hevc", "avi", "3gp"}
 TIMEOUT = 25
 CPUS = os.cpu_count() or 1
 
@@ -95,18 +109,77 @@ def collect(scope, prefix):
     return containers
 
 
-def write_state(state):
+def write_state(state, target=OUTPUT_FILE):
     OUTPUT_DIR.mkdir(mode=0o750, parents=True, exist_ok=True)
-    fd, temporary = tempfile.mkstemp(prefix="services.", dir=OUTPUT_DIR, text=True)
+    fd, temporary = tempfile.mkstemp(prefix=f"{target.stem}.", dir=OUTPUT_DIR, text=True)
     try:
         os.fchmod(fd, 0o640)
         with os.fdopen(fd, "w", encoding="utf-8") as file:
             json.dump(state, file, separators=(",", ":"))
             file.write("\n")
-        os.replace(temporary, OUTPUT_FILE)
+        os.replace(temporary, target)
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
+
+
+def yaml_value(line):
+    value = line.split(":", 1)[1].strip()
+    return value[1:-1] if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"" else value
+
+
+def photo_accounts(root):
+    """[(name, Photos folder)]: the owner first, then each member, from umbrel.yaml."""
+    owner, members, section, member = "Umbrel", [], None, None
+    try:
+        lines = (root / "umbrel.yaml").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        lines = []
+    for line in lines:
+        if line and not line.startswith(" "):
+            section = line.split(":", 1)[0]
+            continue
+        stripped = line.strip()
+        if section == "user" and line.startswith("  name:"):
+            owner = yaml_value(line) or owner
+        elif section == "members" and stripped.startswith("- id:"):
+            member = {"id": yaml_value(stripped[2:]), "name": None}
+            members.append(member)
+        elif section == "members" and member and stripped.startswith("name:"):
+            member["name"] = yaml_value(stripped)
+    accounts = [(owner, root / "home" / "Photos")]
+    for member in members:
+        # Account ids name folders: never let one point elsewhere
+        if member["id"] and "/" not in member["id"] and member["id"] not in (".", ".."):
+            accounts.append((member["name"] or member["id"], root / "members" / member["id"] / "home" / "Photos"))
+    return accounts
+
+
+def count_photos(folder):
+    photos = videos = size = 0
+    for directory, subdirectories, files in os.walk(folder):
+        subdirectories[:] = [name for name in subdirectories if not name.startswith(".")]
+        for name in files:
+            if name.startswith("."):
+                continue
+            kind = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+            if kind not in PHOTO_TYPES and kind not in VIDEO_TYPES:
+                continue
+            try:
+                info = os.lstat(os.path.join(directory, name))
+            except OSError:
+                continue
+            photos += kind in PHOTO_TYPES
+            videos += kind in VIDEO_TYPES
+            size += info.st_size
+    return {"photos": photos, "videos": videos, "bytes": size}
+
+
+def photos_sample(root=UMBREL_DATA):
+    if not (root / "umbrel.yaml").is_file():
+        return {"capturedAt": round(time.time() * 1000), "people": [], "error": f"Umbrel-Daten nicht gefunden ({root})"}
+    people = [{"name": name, **count_photos(folder)} for name, folder in photo_accounts(root)]
+    return {"capturedAt": round(time.time() * 1000), "people": people, "error": None}
 
 
 def sample():
@@ -134,7 +207,12 @@ def sample():
 
 def main():
     once = "--once" in sys.argv
+    if "--photos" in sys.argv:
+        json.dump(photos_sample(), sys.stdout, indent=2, ensure_ascii=False)
+        print()
+        return
     reported = {}
+    photos_due = 0
     while True:
         started = time.monotonic()
         state = sample()
@@ -146,6 +224,16 @@ def main():
             write_state(state)
         except OSError as error:
             print(f"xps-services: {error}", file=sys.stderr, flush=True)
+        if started >= photos_due:
+            photos_due = started + PHOTOS_INTERVAL
+            photos = photos_sample()
+            if photos["error"] != reported.get("photos"):
+                print(f"xps-services: Fotos: {photos['error'] or 'gezählt'}", file=sys.stderr, flush=True)
+                reported["photos"] = photos["error"]
+            try:
+                write_state(photos, PHOTOS_FILE)
+            except OSError as error:
+                print(f"xps-services: {error}", file=sys.stderr, flush=True)
         # Each problem is logged once, not every interval
         for scope, source in state["sources"].items():
             if source["error"] != reported.get(scope):

@@ -54,12 +54,14 @@ SPEAKER_CONTAINERS = ("xps-airplay", "xps-spotify")
 TILES = {
     "wetter": ("Wetter", "DASH_LAT und DASH_LON"),
     "weg": ("Arbeitsweg", "DASH_TOMTOM_KEY, DASH_HOME_ADDRESS und DASH_WORK_ADDRESS"),
+    "backup": ("Fotos-Backup", "läuft xps-services? (systemctl status xps-services)"),
     "fotos": ("Fotos", "DASH_IMMICH_KEY (Immich → Kontoeinstellungen → API-Schlüssel)"),
     "kal": ("Kalender", "DASH_CALENDAR_ICS (Apple) oder DASH_HA_TOKEN und DASH_HA_CALENDAR_ENTITY"),
     "todo": ("To-dos", "DASH_REMINDERS_LIST (Apple) oder DASH_HA_TOKEN und DASH_HA_TODO_ENTITY"),
     "home": ("Zuhause", "DASH_HA_TOKEN und DASH_HA_ENTITIES"),
     "dienste": ("Dienste", "läuft xps-services? (systemctl status xps-services)"),
     "server": ("XPS", ""),
+    "wiki": ("Wikipedia", ""),
 }
 
 
@@ -305,10 +307,12 @@ def check_dashboard(report, env):
     if effective:
         report.add(OK, f"Bildschirm: {names.get(effective.get('display'), '?')} – {effective.get('reason', '')}")
     widgets = state.get("widgets") or {}
+    # Only tiles on the wall: a hidden one may well lack its settings
+    shown = {tile.get("id") for tile in (state.get("layout") or {}).get("tiles") or [] if isinstance(tile, dict)}
     examples = []
     for tile, (name, needs) in TILES.items():
         entry = widgets.get(tile)
-        if not entry:
+        if not entry or (shown and tile not in shown):
             continue
         if entry.get("error"):
             report.add(PROBLEM, f"Kachel {name}: {entry['error']}")

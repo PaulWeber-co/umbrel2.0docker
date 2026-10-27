@@ -8,14 +8,14 @@ export const DEFAULT_LAYOUT = {
   tiles: [
     { id: 'wetter', col: 0, row: 0, w: 2, h: 1 },
     { id: 'weg', col: 2, row: 0, w: 1, h: 1 },
-    { id: 'fotos', col: 3, row: 0, w: 1, h: 1 },
+    { id: 'backup', col: 3, row: 0, w: 1, h: 1 },
     { id: 'kal', col: 0, row: 1, w: 2, h: 1 },
     { id: 'dienste', col: 2, row: 1, w: 2, h: 1 },
     { id: 'wiki', col: 0, row: 2, w: 2, h: 1 },
     { id: 'server', col: 2, row: 2, w: 1, h: 1 },
     { id: 'todo', col: 3, row: 2, w: 1, h: 1 },
   ],
-  hidden: ['home'],
+  hidden: ['fotos', 'home'],
 };
 
 // Returns an error message, or null when the layout is valid.

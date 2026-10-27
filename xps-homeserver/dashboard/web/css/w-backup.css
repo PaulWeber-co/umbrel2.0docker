@@ -1,0 +1,23 @@
+/* Photo backup tile (web/js/widgets/backup.js). 1×1: 188 × 234 inside, 172 in music mode. */
+.bk { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-evenly; gap: 6px; container-type: inline-size; }
+.bk-person + .bk-person { padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, .16); }
+.bk-top { display: flex; align-items: baseline; gap: 8px; font-size: 18px; opacity: .85; }
+.bk-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bk-size { margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bk-count { font-size: 19px; line-height: 1.15; white-space: nowrap; }
+.bk-count b { font-size: 34px; font-weight: 300; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.bk-count.bk-l5 b { font-size: 29px; }
+.bk-count.bk-l7 { font-size: 16px; }
+.bk-count.bk-l7 b { font-size: 24px; }
+.bk-videos { font-size: 16px; opacity: .72; white-space: nowrap; }
+
+/* Music mode: 172 px */
+@container (max-width: 180px) {
+  .bk-count.bk-l5 b { font-size: 26px; }
+  .bk-count.bk-l7 b { font-size: 21px; }
+}
+
+/* Three or more accounts: one line each */
+.bk-lines { flex: 1; min-height: 0; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; justify-content: space-evenly; }
+.bk-line { display: flex; gap: 8px; font-size: 17px; font-variant-numeric: tabular-nums; }
+.bk-line .bk-name { flex: 1; }

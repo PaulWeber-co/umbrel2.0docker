@@ -179,3 +179,43 @@ class AmbientTest(HostTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PhotosTest(unittest.TestCase):
+    """The photo backup figures per Umbrel account (xps-services.py)."""
+
+    def setUp(self):
+        self.services = load("xps_services", "xps-services.py")
+        self.root = Path(tempfile.mkdtemp(prefix="xps-umbrel-"))
+        (self.root / "umbrel.yaml").write_text(
+            "version: 1\nuser:\n  name: Paul\n  language: de\nphotos:\n  backupSources:\n    - id: x\n      name: iPhone\n"
+            "members:\n  - id: Jane\n    name: 'Jana'\n    language: de\n  - id: ../etc\n    name: Böse\n"
+        )
+
+    def put(self, path, size):
+        file = self.root / path
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_bytes(b"x" * size)
+
+    def test_counts_photos_videos_and_bytes_per_account(self):
+        self.put("home/Photos/iPhone/b1/aaa.jpg", 100)
+        self.put("home/Photos/iPhone/b1/bbb.HEIC", 50)
+        self.put("home/Photos/iPhone (2)/c2/ccc.mov", 300)
+        self.put("home/Photos/iPhone/b1/notes.txt", 999)
+        self.put("home/Photos/iPhone/.thumbs/ddd.jpg", 999)
+        self.put("members/Jane/home/Photos/iPhone/e5/eee.dng", 70)
+        sample = self.services.photos_sample(self.root)
+        self.assertIsNone(sample["error"])
+        self.assertEqual(sample["people"], [
+            {"name": "Paul", "photos": 2, "videos": 1, "bytes": 450},
+            {"name": "Jana", "photos": 1, "videos": 0, "bytes": 70},
+        ], "names from umbrel.yaml, other files, hidden folders and odd member ids left out")
+
+    def test_an_account_without_backups_counts_zero(self):
+        sample = self.services.photos_sample(self.root)
+        self.assertEqual([p["photos"] for p in sample["people"]], [0, 0])
+
+    def test_missing_umbrel_data_is_reported(self):
+        sample = self.services.photos_sample(self.root / "nothing")
+        self.assertEqual(sample["people"], [])
+        self.assertIn("nicht gefunden", sample["error"])
