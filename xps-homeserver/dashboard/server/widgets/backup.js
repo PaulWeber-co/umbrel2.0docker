@@ -1,7 +1,7 @@
 // Photo backup ("Fotos-Backup"): what the Umbrel app's photo backup holds for
 // each Umbrel account – photos, videos and their size. The figures come from
 // scripts/xps-services.py, the small root service that may read Umbrel's
-// Docker volume and writes /run/xps-services/photos.json every 10 minutes;
+// Docker volume and writes /run/xps-services/photos.json every 2 minutes;
 // the dashboard never reads the photos themselves.
 //
 // Settings:

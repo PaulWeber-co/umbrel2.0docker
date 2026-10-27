@@ -211,6 +211,20 @@ class PhotosTest(unittest.TestCase):
             {"name": "Jana", "photos": 1, "videos": 0, "bytes": 70},
         ], "names from umbrel.yaml, other files, hidden folders and odd member ids left out")
 
+    def test_deleted_accounts_and_nested_names_do_not_count(self):
+        # Jana deleted and created again: the old record stays as a tombstone,
+        # the new account gets the id Jana-2 and keeps its name
+        (self.root / "umbrel.yaml").write_text(
+            "user:\n  name: Paul\nmembers:\n  - id: Jana\n    deleted: true\n"
+            "  - id: Jana-2\n    name: Jana\n    widgets:\n      - name: Wetter\n        app: x\n    language: de\n"
+        )
+        self.put("members/Jana-2/home/Photos/iPhone/a1/neu.jpg", 40)
+        sample = self.services.photos_sample(self.root)
+        self.assertEqual(sample["people"], [
+            {"name": "Paul", "photos": 0, "videos": 0, "bytes": 0},
+            {"name": "Jana", "photos": 1, "videos": 0, "bytes": 40},
+        ])
+
     def test_an_account_without_backups_counts_zero(self):
         sample = self.services.photos_sample(self.root)
         self.assertEqual([p["photos"] for p in sample["people"]], [0, 0])

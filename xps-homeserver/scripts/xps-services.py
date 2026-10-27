@@ -36,7 +36,7 @@ INTERVAL = max(10, int(os.environ.get("XPS_SERVICES_INTERVAL", "30")))
 UMBREL_DATA = Path(os.environ.get(
     "XPS_UMBREL_DATA", "/var/lib/docker/volumes/xps-homeserver_umbrel-data/_data/umbrel-os/home/umbrel/umbrel"))
 PHOTOS_FILE = OUTPUT_DIR / "photos.json"
-PHOTOS_INTERVAL = max(60, int(os.environ.get("XPS_PHOTOS_INTERVAL", "600")))
+PHOTOS_INTERVAL = max(60, int(os.environ.get("XPS_PHOTOS_INTERVAL", "120")))
 PHOTO_TYPES = {"jpg", "jpeg", "heic", "heif", "png", "gif", "webp", "tif", "tiff", "dng", "raw", "avif"}
 VIDEO_TYPES = {"mov", "mp4", "m4v", "hevc", "avi", "3gp"}
 TIMEOUT = 25
@@ -139,16 +139,25 @@ def photo_accounts(root):
         if line and not line.startswith(" "):
             section = line.split(":", 1)[0]
             continue
-        stripped = line.strip()
         if section == "user" and line.startswith("  name:"):
             owner = yaml_value(line) or owner
-        elif section == "members" and stripped.startswith("- id:"):
-            member = {"id": yaml_value(stripped[2:]), "name": None}
+        elif section == "members" and line.startswith("  - "):
+            # A new member: its first key sits on the dash line
+            member = {"id": None, "name": None, "deleted": False}
             members.append(member)
-        elif section == "members" and member and stripped.startswith("name:"):
-            member["name"] = yaml_value(stripped)
+            line = "    " + line[4:]
+        if section == "members" and member and line.startswith("    ") and not line.startswith("     "):
+            # Only the member's own keys, not those of its nested settings
+            key = line.strip().split(":", 1)[0]
+            if key == "id":
+                member["id"] = yaml_value(line)
+            elif key == "name":
+                member["name"] = yaml_value(line)
+            elif key == "deleted":
+                # A deleted account stays as {id, deleted: true}: its folder is gone
+                member["deleted"] = yaml_value(line) == "true"
     accounts = [(owner, root / "home" / "Photos")]
-    for member in members:
+    for member in (m for m in members if not m["deleted"]):
         # Account ids name folders: never let one point elsewhere
         if member["id"] and "/" not in member["id"] and member["id"] not in (".", ".."):
             accounts.append((member["name"] or member["id"], root / "members" / member["id"] / "home" / "Photos"))
