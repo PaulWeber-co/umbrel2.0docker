@@ -68,6 +68,7 @@ systemctl restart systemd-journald
 systemctl daemon-reexec # picks up the hardware watchdog setting
 systemctl restart xps-wifi-watchdog.service xps-mdns-alias.service
 systemctl start xps-battery-care.service xps-wl-guard.timer
+systemctl restart xps-quiet.service
 /usr/local/sbin/xps-wl-guard >/dev/null
 
 step "Benutzer und Einstellungen"

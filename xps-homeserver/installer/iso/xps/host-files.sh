@@ -9,6 +9,7 @@ HOST_UNITS=(
 	xps-wifi-watchdog.service
 	xps-mdns-alias.service
 	xps-battery-care.service
+	xps-quiet.service
 )
 
 install_host_files() {

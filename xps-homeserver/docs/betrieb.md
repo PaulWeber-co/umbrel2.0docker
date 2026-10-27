@@ -210,6 +210,20 @@ fertig. Pro Tag laufen zwei Clips je Tageszeit, am nächsten Tag die nächsten
 zwei. In der Steuerung schaltet *Videos* sie ab, dann bleibt das Standbild des
 Clips stehen und die Grafik hat Ruhe.
 
+## Lüfter
+
+`xps-quiet` schaltet beim Start den Turbo ab und stellt die CPU auf das
+Energieprofil `balance_power`. Der i5-6200U läuft dann mit 1,7–2,2 statt
+2,7 GHz, bleibt unter etwa 66 °C, und der Lüfter steht bei normaler Last
+still (gemessen: vorher 3600 U/min, eine halbe Minute danach aus). Umbrel
+rechnet die Vorschaubilder neuer Fotos dafür etwas langsamer.
+
+Lauter, aber schneller: in `/etc/xps-homeserver/host.env` `XPS_CPU_TURBO=an`
+oder `XPS_CPU_EPP=balance_performance`, dann `sudo systemctl restart
+xps-quiet`. Läuft der Lüfter trotzdem lange, rechnet meist Umbrel gerade
+Fotos durch (`top`: `convert`, `ffmpeg`); das endet, wenn die Uploads durch
+sind.
+
 ## Updates
 
 | Was | Wie |
