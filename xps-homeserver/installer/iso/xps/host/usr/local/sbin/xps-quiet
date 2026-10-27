@@ -1,0 +1,37 @@
+#!/bin/sh
+# Keeps the XPS quiet: no turbo and the energy-saving end of the Intel
+# governor. Under the steady load of a home server (Umbrel making thumbnails
+# of new photos, the wall's browser) the i5-6200U then runs at about 1.7–2.2
+# instead of 2.7 GHz, stays below about 66 °C and the fan stops; measured on
+# the XPS with the fan at 3600 rpm before and off half a minute after.
+#
+#   XPS_CPU_TURBO=an          turbo back on (default aus)
+#   XPS_CPU_EPP=balance_power performance, balance_performance, balance_power
+#                             or power (default balance_power)
+set -u
+
+TURBO=${XPS_CPU_TURBO:-aus}
+EPP=${XPS_CPU_EPP:-balance_power}
+PSTATE=/sys/devices/system/cpu/intel_pstate
+
+case "$EPP" in
+performance | balance_performance | balance_power | power) ;;
+*)
+	echo "xps-quiet: XPS_CPU_EPP=$EPP unbekannt, nehme balance_power"
+	EPP=balance_power
+	;;
+esac
+
+if [ -w "$PSTATE/no_turbo" ]; then
+	if [ "$TURBO" = an ]; then echo 0 >"$PSTATE/no_turbo"; else echo 1 >"$PSTATE/no_turbo"; fi
+fi
+set_epp=0
+for file in /sys/devices/system/cpu/cpufreq/policy*/energy_performance_preference; do
+	[ -w "$file" ] && echo "$EPP" >"$file" && set_epp=1
+done
+if [ "$set_epp" = 1 ]; then
+	echo "xps-quiet: Turbo $TURBO, Energieprofil $EPP"
+else
+	echo "xps-quiet: kein intel_pstate mit Energieprofil, nichts geändert"
+fi
+exit 0

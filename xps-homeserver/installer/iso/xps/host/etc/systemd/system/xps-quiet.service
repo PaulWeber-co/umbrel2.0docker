@@ -1,0 +1,11 @@
+[Unit]
+Description=Quiet CPU: no turbo and the energy-saving profile, so the fan can stop
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=-/etc/xps-homeserver/host.env
+ExecStart=/usr/local/sbin/xps-quiet
+
+[Install]
+WantedBy=multi-user.target
