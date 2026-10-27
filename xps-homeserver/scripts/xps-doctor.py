@@ -57,7 +57,7 @@ TILES = {
     "backup": ("Fotos-Backup", "läuft xps-services? (systemctl status xps-services)"),
     "fotos": ("Fotos", "DASH_IMMICH_KEY (Immich → Kontoeinstellungen → API-Schlüssel)"),
     "kal": ("Kalender", "DASH_CALENDAR_ICS (Apple) oder DASH_HA_TOKEN und DASH_HA_CALENDAR_ENTITY"),
-    "todo": ("To-dos", "DASH_REMINDERS_LIST (Apple) oder DASH_HA_TOKEN und DASH_HA_TODO_ENTITY"),
+    "todo": ("To-dos", "DASH_KNUDDL_INVITE und DASH_KNUDDL_URL (die Listen aus der Knuddl-App)"),
     "home": ("Zuhause", "DASH_HA_TOKEN und DASH_HA_ENTITIES"),
     "dienste": ("Dienste", "läuft xps-services? (systemctl status xps-services)"),
     "server": ("XPS", ""),
@@ -170,11 +170,9 @@ def check_settings(env):
     ha_url = env.get("DASH_HA_URL", "")
     if ha_url and not re.match(r"^https?://", ha_url):
         found.append((PROBLEM, "DASH_HA_URL muss mit http:// oder https:// beginnen"))
-    for key in ("DASH_HA_CALENDAR_ENTITY", "DASH_HA_TODO_ENTITY"):
-        value = env.get(key, "")
-        prefix = "calendar." if "CALENDAR" in key else "todo."
-        if value and not re.fullmatch(re.escape(prefix) + r"[a-z0-9_]+", value):
-            found.append((PROBLEM, f"{key}={value} sieht nicht wie eine Entität aus ({prefix}…)"))
+    value = env.get("DASH_HA_CALENDAR_ENTITY", "")
+    if value and not re.fullmatch(r"calendar\.[a-z0-9_]+", value):
+        found.append((PROBLEM, f"DASH_HA_CALENDAR_ENTITY={value} sieht nicht wie eine Entität aus (calendar.…)"))
     pin = env.get("DASH_PIN", "")
     if not pin:
         found.append((HINT, "Keine PIN: Jedes Gerät im WLAN kann Licht, Bildschirm und Kacheln ändern (DASH_PIN setzen)"))

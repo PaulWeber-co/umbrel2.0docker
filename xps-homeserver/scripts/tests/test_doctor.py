@@ -30,7 +30,7 @@ class SettingsTest(unittest.TestCase):
             "DASH_KNUDDL_INVITE": "ABC123",
             "DASH_CALENDAR_ICS": "webcal://p52-caldav.icloud.com/published/2/x, kalender",
             "DASH_HA_URL": "umbrel.local:8123",
-            "DASH_HA_TODO_ENTITY": "einkauf",
+            "DASH_HA_CALENDAR_ENTITY": "familie",
         })
         problems = [text for level, text in found if level == doctor.PROBLEM]
         self.assertEqual(len(problems), 4)

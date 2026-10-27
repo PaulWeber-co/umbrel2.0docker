@@ -1,0 +1,69 @@
+/* To-dos from the Knuddl app (web/js/widgets/todo.js). The same two colours
+   as in the app: lila and pink, both together for "zusammen". */
+.t[data-id="todo"] { --td-lila: #8f86ff; --td-pink: #ff8fb4; }
+.t[data-id="todo"] .lbl .ic { color: var(--td-pink); }
+/* The body is the container: the tile's own width decides 1×1 or 2×1 */
+.t[data-id="todo"] .body { container-type: inline-size; }
+
+.td { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 26px; }
+.td-list, .td-blist { list-style: none; margin: 0; padding: 0; min-width: 0; }
+.td-list { display: flex; flex-direction: column; overflow: hidden; }
+
+/* Three fit a 1×1 tile, as in the app's order */
+.td-row:nth-child(n + 4) { display: none; }
+.td-row { display: flex; align-items: flex-start; gap: 11px; padding: 6px 0; font-size: 19px; line-height: 1.2; }
+.td-kreis { flex: none; width: 21px; height: 21px; margin-top: 1px; border-radius: 11px; border: 2.5px solid rgba(255, 255, 255, .85); box-sizing: border-box; }
+.td-kreis.td-lila { border-color: var(--td-lila); }
+.td-kreis.td-pink { border-color: var(--td-pink); }
+/* Both colours as a ring: the gradient cut out in the middle */
+.td-kreis.td-wir { border: 0; background: linear-gradient(135deg, var(--td-lila), var(--td-pink));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px)); }
+.td-text { flex: 1; min-width: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Only in a wide tile, where it fits: when it is due */
+.td-wann { display: none; margin-left: 8px; font-size: 14px; font-weight: 600; }
+.td-wann.td-ueberfaellig { color: #ffb199; }
+.td-wann.td-heute { color: #ffd27a; }
+.td-wann.td-morgen { color: rgba(255, 255, 255, .7); }
+
+.td-rechts, .td-breit { display: none; min-width: 0; }
+.td-kick { margin: 2px 0 2px; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; opacity: .65; }
+.td-b { display: flex; gap: 10px; align-items: flex-start; padding: 5px 0; font-size: 18px; line-height: 1.2; }
+.td-platz { flex: none; width: 18px; font-size: 20px; font-weight: 300; opacity: .8; text-align: center; }
+.td-b-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.td-b-text > span:first-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.td-stimmen { display: inline-flex; gap: 4px; }
+.td-st { display: inline-flex; align-items: center; justify-content: center; width: 21px; height: 21px; border-radius: 11px;
+  font-size: 12px; font-weight: 700; color: #fff; background: var(--td-c); }
+.td-st.td-lila { --td-c: var(--td-lila); }
+.td-st.td-pink { --td-c: var(--td-pink); }
+.td-st.td-l2 { background: rgba(255, 255, 255, .16); box-shadow: inset 0 0 0 2px var(--td-c); }
+.td-st.td-l3, .td-st.td-l0 { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .5); color: rgba(255, 255, 255, .75); }
+.td-st.td-l0 { box-shadow: inset 0 0 0 1.5px var(--td-c); opacity: .8; }
+
+/* All done, 1×1: one bucket item large, the next one every minute */
+.td-alles { grid-template-rows: minmax(0, 1fr) auto; }
+.td-schmal { min-height: 0; display: flex; flex-direction: column; }
+.td-fokus { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; min-height: 0; }
+.td-gross { font-size: 28px; line-height: 1.15; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.td-fokus-st { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.td-urteil { font-size: 14px; font-weight: 600; color: #b8f0c9; }
+.td-punkte { display: flex; gap: 6px; margin-top: 8px; }
+.td-punkte i { width: 7px; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, .35); }
+.td-punkte i.an { background: #fff; }
+.td-erledigt { grid-column: 1 / -1; margin-top: 8px; font-size: 15px; opacity: .75; }
+.td-fertig-leer { margin: auto 0; font-size: 22px; opacity: .85; }
+.td-hinweis { margin-top: 10px; }
+
+/* Next to the to-dos two bucket items fit */
+.td-offen .td-b:nth-child(n + 3) { display: none; }
+
+/* 2×1: both side by side */
+@container (min-width: 380px) {
+  .td.td-offen { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .td-offen .td-rechts { display: block; }
+  .td-wann { display: inline; }
+  .td-alles .td-schmal { display: none; }
+  .td-alles .td-breit { display: block; }
+}

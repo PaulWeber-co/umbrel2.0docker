@@ -15,7 +15,7 @@ dem XPS-Display und in jedem Browser unter `http://xps.local:7777`.
 | Fotos | Immich: Fotos, Videos, diese Woche neu | `DASH_IMMICH_URL`, `DASH_IMMICH_KEY` |
 | Kalender | Apple-Kalender über ihren Link (webcal), Home-Assistant-Kalender, beides zusammen | `DASH_CALENDAR_ICS`, `DASH_HA_CALENDAR_ENTITY` |
 | Dienste | Umbrel-Apps und eigene docker-compose-Projekte: Status, CPU, RAM, Laufzeit | `DASH_SERVICES_NAMES`, `DASH_SERVICES_HIDE` |
-| To-dos | eine Liste aus Apple Erinnerungen (über einen Kurzbefehl, [betrieb.md](../docs/betrieb.md#erinnerungen-z-b-die-einkaufsliste)) oder aus Home Assistant, abhaken und hinzufügen | `DASH_REMINDERS_LIST`, `DASH_HA_TODO_ENTITY` |
+| To-dos | eure To-dos aus der Knuddl-App (Wir → Bucketlist), das Dringendste zuerst, der Kreis in der Farbe dessen, der dran ist; ist alles erledigt, die Bucketlist, jede Minute ein anderer Eintrag. 2×1: beides nebeneinander. Abgehakt wird in der App ([betrieb.md](../docs/betrieb.md#to-dos-und-bucketlist-aus-knuddl)) | `DASH_KNUDDL_INVITE`, `DASH_KNUDDL_URL` (wie Minifunk) |
 | XPS | CPU, RAM, SSD, Temperatur des XPS selbst | – |
 | Zuhause | Home-Assistant-Entitäten, Licht und Schalter tippbar | `DASH_HA_ENTITIES` |
 
@@ -75,7 +75,7 @@ Bei schwarzem oder ausgeschaltetem Bildschirm bleibt die Kamera aus.
 AirPlay- und Spotify-Metadaten bleiben im Speicher des Dashboard-Prozesses.
 
 Die Dashboard-Seite ist im Heimnetz ohne Anmeldung lesbar (von unterwegs
-über Tailscale). Änderungen (Licht, To-dos, Kacheln, Steuerung) nimmt der
+über Tailscale). Änderungen (Licht, Kacheln, Steuerung) nimmt der
 Server nur als JSON vom Dashboard selbst und nur unter Heimnetz-Namen an; mit
 `DASH_PIN` brauchen andere Geräte zusätzlich einmal die PIN, der Kiosk nie.
 Mehr in [docs/sicherheit.md](../docs/sicherheit.md).

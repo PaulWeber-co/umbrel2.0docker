@@ -83,9 +83,9 @@ Umbrel-Updates ab.
 | CPU, RAM, Temperatur, Speicher, Netzwerk, WLAN-Signal, Akku, Uptime | direkt vom Linux-Kernel des XPS (`/proc`, `/sys`). Umbrel liest dieselben Werte, nur ohne Umweg. |
 | Umbrel-Apps (installiert, läuft, CPU/RAM je App, Update verfügbar), Umbrel-Version | Umbrels offizielle MCP-Schnittstelle unter `http://umbrel.local/mcp` mit einem Zugangstoken aus den Umbrel-Einstellungen. `get_system_info`, `get_system_resources` und `list_apps` brauchen keine Freigaben. Der Token kann also nur lesen, nichts ändern (geprüft in `packages/umbreld/source/modules/mcp/tools/`). |
 | Anzahl Fotos und Videos, belegter Platz | Immich-API mit eigenem API-Schlüssel |
-| Smart Home, To-dos, Kalender | Home Assistant (Umbrel-App), Long-Lived Access Token |
+| Smart Home, Kalender | Home Assistant (Umbrel-App), Long-Lived Access Token |
 | Apple Kalender | iCalendar-Links der Kalender-App (*Öffentlicher Kalender*), Serientermine rechnet `server/sources/ics.js` selbst aus |
-| Apple Erinnerungen | ein Kurzbefehl auf dem iPhone schickt die Liste und holt die Änderungen der Wand ab (`server/sources/reminders.js`) |
+| To-dos und Bucketlist | die Knuddl-App schreibt sie verschlüsselt nach `x/liste` im Raum, die Wand liest sie live (`server/widgets/todo.js`) |
 | Minifunk | der verschlüsselte Raum der Knuddl-App in deren Firebase-Datenbank (`server/knuddl.js`) |
 | Hintergrundvideos | Mixkit-Luftaufnahmen, beim Setup geladen (`dashboard/scripts/backgrounds.txt`) |
 | Wetter | Open-Meteo, ohne Schlüssel |
@@ -245,14 +245,18 @@ gerade zu sehen ist (nur dann bietet die App den Minifunk an). Unter
 So braucht es weder einen Port nach außen noch einen Dienst in der Cloud,
 und die Datenbank sieht nur Zufallsdaten.
 
-### Erinnerungen über einen Kurzbefehl
+### To-dos und Bucketlist aus Knuddl
 
-Für Erinnerungen gibt es keine Schnittstelle, die ein Server erreicht
-(CalDAV kennt iCloud-Erinnerungen seit Jahren nicht mehr). Kurzbefehle auf dem
-iPhone dürfen sie aber lesen und ändern. Ein Kurzbefehl schickt deshalb die
-Liste an die Wand und bekommt in derselben Antwort zurück, was dort
-abgehakt oder eingetippt wurde. Das bleibt offen, bis ein späterer Abgleich
-es bestätigt, damit ein abgebrochener Lauf nichts verliert oder verdoppelt.
+Die To-dos und die Bucketlist leben in der Knuddl-App und gleichen sich
+zwischen euren Handys über eure Postfächer ab. Die liest die Wand nicht mit.
+Deshalb schreibt die App nach jeder Änderung ein kleines Paket nach `x/liste`
+im Raum, verschlüsselt mit dem Schlüssel der Einladung: offene To-dos, die
+Spitze der Bucketlist, Namen, Farben und Stimmen. Beide Handys schreiben
+dasselbe Paket; die Wand nimmt nur ein neueres als das, was sie zeigt, prüft
+jedes Feld und hebt das letzte auf, damit nach einem Neustart ohne Internet
+die Liste trotzdem dasteht. Wie beim Minifunk hört sie auf den Live-Stream des
+Pfads und fragt zusätzlich jede Minute nach; dabei wechselt auch der
+angezeigte Bucketlist-Eintrag.
 
 ### Spotify Connect
 

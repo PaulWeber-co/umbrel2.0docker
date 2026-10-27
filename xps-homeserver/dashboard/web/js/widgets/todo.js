@@ -1,27 +1,58 @@
+// To-dos from the Knuddl app (server/widgets/todo.js). 1×1: up to three open
+// to-dos, the circle in the colour of whoever does it (lila, pink, both for
+// "zusammen"). With everything done: the bucket list, one item a minute, and
+// "To-dos erledigt" underneath. 2×1: to-dos left, the top of the bucket list
+// right. Which of the two shows is up to the tile's width (container query in
+// web/css/w-todo.css). Every value through esc(); nothing to tap.
 import { esc, icon } from '../util.js';
 
-export const label = 'To-dos';
+export const label = 'Unsere To-dos';
 
-// data: the items (Home Assistant), or { title, items, syncedAt } for a list
-// from Apple's Reminders (server/sources/reminders.js)
-export function render(data, { entry } = {}) {
-  if (!data) return `<div class="lbl">${icon('list')}To-dos</div><div class="loading">Lädt …</div>`;
-  const demo = Boolean(entry?.demo);
-  const apple = !Array.isArray(data);
-  const list = apple ? data.items ?? [] : data;
-  const title = apple ? data.title || 'Erinnerungen' : 'To-dos';
-  // Typed on the wall, not yet in Reminders: lighter until the next sync
-  const pending = (item) => (item.pending ? ' is-pending' : '');
-  const items = list.length
-    ? list.slice(0, 3).map((item) => demo ? `
-      <li><div class="check todo-check todo-readonly"><span class="box"></span><span>${esc(item.summary)}</span></div></li>` : `
-      <li><button class="check todo-check${pending(item)}" type="button" data-action="complete" data-payload="${esc(JSON.stringify({ uid: item.uid }))}" aria-label="${esc(item.summary)} erledigen">
-        <span class="box">${icon('check')}</span><span>${esc(item.summary)}</span>
-      </button></li>`).join('')
-    : `<li class="empty">${apple && !data.syncedAt ? 'Wartet auf den ersten Abgleich vom iPhone' : 'Alles erledigt'}</li>`;
-  const form = demo ? '' : `<form class="todo-add" data-action="add"><input name="item" maxlength="160" placeholder="${apple ? `Auf „${esc(title)}“ …` : 'Neue Aufgabe …'}" aria-label="Neue Aufgabe" required><button type="submit" aria-label="Aufgabe hinzufügen">${icon('plus')}</button></form>`;
+const ZEICHEN = { 1: '♥', 2: '✓', 3: '–' };
+const WORT = { 1: 'unbedingt', 2: 'gern', 3: 'eher nicht' };
+
+const stimme = (s) => `<span class="td-st td-${esc(s.farbe)} td-l${s.l ?? 0}" title="${esc(`${s.name}: ${s.l ? WORT[s.l] : 'noch offen'}`)}">${s.l ? ZEICHEN[s.l] : '?'}</span>`;
+const stimmen = (item) => `<span class="td-stimmen">${item.stimmen.map(stimme).join('')}</span>`;
+
+function todoZeile(todo) {
+  const wann = todo.wann && ['ueberfaellig', 'heute', 'morgen'].includes(todo.gruppe) ? `<span class="td-wann td-${esc(todo.gruppe)}">${esc(todo.wann)}</span>` : '';
+  return `<li class="td-row"><span class="td-kreis td-${esc(todo.farbe)}"></span><span class="td-text">${esc(todo.text)}${wann}</span></li>`;
+}
+
+const bucketZeile = (item, i) => `
+  <li class="td-b"><span class="td-platz">${i + 1}</span><span class="td-b-text"><span>${esc(item.text)}</span>${stimmen(item)}</span></li>`;
+
+// The bucket item on show this minute, large
+function fokus(data) {
+  const item = data.bucket[data.fokus] ?? data.bucket[0];
+  if (!item) return '<div class="td-fertig-leer">Alles erledigt</div>';
+  const urteil = item.unbedingt ? 'beide unbedingt' : item.einig ? 'wollt ihr beide' : '';
   return `
-    <div class="lbl">${icon('list')}${esc(title)}<em>${list.length}</em></div>
-    <ul class="todo-list">${items}</ul>
-    ${form}`;
+    <div class="td-fokus">
+      <div class="td-gross">${esc(item.text)}</div>
+      <div class="td-fokus-st">${stimmen(item)}${urteil ? `<span class="td-urteil">${esc(urteil)}</span>` : ''}</div>
+    </div>
+    ${data.bucket.length > 1 ? `<div class="td-punkte">${data.bucket.map((_, i) => `<i class="${i === data.fokus ? 'an' : ''}"></i>`).join('')}</div>` : ''}`;
+}
+
+export function render(data) {
+  const head = (title, extra = '') => `<div class="lbl">${icon('heart')}${esc(title)}${extra ? `<em>${esc(extra)}</em>` : ''}</div>`;
+  if (!data) return `${head(label)}<div class="loading">Lädt …</div>`;
+  if (data.leer) return `${head(label)}<div class="sub td-hinweis">Noch nichts aus Knuddl. In der App: Wir → Bucketlist.</div>`;
+  const offen = data.todos.length > 0;
+  if (offen) {
+    return `
+      ${head(label, String(data.offen))}
+      <div class="td td-offen">
+        <ul class="td-list">${data.todos.slice(0, 6).map(todoZeile).join('')}</ul>
+        ${data.bucket.length ? `<div class="td-rechts"><div class="td-kick">Bucketlist · als Nächstes</div><ol class="td-blist">${data.bucket.slice(0, 3).map(bucketZeile).join('')}</ol></div>` : ''}
+      </div>`;
+  }
+  return `
+    ${head('Bucketlist', data.bucket.length > 1 ? `${data.fokus + 1} / ${data.bucket.length}` : '')}
+    <div class="td td-alles">
+      <div class="td-schmal">${fokus(data)}</div>
+      ${data.bucket.length ? `<div class="td-rechts td-breit"><div class="td-kick">Als Nächstes</div><ol class="td-blist">${data.bucket.slice(0, 3).map(bucketZeile).join('')}</ol></div>` : ''}
+      <div class="td-erledigt">To-dos erledigt ✓</div>
+    </div>`;
 }
