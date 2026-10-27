@@ -12,9 +12,9 @@ Ein Dell XPS 13 9350 als Homeserver, der jahrelang ohne Pflege läuft:
   ein Bild gespeichert wird
 - **Luftaufnahmen** wie beim Apple TV hinter den Kacheln: Städte, Küsten,
   Berge, jeden Tag andere, sparsam in der Grafik dekodiert
-- **Apple Kalender und Erinnerungen** auf der Wand: Kalender über ihren Link,
-  eine Erinnerungsliste (z. B. Einkauf) über einen Kurzbefehl, in beide
-  Richtungen
+- **Apple Kalender** auf der Wand, über den Link des Kalenders
+- **To-dos und Bucketlist** aus der Knuddl-App: offene To-dos in der Farbe
+  dessen, der dran ist; ist alles erledigt, die Spitze eurer Bucketlist
 - **Minifunk** aus der Knuddl-App: kurze Nachrichten, Listen und ein Foto am
   Tag erscheinen unter der Uhr, mit Namen, Ende-zu-Ende verschlüsselt
 - eine **Steuerung** auf dem Display und am Handy (`http://xps.local:7777/steuerung`):
@@ -35,7 +35,7 @@ Läuft etwas nicht: `sudo xps-doctor` auf dem XPS prüft alles und sagt, woran e
 | [Installer-Stick](installer/README.md) | Debian 13 mit Broadcom-WLAN-Treiber, ohne Netz installierbar | gebaut, in QEMU getestet |
 | Grundsystem | Sicherheitsupdates mit Neustartfenster, Kernel-Wächter für den WLAN-Treiber, WLAN- und Hardware-Watchdog, kein Standby, zram, Journal-Limit, Akku bis 60 %, `umbrel.local`, Tailscale | eingebaut, in QEMU getestet; am XPS abzunehmen |
 | Umbrel | Container-Image aus dem Fork (GitHub Actions → GHCR), Update mit Healthcheck und automatischem Rückfall, manueller Rollback | eingebaut; erster Start am XPS offen |
-| [Dashboard](dashboard/README.md) | Wetter, Arbeitsweg mit Stau, Fotos-Backup der Umbrel-App je Konto (Immich-Kachel ausgeblendet), Kalender (Apple, Home Assistant), Dienste, To-dos (Apple Erinnerungen, Home Assistant), XPS-Werte, Wikipedia (morgens „Was geschah am“, mittags „Schon gewusst?“, abends Artikel des Tages), Zuhause (ausgeblendet), Minifunk; Bearbeiten-Modus, Glas-Regler, täglich wechselnde Luftaufnahmen, Kiosk als eigener Benutzer | fertig, getestet; Display am XPS abzunehmen |
+| [Dashboard](dashboard/README.md) | Wetter, Arbeitsweg mit Stau, Fotos-Backup der Umbrel-App je Konto (Immich-Kachel ausgeblendet), Kalender (Apple, Home Assistant), Dienste, To-dos und Bucketlist (Knuddl), XPS-Werte, Wikipedia (morgens „Was geschah am“, mittags „Schon gewusst?“, abends Artikel des Tages), Zuhause (ausgeblendet), Minifunk; Bearbeiten-Modus, Glas-Regler, täglich wechselnde Luftaufnahmen, Kiosk als eigener Benutzer | fertig, getestet; Display am XPS abzunehmen |
 | Steuerung | Modi, Zeitplan, Schnellaktionen, Regeln, Funktionsschalter; `xps-control` setzt sie um, `xps-display` auf der Kommandozeile | fertig, getestet; Backlight und „Aus“ am XPS abzunehmen |
 | Sicherheit | CSRF- und DNS-Rebinding-Schutz, optionale PIN, CSP, Schrift lokal, Dienste ohne Rechte und ohne Netz | geprüft am 23.10.2026 |
 | Lautsprecher | Shairport Sync 5.5 mit AirPlay 2 (Metadaten-Pipe) und go-librespot 0.10 für Spotify Connect (lokale API), Musikmodus | eingebaut; Ton am XPS abzunehmen |

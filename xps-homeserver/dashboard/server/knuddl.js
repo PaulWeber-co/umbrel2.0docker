@@ -102,7 +102,7 @@ export async function open(key, box) {
   }
 }
 
-// The room's two Minifunk paths over Firebase's REST API. fetchJson throws on
+// The room's paths under x/ over Firebase's REST API (Minifunk and the lists). fetchJson throws on
 // HTTP errors (hub.js); every URL is built from validated parts only.
 export async function connectRoom({ url, namespace = 'knuddl', secret, fetchJson, fetchImpl = globalThis.fetch }) {
   const database = String(url || '').trim().replace(/\/+$/, '');
@@ -127,35 +127,48 @@ export async function connectRoom({ url, namespace = 'knuddl', secret, fetchJson
       }
       return out;
     },
+    // The lists from the app (to-dos and the top of the bucket list), one
+    // package the app rewrites on every change → the decrypted package or null
+    async readListe() {
+      const box = await fetchJson(`${root}/x/liste.json`);
+      return box ? open(key, box) : null;
+    },
     async deleteFunk(recordKey) {
       if (!/^[A-Za-z0-9_-]{1,64}$/.test(recordKey)) return;
       const response = await fetchImpl(`${root}/x/funk/${recordKey}.json`, { method: 'DELETE', signal: AbortSignal.timeout(15_000) });
       if (!response.ok) throw new Error(`DELETE x/funk: HTTP ${response.status}`);
     },
-    // Live: Firebase streams a path as Server-Sent Events ("put"/"patch",
-    // a "keep-alive" every 30 s). onChange() runs for every change; resolves
-    // when the stream ends, also when it went silent for 90 s.
     async watchFunks(onChange, signal) {
-      const silent = new AbortController();
-      let watchdog;
-      const alive = () => {
-        clearTimeout(watchdog);
-        watchdog = setTimeout(() => silent.abort(), 90_000);
-        watchdog.unref?.();
-      };
-      alive();
-      const both = AbortSignal.any([signal ?? new AbortController().signal, silent.signal]);
-      try {
-        const response = await fetchImpl(`${root}/x/funk.json`, { headers: { accept: 'text/event-stream' }, signal: both });
-        if (!response.ok || !response.body) throw new Error(`Stream x/funk: HTTP ${response.status}`);
-        await readEvents(response.body, onChange, alive);
-      } catch (error) {
-        if (!silent.signal.aborted) throw error;
-      } finally {
-        clearTimeout(watchdog);
-      }
+      return watch('funk', onChange, signal);
+    },
+    async watchListe(onChange, signal) {
+      return watch('liste', onChange, signal);
     },
   };
+
+  // Live: Firebase streams a path as Server-Sent Events ("put"/"patch",
+  // a "keep-alive" every 30 s). onChange() runs for every change; resolves
+  // when the stream ends, also when it went silent for 90 s.
+  async function watch(path, onChange, signal) {
+    const silent = new AbortController();
+    let watchdog;
+    const alive = () => {
+      clearTimeout(watchdog);
+      watchdog = setTimeout(() => silent.abort(), 90_000);
+      watchdog.unref?.();
+    };
+    alive();
+    const both = AbortSignal.any([signal ?? new AbortController().signal, silent.signal]);
+    try {
+      const response = await fetchImpl(`${root}/x/${path}.json`, { headers: { accept: 'text/event-stream' }, signal: both });
+      if (!response.ok || !response.body) throw new Error(`Stream x/${path}: HTTP ${response.status}`);
+      await readEvents(response.body, onChange, alive);
+    } catch (error) {
+      if (!silent.signal.aborted) throw error;
+    } finally {
+      clearTimeout(watchdog);
+    }
+  }
 }
 
 async function readEvents(body, onChange, alive) {

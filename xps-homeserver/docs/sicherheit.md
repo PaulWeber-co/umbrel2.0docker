@@ -30,7 +30,8 @@ tun kannst.
 | Spotify Connect | go-librespot läuft im Container als eigener Benutzer `xps-spotify` (nicht root), ohne Linux-Capabilities, mit schreibgeschütztem Dateisystem und nur seinem eigenen Ordner; seine Steuer-API lauscht nur auf 127.0.0.1. Das Dashboard holt Cover nur per HTTPS von Spotifys Bildservern. |
 | Docker | Nur `xps-services` (ohne Netz) fragt die Docker-Sockets und schreibt Namen und Zahlen in eine Datei; das Dashboard bekommt nie Docker-Zugriff. |
 | Minifunk | Das Dashboard kennt das gemeinsame Knuddl-Geheimnis (nur in der dashboard.env) und nutzt im Raum nur `x/status` und `x/funk`, nie eure Postfächer. Alles darin ist Ende-zu-Ende verschlüsselt (AES-GCM, wie in der App). Was ankommt, wird geprüft: Text höchstens 500 Zeichen und maskiert angezeigt, Fotos nur als echtes JPEG bis 1,5 MB, eins pro Person und Tag. Fotos liegen nur im Datenordner des Dashboards und werden nach 6 Stunden gelöscht. |
-| Kalender und Erinnerungen | Die Kalender-Links stehen nur in der dashboard.env, in Fehlermeldungen nur als „Kalender-Link (Host)“. Der Kurzbefehl für Erinnerungen geht durch dieselben Prüfungen wie jede Änderung, mit `DASH_PIN` per Header `x-dashboard-pin`. |
+| Kalender | Die Kalender-Links stehen nur in der dashboard.env, in Fehlermeldungen nur als „Kalender-Link (Host)“. |
+| To-dos und Bucketlist | Kommen verschlüsselt wie der Minifunk aus dem Raum (`x/liste`), nur Titel, Termine, Namen, Farben und Stimmen, keine Notizen. Die Wand prüft jedes Feld, zeigt alles maskiert und kann nichts ändern: abgehakt wird nur in der App. |
 | Geheimnisse | Nichts davon im öffentlichen Repo (`.gitignore`); das öffentliche Umbrel-Image enthält nur Code. |
 
 ## In dieser Prüfung behoben
@@ -111,7 +112,7 @@ Nach Wichtigkeit:
 - 181 automatische Tests des Dashboards (`npm test`), darunter Tests für
   CSRF, DNS-Rebinding, PIN mit Sperre pro Gerät und im ganzen Netz,
   Eingabeprüfung, die Regeln der Steuerung, die Verschlüsselung des Minifunks
-  gegen die der Knuddl-App und den Abgleich der Erinnerungen über HTTP;
+  gegen die der Knuddl-App, das Listen-Paket der App (mit ihrem Code verschlüsselt);
   Smoke-Test des echten Servers.
 - Tests der Root-Dienste gegen nachgebaute `/sys`-Dateien und ein falsches
   `systemctl` (`python3 -m unittest discover -s scripts/tests`), u. a. dass

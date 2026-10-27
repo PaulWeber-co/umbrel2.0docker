@@ -108,19 +108,17 @@ Ohne Eintrag zeigt eine Kachel Beispieldaten mit der Marke „Beispiel“. Was
 jede Kachel braucht, steht in [dashboard/README.md](../dashboard/README.md).
 Zwei Hinweise:
 
-- **Kalender** und **To-dos** kommen aus Apple Kalender und Erinnerungen
-  (nächster Abschnitt) oder aus Home Assistant
-  (`DASH_HA_CALENDAR_ENTITY`, `DASH_HA_TODO_ENTITY`). Beim Kalender laufen
-  beide zusammen.
+- **Kalender** kommt aus Apple Kalender (nächster Abschnitt) oder aus Home
+  Assistant (`DASH_HA_CALENDAR_ENTITY`); laufen beide, zeigt die Wand beide.
+- **To-dos** kommen aus der Knuddl-App, mit derselben Einladung wie der
+  Minifunk (Abschnitt „To-dos und Bucketlist aus Knuddl“).
 - **Dienste** braucht keine Einstellung. Eigene Projekte erscheinen
   automatisch, sobald sie als docker-compose-Projekt auf dem XPS laufen
   (`docker compose up -d` in ihrem Ordner) oder als Umbrel-App installiert
   sind. Anzeigenamen und Ausblenden: `DASH_SERVICES_NAMES`,
   `DASH_SERVICES_HIDE`.
 
-## Apple Kalender und Erinnerungen
-
-### Kalender
+## Apple Kalender
 
 1. iPhone: App *Kalender* → *Kalender* (unten) → beim Kalender auf ⓘ →
    *Öffentlicher Kalender* einschalten → *Link teilen* → kopieren. Am Mac:
@@ -135,47 +133,28 @@ Terminen. Wer den Link kennt, kann den Kalender lesen. Er steht deshalb nur in
 der dashboard.env, die nur root lesen kann. Ein neuer Link (Freigabe aus und
 wieder an) macht den alten ungültig.
 
-### Erinnerungen (z. B. die Einkaufsliste)
+## To-dos und Bucketlist aus Knuddl
 
-Apple lässt keinen Server an Erinnerungen heran, die App *Kurzbefehle* auf dem
-iPhone aber schon. Ein Kurzbefehl schickt die offene Liste an die Wand und
-bekommt zurück, was dort inzwischen abgehakt oder dazugeschrieben wurde. Das
-trägt er dann in Erinnerungen ein.
+In der Knuddl-App unter *Wir* → *Bucketlist* gibt es zwei Listen: To-dos für
+die nächsten Tage und die Bucketlist für irgendwann. Die Kachel unten rechts
+zeigt die offenen To-dos, das Dringendste zuerst, jedes mit einem Kreis in
+der Farbe dessen, der es macht (lila, pink, beide Farben für „zusammen“). Sind
+alle erledigt, zeigt sie die Bucketlist: jede Minute einen anderen Eintrag,
+das, was ihr beide am meisten wollt, zuerst, und darunter „To-dos erledigt“.
+Zieht man die Kachel im Bearbeiten-Modus auf 2×1, stehen To-dos und
+Bucketlist nebeneinander.
 
-1. `DASH_REMINDERS_LIST=Einkauf` eintragen (der Name der Liste), dann
-   `sudo systemctl restart xps-dashboard`. Die To-do-Kachel heißt jetzt
-   „Einkauf“ und wartet auf den ersten Abgleich.
-2. In *Kurzbefehle* einen neuen Kurzbefehl „Wand-Abgleich“ anlegen:
-   1. **Erinnerungen suchen**: Liste ist *Einkauf*, nur nicht erledigte.
-   2. **Text kombinieren**: die Erinnerungen, getrennt durch *Neue Zeile*.
-   3. **Inhalte von URL abrufen**: `http://xps.local:7777/api/widgets/todo/actions/sync`,
-      Methode *POST*. Mit `DASH_PIN` einen Header `x-dashboard-pin` mit der
-      PIN. Hauptteil der Anforderung *JSON*, ein Feld `text` (Text) mit dem
-      kombinierten Text.
-   4. **Wörterbuchwert abrufen**: Wert für `result`. Daraus noch einmal
-      **Wörterbuchwert abrufen**: Wert für `done`.
-   5. **Wiederholen mit jedem** Objekt darin: **Erinnerungen suchen**
-      (Liste *Einkauf*, Titel ist *Wiederholungsobjekt*, nicht erledigt,
-      Limit 1), dann **Erinnerung bearbeiten** → *Ist erledigt* einschalten.
-   6. Wie in Schritt 4 den Wert für `add` aus `result` holen, dann
-      **Wiederholen mit jedem**: **Neue Erinnerung hinzufügen** mit
-      *Wiederholungsobjekt* auf der Liste *Einkauf*.
-3. Unter *Automation* starten lassen, *Sofort ausführen*: bei *App* →
-   *Erinnerungen* → *Wird geschlossen*, dazu bei *Tageszeit* (z. B. 7, 12 und
-   18 Uhr) und bei *Ankommen* zu Hause.
-
-Was an der Wand abgehakt oder eingetippt wird, steht ab sofort so an der Wand.
-In Erinnerungen kommt es beim nächsten Lauf des Kurzbefehls an. Bis dahin ist
-Neues in der Kachel etwas blasser. Geht ein Lauf schief, bekommt der nächste
-dieselbe Antwort, doppelt wird nichts. Teilt ihr die Liste über iCloud, kann
-der Kurzbefehl auf beiden iPhones laufen. Abgeglichen wird über den Titel,
-weil Kurzbefehle keine feste Kennung einer Erinnerung kennen. Änderungen, die
-eine Woche lang kein Kurzbefehl abholt, verfallen.
+Eingerichtet ist das mit der Minifunk-Einladung (`DASH_KNUDDL_INVITE`,
+`DASH_KNUDDL_URL`). Die App schreibt nach jeder Änderung ein verschlüsseltes
+Paket nach `x/liste`: Titel, Termine, Namen, Farben und Stimmen, keine
+Notizen. Abgehakt und eingetragen wird nur in der App. Welche Farbe wem
+gehört, tauscht „Farben tauschen“ unter den To-dos in der App. Kommt nichts
+an, steht im Protokoll (`journalctl -u xps-dashboard`) eine Zeile mit `[todo]`.
 
 ## Minifunk
 
 Aus der Knuddl-App (*Wir* → *Heute*, unter der Frage des Tages) schickt ihr
-einen Satz, eine Liste oder eine Erinnerung an die Wand, dazu höchstens ein
+einen Satz, eine Liste oder eine Notiz an die Wand, dazu höchstens ein
 Foto pro Person und Tag. Es geht nur an den Bildschirm, nicht aufs andere
 Handy. Die Wand zeigt es unter der Uhr, solange keine Musik läuft: Text in
 einer Glaskarte, deren Schrift sich nach der Länge richtet, ein Foto an der
