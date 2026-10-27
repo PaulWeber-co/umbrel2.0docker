@@ -39,7 +39,9 @@ export const demoSample = () => ({
 
 export default {
   id: 'backup',
-  intervalMs: 5 * 60_000,
+  // Only a small file: once a minute, so after a reboot the real figures
+  // replace the example within a minute of xps-services writing them
+  intervalMs: 60_000,
   isConfigured: (config) => existsSync(config.get('DASH_PHOTOS_FILE', DEFAULT_FILE)),
 
   async fetch(ctx) {
