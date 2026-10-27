@@ -86,7 +86,7 @@ test('layout is validated and saved', async () => {
   const saved = await (await fetch(`${base}/api/layout`)).json();
   assert.deepEqual(saved.tiles, layout.tiles);
   // Widgets the saved layout does not know yet are offered as hidden
-  const others = DEFAULT_LAYOUT.tiles.map((tile) => tile.id).filter((id) => !['wetter', 'fotos'].includes(id));
+  const others = [...DEFAULT_LAYOUT.tiles.map((tile) => tile.id), ...DEFAULT_LAYOUT.hidden].filter((id) => !['wetter', 'fotos'].includes(id));
   assert.deepEqual(saved.hidden, ['fotos', ...others]);
 });
 

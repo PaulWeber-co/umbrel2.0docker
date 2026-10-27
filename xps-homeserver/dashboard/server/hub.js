@@ -16,7 +16,8 @@
 //                pipe): called once at start unless in demo mode, emit(data)
 //                publishes at once, returns a function that stops watching.
 //                fetch() still runs every intervalMs and returns the current state.
-//   ctx = { config, store, log, now, fetchJson, fetchText, peek }
+//   ctx = { config, store, log, now, fetchJson, fetchText, fetchBytes, peek }
+//   fetchBytes(url, { maxBytes }) → { bytes, type } for small images
 //   peek(id) is the latest data of another widget (Minifunk asks for music)
 //
 // Updates whose data did not change are not sent to the browsers again.
@@ -42,6 +43,7 @@ export class Hub {
       now: () => new Date(),
       fetchJson: (url, options) => fetchJson(fetchImpl, url, { timeoutMs, ...options }),
       fetchText: (url, options) => fetchText(fetchImpl, url, { timeoutMs, ...options }),
+      fetchBytes: (url, options) => fetchBytes(fetchImpl, url, { timeoutMs, ...options }),
       peek: (id) => this.#entries.get(id)?.data ?? null,
     };
   }
@@ -189,4 +191,15 @@ export async function fetchJson(fetchImpl, url, options = {}) {
 export async function fetchText(fetchImpl, url, options = {}) {
   const response = await request(fetchImpl, url, options);
   return response.text();
+}
+
+// A small binary file (a picture): refused before and after download when it
+// is larger than maxBytes
+export async function fetchBytes(fetchImpl, url, { maxBytes = 1024 * 1024, ...options } = {}) {
+  const response = await request(fetchImpl, url, options);
+  const tooLarge = () => new Error(`GET ${redact(url)}: größer als ${maxBytes} Bytes`);
+  if (Number(response.headers.get('content-length')) > maxBytes) throw tooLarge();
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (bytes.length > maxBytes) throw tooLarge();
+  return { bytes, type: response.headers.get('content-type') ?? '' };
 }

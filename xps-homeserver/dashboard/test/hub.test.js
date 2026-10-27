@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { Hub, redact } from '../server/hub.js';
+import { fetchBytes, Hub, redact } from '../server/hub.js';
 
 const quiet = { warn() {}, log() {}, error() {} };
 const store = { read: async (_, fallback) => fallback, write: async () => {} };
@@ -96,4 +96,14 @@ test('actions run and refresh the widget', async () => {
 test('API keys never reach logs', () => {
   assert.equal(redact('https://x/route?key=abc123&traffic=true'), 'https://x/route?key=…&traffic=true');
   assert.equal(redact('https://x/a.json?auth=secret'), 'https://x/a.json?auth=…');
+});
+
+test('fetchBytes returns small files and refuses large ones', async () => {
+  const reply = (size, type = 'image/jpeg', length = String(size)) => async () =>
+    new Response(new Uint8Array(size), { headers: { 'content-type': type, 'content-length': length } });
+  const small = await fetchBytes(reply(10), 'https://upload.wikimedia.org/a.jpg', { maxBytes: 100 });
+  assert.equal(small.bytes.length, 10);
+  assert.equal(small.type, 'image/jpeg');
+  await assert.rejects(fetchBytes(reply(200), 'https://upload.wikimedia.org/a.jpg', { maxBytes: 100 }), /größer als 100 Bytes/);
+  await assert.rejects(fetchBytes(reply(200, 'image/jpeg', '5'), 'https://upload.wikimedia.org/a.jpg', { maxBytes: 100 }), /größer als 100 Bytes/, 'a wrong length header does not help');
 });

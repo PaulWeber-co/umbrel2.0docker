@@ -1,0 +1,25 @@
+/* Wikipedia tile (web/js/widgets/wiki.js). Made for 2×1 (460 × 234 inside);
+   in a 1×1 tile or music mode the picture gives way to the text. */
+.wk { flex: 1; min-height: 0; display: flex; gap: 18px; container-type: inline-size; }
+.wk-img { flex: none; width: 128px; height: 128px; border-radius: 18px; object-fit: cover; box-shadow: 0 6px 20px -8px rgba(0, 0, 0, .5); }
+.wk-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.wk-lead { font-size: 34px; font-weight: 400; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.wk-title { font-size: 25px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The feed brings soft hyphens: words break where German breaks them. The
+   clamp is a last resort; the server already shortens long texts. */
+.wk-text {
+  margin: 0; font-size: 20px; line-height: 1.3; opacity: .92; hyphens: manual; overflow-wrap: break-word;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 9; overflow: hidden;
+}
+.wk-text.wk-s28 { font-size: 28px; line-height: 1.25; }
+.wk-text.wk-s24 { font-size: 24px; }
+.wk-text.wk-s21 { font-size: 21px; }
+.wk-text.wk-s20 { font-size: 20px; }
+.wk-text.wk-s18 { font-size: 18px; }
+.wk-text.wk-s16 { font-size: 16.5px; }
+
+@container (max-width: 300px) {
+  .wk-img { display: none; }
+  .wk-text.wk-text { font-size: 15px; line-height: 1.3; }
+}

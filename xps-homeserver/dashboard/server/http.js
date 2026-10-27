@@ -87,7 +87,7 @@ export function createApp({ hub, store, config, webDir, defaultLayout, control =
     const saved = await store.read('layout.json', null);
     if (!saved) return defaultLayout;
     const known = new Set([...(saved.tiles ?? []).map((tile) => tile.id), ...(saved.hidden ?? [])]);
-    const missing = defaultLayout.tiles.map((tile) => tile.id).filter((id) => !known.has(id));
+    const missing = [...defaultLayout.tiles.map((tile) => tile.id), ...(defaultLayout.hidden ?? [])].filter((id) => !known.has(id));
     return missing.length ? { ...saved, hidden: [...(saved.hidden ?? []), ...missing] } : saved;
   };
   const loadSettings = async () => {

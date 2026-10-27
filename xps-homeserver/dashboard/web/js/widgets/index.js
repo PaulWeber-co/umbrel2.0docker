@@ -8,5 +8,6 @@ import * as server from './server.js';
 import * as todo from './todo.js';
 import * as weg from './weg.js';
 import * as wetter from './wetter.js';
+import * as wiki from './wiki.js';
 
-export default { wetter, weg, fotos, kal, dienste, todo, server, home };
+export default { wetter, weg, fotos, kal, dienste, todo, server, home, wiki };

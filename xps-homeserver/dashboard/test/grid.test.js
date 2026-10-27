@@ -242,7 +242,7 @@ test('random sequences of changes always give valid layouts', () => {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
   const pick = (list) => list[Math.floor(random() * list.length)];
-  const ids = DEFAULT_LAYOUT.tiles.map((tile) => tile.id);
+  const ids = [...DEFAULT_LAYOUT.tiles.map((tile) => tile.id), ...DEFAULT_LAYOUT.hidden];
   let layout = structuredClone(DEFAULT_LAYOUT);
   for (let i = 0; i < 2000; i++) {
     const id = pick(ids);

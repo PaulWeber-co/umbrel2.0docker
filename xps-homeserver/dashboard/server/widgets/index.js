@@ -12,5 +12,6 @@ import server from './server.js';
 import services from './services.js';
 import todo from './todo.js';
 import weather from './weather.js';
+import wiki from './wiki.js';
 
-export default [weather, commute, photos, calendar, services, todo, server, home, music, minifunk, ambient];
+export default [weather, commute, photos, calendar, services, todo, server, home, wiki, music, minifunk, ambient];
