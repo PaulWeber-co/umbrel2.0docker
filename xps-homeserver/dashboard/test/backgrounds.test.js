@@ -72,7 +72,14 @@ test('scenes by time of day', () => {
   assert.equal(sceneAt(8 * 60, sun), 'morgen');
   assert.equal(sceneAt(13 * 60, sun), 'tag');
   assert.equal(sceneAt(18 * 60, sun), 'abend');
+  assert.equal(sceneAt(18 * 60 + 50, sun), 'abend', 'until half an hour after sunset');
+  assert.equal(sceneAt(18 * 60 + 54, sun), 'spaet', 'then the city lights');
   assert.equal(sceneAt(23 * 60, sun), 'spaet');
+  // Late October: dark by five
+  assert.equal(sceneAt(17 * 60 + 30, { sunrise: '07:15', sunset: '16:56' }), 'spaet');
+  // Midsummer: still light at ten, city lights from 22:30 at the latest
+  assert.equal(sceneAt(22 * 60, { sunrise: '04:50', sunset: '21:55' }), 'abend');
+  assert.equal(sceneAt(22 * 60 + 30, { sunrise: '04:50', sunset: '21:55' }), 'spaet');
 });
 
 function fakeVideo() {

@@ -3,7 +3,11 @@
 # A small pool per scene (morgen, tag, abend, spaet). The wall plays two
 # clips of a scene each day and the next two the day after, so over the days
 # it walks through the whole list (web/js/scene.js). Every clip here exists
-# at 1920×1080 on Mixkit, so nothing is upscaled.
+# at 1920×1080 in landscape on Mixkit, so nothing is upscaled or cut to a
+# strip. Only calm drone flights: a frame two and three seconds in barely
+# differ (checked for each); time-lapses with racing clouds or light trails,
+# which only long exposures leave, stay out, whatever their title says.
+# fetch-backgrounds.sh slows them further.
 #
 # Free under the Mixkit Stock Video Free License (https://mixkit.co/license/),
 # which allows using them but not redistributing the files, so they are
@@ -13,7 +17,8 @@
 # Morning: mist, first light
 morgen 2793  Fog drifting over a wooded valley
 morgen 50869 Green forest under the morning mist
-morgen 4396  Snowy peaks rising out of the clouds
+morgen 28339 Forest under mist at sunrise
+morgen 44616 Mist along a mountain flank
 morgen 44366 Long beach in low sunlight
 
 # Day: coasts, mountains, cities
@@ -21,19 +26,26 @@ tag    5008  Turquoise bay between forested islands
 tag    36615 Coast with rock towers in the sea
 tag    42495 Turquoise water along a sandy beach, from above
 tag    50145 Lagoon and sandbanks below a mountain
-tag    4132  Alpine peaks under moving clouds
+tag    43130 Volcano under a single cloud
+tag    42494 Sunny mountain range
 tag    41401 River canyon in green mountains
 tag    50180 City on the coast, sailboats in the bay
 tag    49825 River and bridges through a city
 
-# Evening: sunsets
+# Evening, around sunset: the last light
 abend  5002  Red sunset over a mountain lake
 abend  5372  Sunset glow on a small gulf
 abend  50154 Calm sea in the last light
 abend  41375 High above a city at dusk
+abend  41374 A huge city under a violet dusk
+abend  41542 Lit bridge and towers at dusk
 
-# Late evening and night: city lights
+# After sunset and through the night: cities and their lights
+spaet  42343 Skyline in violet light by a lit bridge
 spaet  42342 City centre at night
-spaet  49878 Big city at night
-spaet  42343 Towers and traffic at night
-spaet  4998  Lake at dusk
+spaet  3223  A sea of city lights from high above
+spaet  3217  City lights from the air
+spaet  49847 Towers downtown at night
+spaet  42344 Downtown from the heights at night
+spaet  1148  Dense city lights at night
+spaet  5011  A city at the blue hour

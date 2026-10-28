@@ -1,6 +1,7 @@
 // Time of day decides the scene: background video and the evening warm
-// filter. "spaet" is the late evening and the small hours with the
-// dashboard still on; "nacht", the dimmed clock alone, comes only from the
+// filter. "abend" is the last light around sunset; "spaet" starts half an
+// hour after sunset (22:30 at the latest) and runs through the night with
+// city lights; "nacht", the dimmed clock alone, comes only from the
 // control center (features/display.js), which follows the schedule.
 //
 // Videos are aerial clips from /media, a small pool per scene (see
@@ -24,7 +25,7 @@ const minutes = (hhmm) => {
 export function sceneAt(now, sun = { sunrise: '07:00', sunset: '19:00' }) {
   const rise = minutes(sun.sunrise);
   const set = minutes(sun.sunset);
-  if (now >= 22 * 60 + 30 || now < Math.min(rise - 60, 6 * 60)) return 'spaet';
+  if (now >= Math.min(set + 30, 22 * 60 + 30) || now < Math.min(rise - 60, 6 * 60)) return 'spaet';
   if (now < rise + 180) return 'morgen';
   if (now < set - 90) return 'tag';
   return 'abend';
