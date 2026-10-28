@@ -63,6 +63,8 @@ step "Grundsystem: Kernel-Wächter, Watchdogs, umbrel.local, Akku, Updates"
 # shellcheck source=SCRIPTDIR/../installer/iso/xps/host-files.sh
 . "$XPS_ROOT/installer/iso/xps/host-files.sh"
 install_host_files "$XPS_ROOT/installer/iso/xps/host"
+# SSH takes the hardening only after a check, so a typo never locks us out
+if sshd -t 2>/dev/null; then systemctl reload ssh.service; else warn "SSH-Einstellungen fehlerhaft, nicht übernommen: sudo sshd -t"; fi
 update-grub 2>/dev/null || warn "update-grub fehlgeschlagen"
 systemctl restart systemd-journald
 systemctl daemon-reexec # picks up the hardware watchdog setting
