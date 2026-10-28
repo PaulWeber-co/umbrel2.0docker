@@ -15,6 +15,7 @@
 
 export const PER_DAY = 2;
 const ROTATE_MS = 60_000;
+const RETRY_MS = 5000;
 
 const minutes = (hhmm) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -86,8 +87,21 @@ export function createScenes(stage) {
         if (!current.classList.contains('on')) release(current);
       }, 2000);
     };
-    // A missing video only means no video: the gradient behind it stays.
-    next.onerror = () => next.src && next.classList.remove('on');
+    // A missing video only means no video: the gradient behind it stays. A
+    // video that already showed and then failed lost its connection (the
+    // dashboard restarting during an update): the same clip once more.
+    let retried = false;
+    next.onerror = () => {
+      if (!next.src) return;
+      const shown = next.classList.contains('on');
+      next.classList.remove('on');
+      if (shown && !retried) {
+        retried = true;
+        setTimeout(() => {
+          if (videosOn && clips[clip] === name) play(name);
+        }, RETRY_MS);
+      }
+    };
     next.play().then(show, () => {});
   }
 

@@ -168,3 +168,35 @@ test('one video decodes at a time; videos off leave the still picture', async (t
   assert.equal(v1.src + v2.src, '', 'the night clock has no video');
   assert.ok(!v1.on && !v2.on);
 });
+
+test('a clip that loses its connection while showing comes back, a missing one does not', async (t) => {
+  t.mock.timers.enable({ apis: ['setInterval', 'setTimeout'] });
+  const v1 = fakeVideo();
+  const v2 = fakeVideo();
+  const stage = { dataset: {}, querySelector: (selector) => (selector === '#v1' ? v1 : v2) };
+  const scenes = createScenes(stage);
+  scenes.setPool({ tag: ['tag-1', 'tag-2', 'tag-3'] });
+  scenes.set('tag', dayNumber(2026, 10, 28));
+  await Promise.resolve();
+  const shown = v2.on ? v2 : v1;
+  const clip = shown.src;
+  t.mock.timers.tick(2000);
+
+  // The dashboard restarts: the showing video reports an error
+  shown.onerror();
+  assert.ok(!v1.on && !v2.on, 'for a moment the gradient');
+  t.mock.timers.tick(5000);
+  await Promise.resolve();
+  const back = v1.on ? v1 : v2;
+  assert.ok(back.on, 'the clip is back');
+  assert.equal(back.src, clip, 'the same clip');
+
+  // A clip that never showed (file missing) is not tried again and again
+  const before = v1.played.length + v2.played.length;
+  const hidden = back === v1 ? v2 : v1;
+  hidden.src = '/media/tag-404.mp4';
+  hidden.onerror();
+  t.mock.timers.tick(5000);
+  await Promise.resolve();
+  assert.equal(v1.played.length + v2.played.length, before);
+});
