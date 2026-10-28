@@ -22,8 +22,8 @@ test('photos.json becomes people and a total', () => {
 });
 
 test('odd entries are cleaned, a reported error throws', () => {
-  const data = toWidgetData({ people: [{ name: ' Jana ', photos: -3, videos: 'x', bytes: 1.6 }, { name: '' }, null] });
-  assert.deepEqual(data.people, [{ name: 'Jana', photos: 0, videos: 0, bytes: 2 }]);
+  const data = toWidgetData({ people: [{ name: ' Jane ', photos: -3, videos: 'x', bytes: 1.6 }, { name: '' }, null] });
+  assert.deepEqual(data.people, [{ name: 'Jane', photos: 0, videos: 0, bytes: 2 }]);
   assert.throws(() => toWidgetData({ people: [], error: 'Umbrel-Daten nicht gefunden (/x)' }), /nicht gefunden/);
   assert.throws(() => toWidgetData({}), /unerwartetes Format/);
 });

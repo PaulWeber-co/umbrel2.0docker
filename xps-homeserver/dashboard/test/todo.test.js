@@ -15,16 +15,17 @@ const SECRET = 'K7F2M9QX4R8TWE7HJ2NP';
 const quiet = { warn() {}, log() {}, error() {} };
 const NOW = new Date('2026-10-27T18:00:00+01:00');
 
-// Made with src/util/crypto.js of DynamicChicken: derive(SECRET), seal(key, liste)
-// for a package as listeFuerWand() writes it (Paul lila, Jana pink)
-const FROM_APP = { v: 1, iv: 'SbZOMAK-VHjDbjXy', ct: 'J8R_ZEUgoclM3ebiYhS1bKwf7dcVGbg3OpS46WfMfHZc5INOFhhdSRI5l1mSesn5x7Suq-CiaPAC_erfp-45bdZKMJNmcUJPStvDqlGYdnYITejmHKuVbpuepBGXqrqlgpnL0QZL2SXAMCNR_cgEU0Ki-EWj-Aqrq2PrnXPmxSTx7Run8IZ7EBkHKKDeL12oycYFbd3c6vNsMdfRlN60zNVAnstwi6mTjhwnV9eMEFM-LQ6AAF6jd9Srd54aywIU6Ef0gl-MTW7gFwm-LMJZi8SXB2gARZkf0Mx3cNHKQAvFESwJYhB7usIQk_rV2S-_K-J9Qwr_gmEGZkipw70ZAlQlTtdX7L8Jpi5J-5w6hkmVzT_Q-_LpIoOnyw8yD9Ro8FHutGR9zaRxoTwcbPOUCWQH96ixKatFWP9OVBz9QgQM8JcJn3OsVQz0FfS42QEWfhqYlee4AGkHAROfU6AJllBCH36H8GW9nsm4siSuGbmWdNt_UHNz4BfE8vUyrFFJaTJDSdixQSajDFAILGaOOVXiCDT8rzl1VIrF7rX_OWHEHT7Y3e88sUOMHo6cMjPR2oIeM-xtHHESEF26dcGER_FTKENzui1pTa8Dixbxe0uMnv6tqFxRnvIzGY__ea-wdv3xZ67g2QpWy-qZ8w2x1DGYP4yL2Nem2opIKVV9Pfc-1Bk' };
+// A package as listeFuerWand() of DynamicChicken writes it (Paul lila, Jane pink),
+// sealed with derive(SECRET) and seal(); that the XPS opens what the app
+// itself sealed shows test/minifunk.test.js with an app-made package
+const FROM_APP = { v: 1, iv: 'ZOGAHpZMyZ2PWxFm', ct: 'BsvbJlmZJdMF66hYCFYdFLQhELvIQTcO-3chYqwwSLjIdgdl3Y-9WnyxJXl6F2vi4--eyXzSfj1m7axRLlbWLNBzORSWvYqhuc_CBXk-7m6rykK2OnRukCMx5INp-RvZUQxQLMRKXxfSS24SOELFQKZwxy-_bnB3oNM5KO60hgXm-RSOKXy0E_NYSsbG9QjycTXDc9ECrOu68DrTPLS8IFPd58fywG3QARHqzVMeVX5zUwt0tjp-W3fHNQ4qcV4UL99EFEkj1CeTjDiY-EIznPF1WSPwRd2D62ltsvr8ZzSHYkc0PCAQ9S6WEE7MR5YDcR2lOzYq_obxR7sHTTLrDIlBk9o9BZziiVwoEgM29dKDSnnGTc32LLgOqMHg4jVaumR0n4_AnpHvPcPwmYkCNJ78PtlBCC80HShf0pRBZjuRMFSfkuVAC6YSUCuDQEuQqzSPrZmQMTfxjDMYCn9Noxmwv6ViIQh7rSyD4FYpwbjvygp7f5UjKZ6DUiCrRSptwEhgADrWI6fJFTUpH9vIBznKD8wxhCL9DXjQI6fJGN1pRr-MaE_aamkoTaXlW-14mcQjGq0nYunXan7fHuogAJ-xiBZF_9VZM-ZWRbSquGK5SG2csIRGQsdfjGTkXZAkeGVUGa54TtcFS-SWqWGt0_PsifIpnPp0XduzLtu11P3Z5w8' };
 
 test('the package the app sealed opens on the XPS', async () => {
   const { key } = await derive(SECRET);
   const liste = validateListe(await open(key, FROM_APP));
-  assert.deepEqual(liste.leute, [{ code: 'PAUL01', name: 'Paul', farbe: 'lila' }, { code: 'JANA01', name: 'Jana', farbe: 'pink' }]);
-  assert.deepEqual(liste.todos.map((t) => [t.text, t.due, t.who]), [['Geschenk für Oma', '2026-10-27', 'JANA01'], ['Fahrrad zur Werkstatt', null, 'wir']]);
-  assert.deepEqual(liste.bucket[0], { text: 'Nordlichter in Norwegen sehen', stimmen: { PAUL01: 1, JANA01: 1 }, einig: true, unbedingt: true });
+  assert.deepEqual(liste.leute, [{ code: 'PAUL01', name: 'Paul', farbe: 'lila' }, { code: 'JANE01', name: 'Jane', farbe: 'pink' }]);
+  assert.deepEqual(liste.todos.map((t) => [t.text, t.due, t.who]), [['Geschenk für Oma', '2026-10-27', 'JANE01'], ['Fahrrad zur Werkstatt', null, 'wir']]);
+  assert.deepEqual(liste.bucket[0], { text: 'Nordlichter in Norwegen sehen', stimmen: { PAUL01: 1, JANE01: 1 }, einig: true, unbedingt: true });
 });
 
 test('everything in the package is checked', () => {
@@ -34,12 +35,12 @@ test('everything in the package is checked', () => {
   assert.equal(validateListe({ ...demoListe(), at: 'gestern' }), null);
   const liste = validateListe({
     ...demoListe(),
-    leute: [{ code: '../x', name: 'Böse' }, { code: 'PAUL01', name: 'P'.repeat(80), farbe: 'grün' }, { code: 'JANA01', name: 'Jana', farbe: 'pink' }, { code: 'DRITT1', name: 'Dritte' }],
+    leute: [{ code: '../x', name: 'Böse' }, { code: 'PAUL01', name: 'P'.repeat(80), farbe: 'grün' }, { code: 'JANE01', name: 'Jane', farbe: 'pink' }, { code: 'DRITT1', name: 'Dritte' }],
     todos: [{ text: '  viel   Platz ', due: '27.10.2026', who: 'FREMD1' }, { text: '', who: 'PAUL01' }, ...Array.from({ length: 20 }, (_, i) => ({ text: `t${i}` }))],
-    bucket: [{ text: 'x', stimmen: { PAUL01: 1, JANA01: 7, FREMD1: 1 }, einig: 'ja' }],
+    bucket: [{ text: 'x', stimmen: { PAUL01: 1, JANE01: 7, FREMD1: 1 }, einig: 'ja' }],
     offen: -3,
   });
-  assert.deepEqual(liste.leute.map((p) => [p.code, p.name.length, p.farbe]), [['PAUL01', 40, 'lila'], ['JANA01', 4, 'pink']], 'two people, sane names and colours');
+  assert.deepEqual(liste.leute.map((p) => [p.code, p.name.length, p.farbe]), [['PAUL01', 40, 'lila'], ['JANE01', 4, 'pink']], 'two people, sane names and colours');
   assert.deepEqual(liste.todos[0], { text: 'viel Platz', due: null, who: 'wir' }, 'bad dates and strangers dropped');
   assert.equal(liste.todos.length, 11, 'twelve at most, the empty one gone');
   assert.deepEqual(liste.bucket[0].stimmen, { PAUL01: 1 });
@@ -55,10 +56,10 @@ test('due dates in words, colours and names instead of codes, one bucket item a 
   assert.deepEqual(dueText(null, '2026-10-27'), { gruppe: 'ohne', wann: '' });
   const liste = validateListe(demoListe(NOW.getTime()));
   const data = toWidgetData(liste, NOW, TZ);
-  assert.deepEqual(data.todos[0], { text: 'Geschenk für Oma', gruppe: 'heute', wann: 'heute', name: 'Jana', farbe: 'pink' });
+  assert.deepEqual(data.todos[0], { text: 'Geschenk für Oma', gruppe: 'heute', wann: 'heute', name: 'Jane', farbe: 'pink' });
   assert.deepEqual(data.todos[2], { text: 'Fahrrad zur Werkstatt', gruppe: 'ohne', wann: '', name: 'Zusammen', farbe: 'wir' });
   assert.ok(!JSON.stringify(data).includes('PAUL01'), 'no codes for the browsers');
-  assert.deepEqual(data.bucket[2].stimmen, [{ name: 'Paul', farbe: 'lila', l: 2 }, { name: 'Jana', farbe: 'pink', l: null }]);
+  assert.deepEqual(data.bucket[2].stimmen, [{ name: 'Paul', farbe: 'lila', l: 2 }, { name: 'Jane', farbe: 'pink', l: null }]);
   const seen = new Set([0, 1, 2, 3].map((minute) => toWidgetData(liste, new Date(NOW.getTime() + minute * 60_000), TZ).fokus));
   assert.deepEqual([...seen].sort(), [0, 1, 2], 'every bucket item gets its minute');
   assert.deepEqual(toWidgetData(null, NOW, TZ), { leer: true, todos: [], offen: 0, bucket: [], fokus: 0 });

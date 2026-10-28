@@ -189,7 +189,7 @@ class PhotosTest(unittest.TestCase):
         self.root = Path(tempfile.mkdtemp(prefix="xps-umbrel-"))
         (self.root / "umbrel.yaml").write_text(
             "version: 1\nuser:\n  name: Paul\n  language: de\nphotos:\n  backupSources:\n    - id: x\n      name: iPhone\n"
-            "members:\n  - id: Jane\n    name: 'Jana'\n    language: de\n  - id: ../etc\n    name: Böse\n"
+            "members:\n  - id: Jane\n    name: 'Jane'\n    language: de\n  - id: ../etc\n    name: Böse\n"
         )
 
     def put(self, path, size):
@@ -208,21 +208,21 @@ class PhotosTest(unittest.TestCase):
         self.assertIsNone(sample["error"])
         self.assertEqual(sample["people"], [
             {"name": "Paul", "photos": 2, "videos": 1, "bytes": 450},
-            {"name": "Jana", "photos": 1, "videos": 0, "bytes": 70},
+            {"name": "Jane", "photos": 1, "videos": 0, "bytes": 70},
         ], "names from umbrel.yaml, other files, hidden folders and odd member ids left out")
 
     def test_deleted_accounts_and_nested_names_do_not_count(self):
-        # Jana deleted and created again: the old record stays as a tombstone,
-        # the new account gets the id Jana-2 and keeps its name
+        # Jane deleted and created again: the old record stays as a tombstone,
+        # the new account gets the id Jane-2 and keeps its name
         (self.root / "umbrel.yaml").write_text(
-            "user:\n  name: Paul\nmembers:\n  - id: Jana\n    deleted: true\n"
-            "  - id: Jana-2\n    name: Jana\n    widgets:\n      - name: Wetter\n        app: x\n    language: de\n"
+            "user:\n  name: Paul\nmembers:\n  - id: Jane\n    deleted: true\n"
+            "  - id: Jane-2\n    name: Jane\n    widgets:\n      - name: Wetter\n        app: x\n    language: de\n"
         )
-        self.put("members/Jana-2/home/Photos/iPhone/a1/neu.jpg", 40)
+        self.put("members/Jane-2/home/Photos/iPhone/a1/neu.jpg", 40)
         sample = self.services.photos_sample(self.root)
         self.assertEqual(sample["people"], [
             {"name": "Paul", "photos": 0, "videos": 0, "bytes": 0},
-            {"name": "Jana", "photos": 1, "videos": 0, "bytes": 40},
+            {"name": "Jane", "photos": 1, "videos": 0, "bytes": 40},
         ])
 
     def test_each_phone_folder_is_counted_on_its_own(self):
@@ -237,7 +237,7 @@ class PhotosTest(unittest.TestCase):
             {"account": "Paul", "folder": "iPhone", "photos": 1, "videos": 1, "bytes": 400},
             {"account": "Paul", "folder": "iPhone (2)", "photos": 1, "videos": 0, "bytes": 40},
             {"account": "Paul", "folder": "", "photos": 1, "videos": 0, "bytes": 5},
-            {"account": "Jana", "folder": "iPhone", "photos": 1, "videos": 0, "bytes": 70},
+            {"account": "Jane", "folder": "iPhone", "photos": 1, "videos": 0, "bytes": 70},
         ], "files directly in Photos count under the folder \"\"")
         self.assertEqual(sample["people"][0], {"name": "Paul", "photos": 3, "videos": 1, "bytes": 445}, "accounts sum their folders")
 

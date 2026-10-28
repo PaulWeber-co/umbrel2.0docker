@@ -79,7 +79,7 @@ export const demoSample = () => ({
   capturedAt: Date.now(),
   people: [
     { name: 'Paul', photos: 4812, videos: 377, bytes: 61.4 * 1024 ** 3 },
-    { name: 'Jana', photos: 2290, videos: 141, bytes: 27.8 * 1024 ** 3 },
+    { name: 'Jane', photos: 2290, videos: 141, bytes: 27.8 * 1024 ** 3 },
   ],
   error: null,
 });

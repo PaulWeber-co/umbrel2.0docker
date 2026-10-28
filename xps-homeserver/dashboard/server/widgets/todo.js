@@ -183,17 +183,17 @@ export const demoListe = (now = Date.now()) => {
     t: 'liste',
     v: 1,
     at: now,
-    leute: [{ code: 'PAUL01', name: 'Paul', farbe: 'lila' }, { code: 'JANA01', name: 'Jana', farbe: 'pink' }],
+    leute: [{ code: 'PAUL01', name: 'Paul', farbe: 'lila' }, { code: 'JANE01', name: 'Jane', farbe: 'pink' }],
     offen: 4,
     todos: [
-      { text: 'Geschenk für Oma', due: date(0), who: 'JANA01' },
+      { text: 'Geschenk für Oma', due: date(0), who: 'JANE01' },
       { text: 'Zugtickets nach Wien buchen', due: date(3), who: 'PAUL01' },
       { text: 'Fahrrad zur Werkstatt', due: null, who: 'wir' },
       { text: 'Wäsche aufhängen', due: null, who: 'PAUL01' },
     ],
     bucket: [
-      { text: 'Nordlichter in Norwegen sehen', stimmen: { PAUL01: 1, JANA01: 1 }, einig: true, unbedingt: true },
-      { text: 'Zusammen einen Kochkurs machen', stimmen: { PAUL01: 1, JANA01: 2 }, einig: true, unbedingt: false },
+      { text: 'Nordlichter in Norwegen sehen', stimmen: { PAUL01: 1, JANE01: 1 }, einig: true, unbedingt: true },
+      { text: 'Zusammen einen Kochkurs machen', stimmen: { PAUL01: 1, JANE01: 2 }, einig: true, unbedingt: false },
       { text: 'Mit dem Nachtzug nach Wien', stimmen: { PAUL01: 2 }, einig: false, unbedingt: false },
     ],
   };
