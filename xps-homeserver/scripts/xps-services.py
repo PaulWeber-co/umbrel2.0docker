@@ -12,10 +12,11 @@ itself never gets access to Docker. Only names, states and resource figures are
 written, never environment variables, logs or other container details.
 
 Every XPS_PHOTOS_INTERVAL seconds it also counts what the Umbrel app's photo
-backup holds for each Umbrel account (photos, videos, bytes) and writes it to
-/run/xps-services/photos.json for the "Fotos-Backup" tile
-(server/widgets/backup.js). Only account names and these three figures leave,
-never file names. Live Photos count as one photo and one video: the files are
+backup holds for each Umbrel account (photos, videos, bytes), and for each
+folder in an account's Photos (the app gives every phone its own, "iPhone",
+"iPhone (2)" ...), and writes it to /run/xps-services/photos.json for the
+"Fotos-Backup" tile (server/widgets/backup.js). Only account and folder names
+and these three figures leave, never file names. Live Photos count as one photo and one video: the files are
 named by their content, so the halves cannot be paired.
 """
 import json
@@ -184,11 +185,40 @@ def count_photos(folder):
     return {"photos": photos, "videos": videos, "bytes": size}
 
 
+def count_folders(photos):
+    """{folder: figures} for each folder in an account's Photos; "" holds the
+    files lying directly in Photos."""
+    folders = {}
+    loose = {"photos": 0, "videos": 0, "bytes": 0}
+    try:
+        entries = sorted(os.scandir(photos), key=lambda entry: entry.name)
+    except OSError:
+        return folders
+    for entry in entries:
+        if entry.name.startswith("."):
+            continue
+        if entry.is_dir(follow_symlinks=False):
+            folders[entry.name] = count_photos(entry.path)
+        elif entry.is_file(follow_symlinks=False):
+            kind = entry.name.rsplit(".", 1)[-1].lower() if "." in entry.name else ""
+            if kind in PHOTO_TYPES or kind in VIDEO_TYPES:
+                loose["photos"] += kind in PHOTO_TYPES
+                loose["videos"] += kind in VIDEO_TYPES
+                loose["bytes"] += entry.stat(follow_symlinks=False).st_size
+    if any(loose.values()):
+        folders[""] = loose
+    return folders
+
+
 def photos_sample(root=UMBREL_DATA):
     if not (root / "umbrel.yaml").is_file():
-        return {"capturedAt": round(time.time() * 1000), "people": [], "error": f"Umbrel-Daten nicht gefunden ({root})"}
-    people = [{"name": name, **count_photos(folder)} for name, folder in photo_accounts(root)]
-    return {"capturedAt": round(time.time() * 1000), "people": people, "error": None}
+        return {"capturedAt": round(time.time() * 1000), "people": [], "devices": [], "error": f"Umbrel-Daten nicht gefunden ({root})"}
+    people, devices = [], []
+    for name, photos in photo_accounts(root):
+        folders = count_folders(photos)
+        people.append({"name": name, **{key: sum(f[key] for f in folders.values()) for key in ("photos", "videos", "bytes")}})
+        devices += [{"account": name, "folder": folder, **figures} for folder, figures in folders.items()]
+    return {"capturedAt": round(time.time() * 1000), "people": people, "devices": devices, "error": None}
 
 
 def sample():

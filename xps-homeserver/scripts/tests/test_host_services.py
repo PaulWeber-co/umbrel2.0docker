@@ -225,6 +225,22 @@ class PhotosTest(unittest.TestCase):
             {"name": "Jana", "photos": 1, "videos": 0, "bytes": 40},
         ])
 
+    def test_each_phone_folder_is_counted_on_its_own(self):
+        self.put("home/Photos/iPhone/b1/aaa.jpg", 100)
+        self.put("home/Photos/iPhone/b2/bbb.mov", 300)
+        self.put("home/Photos/iPhone (2)/c2/ccc.heic", 40)
+        self.put("home/Photos/lose.png", 5)
+        self.put("home/Photos/.versteckt/ddd.jpg", 999)
+        self.put("members/Jane/home/Photos/iPhone/e5/eee.jpg", 70)
+        sample = self.services.photos_sample(self.root)
+        self.assertEqual(sample["devices"], [
+            {"account": "Paul", "folder": "iPhone", "photos": 1, "videos": 1, "bytes": 400},
+            {"account": "Paul", "folder": "iPhone (2)", "photos": 1, "videos": 0, "bytes": 40},
+            {"account": "Paul", "folder": "", "photos": 1, "videos": 0, "bytes": 5},
+            {"account": "Jana", "folder": "iPhone", "photos": 1, "videos": 0, "bytes": 70},
+        ], "files directly in Photos count under the folder \"\"")
+        self.assertEqual(sample["people"][0], {"name": "Paul", "photos": 3, "videos": 1, "bytes": 445}, "accounts sum their folders")
+
     def test_an_account_without_backups_counts_zero(self):
         sample = self.services.photos_sample(self.root)
         self.assertEqual([p["photos"] for p in sample["people"]], [0, 0])

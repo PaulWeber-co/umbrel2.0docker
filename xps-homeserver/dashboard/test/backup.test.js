@@ -70,3 +70,45 @@ test('long photo counts get a smaller size', async () => {
   assert.equal(fit('4.812'), ' bk-l5');
   assert.equal(fit('999.999'), ' bk-l7');
 });
+
+test('folder names map to people', async () => {
+  const { parseNames } = await import('../server/widgets/backup.js');
+  assert.deepEqual([...parseNames('Paul/iPhone=Paul, iPhone (2) = Jane,kaputt,=x,y=')], [['Paul/iPhone', 'Paul'], ['iPhone (2)', 'Jane']]);
+  assert.equal(parseNames('').size, 0);
+});
+
+test('with names each phone folder counts for its person', async () => {
+  const { parseNames } = await import('../server/widgets/backup.js');
+  const sample = {
+    people: [{ name: 'Paul', photos: 9, videos: 9, bytes: 9 }, { name: 'Jane', photos: 0, videos: 0, bytes: 0 }],
+    devices: [
+      { account: 'Paul', folder: 'iPhone', photos: 1739, videos: 300, bytes: 2000 },
+      { account: 'Paul', folder: 'iPhone (2)', photos: 400, videos: 5, bytes: 600 },
+      { account: 'Paul', folder: '', photos: 2, videos: 0, bytes: 10 },
+    ],
+    error: null,
+  };
+  const names = parseNames('Paul/iPhone=Paul,Paul/iPhone (2)=Jane');
+  const { people, total } = toWidgetData(sample, { names });
+  assert.deepEqual(people, [
+    { name: 'Paul', photos: 1741, videos: 300, bytes: 2010 },
+    { name: 'Jane', photos: 400, videos: 5, bytes: 600 },
+  ], 'loose files stay with the account, Jane gets her folder');
+  assert.deepEqual(total, { photos: 2141, videos: 305, bytes: 2610 });
+  // Later Jane backs up in her own account: her "iPhone" is not Paul's
+  const later = { ...sample, devices: [...sample.devices, { account: 'Jane', folder: 'iPhone', photos: 7, videos: 0, bytes: 70 }] };
+  assert.equal(toWidgetData(later, { names }).people.find((p) => p.name === 'Jane').photos, 407);
+  // Without names it stays per account, also for an older photos.json without devices
+  assert.deepEqual(toWidgetData(sample).people.map((p) => p.name), ['Paul', 'Jane']);
+  assert.equal(toWidgetData({ people: sample.people }, { names }).people[0].photos, 9);
+});
+
+test('an account without folders still shows, unless a name covers it', async () => {
+  const { parseNames } = await import('../server/widgets/backup.js');
+  const sample = {
+    people: [{ name: 'Paul' }, { name: 'Gast' }],
+    devices: [{ account: 'Paul', folder: 'iPhone', photos: 1, videos: 0, bytes: 1 }],
+  };
+  const people = toWidgetData(sample, { names: parseNames('iPhone=Paul') }).people;
+  assert.deepEqual(people.map((p) => [p.name, p.photos]), [['Paul', 1], ['Gast', 0]]);
+});
