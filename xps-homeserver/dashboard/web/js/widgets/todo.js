@@ -6,7 +6,7 @@
 // web/css/w-todo.css). Every value through esc(); nothing to tap.
 import { esc, icon } from '../util.js';
 
-export const label = 'Unsere To-dos';
+export const label = 'To-dos';
 
 const ZEICHEN = { 1: '♥', 2: '✓', 3: '–' };
 const WORT = { 1: 'unbedingt', 2: 'gern', 3: 'eher nicht' };
@@ -36,7 +36,7 @@ function fokus(data) {
 }
 
 export function render(data) {
-  const head = (title, extra = '') => `<div class="lbl">${icon('heart')}${esc(title)}${extra ? `<em>${esc(extra)}</em>` : ''}</div>`;
+  const head = (title, extra = '', symbol = 'check') => `<div class="lbl">${icon(symbol)}${esc(title)}${extra ? `<em>${esc(extra)}</em>` : ''}</div>`;
   if (!data) return `${head(label)}<div class="loading">Lädt …</div>`;
   if (data.leer) return `${head(label)}<div class="sub td-hinweis">Noch nichts aus Knuddl. In der App: Wir → Bucketlist.</div>`;
   const offen = data.todos.length > 0;
@@ -49,7 +49,7 @@ export function render(data) {
       </div>`;
   }
   return `
-    ${head('Bucketlist', data.bucket.length > 1 ? `${data.fokus + 1} / ${data.bucket.length}` : '')}
+    ${head('Bucketlist', data.bucket.length > 1 ? `${data.fokus + 1} / ${data.bucket.length}` : '', 'list')}
     <div class="td td-alles">
       <div class="td-schmal">${fokus(data)}</div>
       ${data.bucket.length ? `<div class="td-rechts td-breit"><div class="td-kick">Als Nächstes</div><ol class="td-blist">${data.bucket.slice(0, 3).map(bucketZeile).join('')}</ol></div>` : ''}

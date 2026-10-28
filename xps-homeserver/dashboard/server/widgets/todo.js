@@ -1,4 +1,4 @@
-// To-dos ("Unsere To-dos"): the lists from the Knuddl app
+// To-dos: the lists from the Knuddl app
 // (github.com/PaulWeber-co/DynamicChicken). After every change the app
 // writes one encrypted package to the room's x/liste (src/state/listen.js
 // there, listeFuerWand): the open to-dos, the top of the bucket list, your

@@ -68,7 +68,8 @@ test('due dates in words, colours and names instead of codes, one bucket item a 
 test('the tile: to-dos without a legend; all done shows the bucket list and says so', () => {
   const liste = validateListe(demoListe(NOW.getTime()));
   const offen = render(toWidgetData(liste, NOW, TZ));
-  assert.match(offen, /Unsere To-dos<em>4<\/em>/);
+  assert.match(offen, /To-dos<em>4<\/em>/);
+  assert.ok(!offen.includes('i-heart') && !offen.includes('Unsere'), 'no heart, just To-dos');
   assert.match(offen, /td-kreis td-pink"><\/span><span class="td-text">Geschenk für Oma/);
   assert.match(offen, /td-kreis td-wir/);
   assert.doesNotMatch(offen, /zu zweit/, 'no legend');
