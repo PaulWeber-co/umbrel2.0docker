@@ -249,3 +249,38 @@ class PhotosTest(unittest.TestCase):
         sample = self.services.photos_sample(self.root / "nothing")
         self.assertEqual(sample["people"], [])
         self.assertIn("nicht gefunden", sample["error"])
+
+
+class ServicesTest(unittest.TestCase):
+    """Container figures (xps-services.py) against a fake docker."""
+
+    def setUp(self):
+        self.services = load("xps_services_containers", "xps-services.py")
+        self.tmp = Path(tempfile.mkdtemp(prefix="xps-docker-"))
+
+    def fake_docker(self, inspect_exit):
+        script = self.tmp / "docker"
+        script.write_text(f"""#!/bin/sh
+case "$1" in
+ps) printf 'aaa\\nbbb\\n' ;;
+stats) echo '{{"ID":"aaa","CPUPerc":"1.5%","MemUsage":"10MiB / 1GiB"}}' ;;
+inspect)
+\techo '[{{"Id":"aaa","Name":"/app_web_1","State":{{"Status":"running"}},"Config":{{"Labels":{{"com.docker.compose.project":"app"}}}}}}]'
+\t[ {inspect_exit} = 0 ] || echo 'Error: No such object: bbb' >&2
+\texit {inspect_exit} ;;
+esac
+""")
+        script.chmod(0o755)
+        return [str(script)]
+
+    def test_a_container_gone_since_ps_does_not_fail_the_sample(self):
+        containers = self.services.collect("host", self.fake_docker(1))
+        self.assertEqual([c["name"] for c in containers], ["app_web_1"])
+        self.assertEqual(containers[0]["cpuPercent"], round(1.5 / self.services.CPUS, 1), "Docker counts 100 % per core")
+
+    def test_other_docker_errors_still_count(self):
+        script = self.tmp / "docker"
+        script.write_text("#!/bin/sh\ncase \"$1\" in ps) echo aaa ;; stats) ;; inspect) echo 'Cannot connect' >&2; exit 1 ;; esac\n")
+        script.chmod(0o755)
+        with self.assertRaises(Exception):
+            self.services.collect("host", [str(script)])

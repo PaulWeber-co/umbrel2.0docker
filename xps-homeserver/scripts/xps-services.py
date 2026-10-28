@@ -74,6 +74,22 @@ def docker(prefix, *args):
     return result.stdout
 
 
+def inspect(prefix, ids):
+    """docker inspect for many ids. A container that went away since "ps"
+    (an app restarting) makes docker fail with "No such object", but it still
+    prints the others: those count, the missing one is simply not there."""
+    result = subprocess.run(
+        [*prefix, "inspect", *ids], capture_output=True, text=True, timeout=TIMEOUT, stdin=subprocess.DEVNULL
+    )
+    try:
+        found = json.loads(result.stdout or "null")
+    except ValueError:
+        found = None
+    if isinstance(found, list) and (result.returncode == 0 or "No such object" in result.stderr):
+        return found
+    raise subprocess.CalledProcessError(result.returncode, result.args, result.stdout, result.stderr)
+
+
 def collect(scope, prefix):
     """All containers of one Docker daemon as plain dictionaries."""
     ids = docker(prefix, "ps", "--all", "--quiet", "--no-trunc").split()
@@ -87,7 +103,7 @@ def collect(scope, prefix):
             continue
         stats[row.get("ID", "")] = row
     containers = []
-    for info in json.loads(docker(prefix, "inspect", *ids)):
+    for info in inspect(prefix, ids):
         state = info.get("State") or {}
         labels = (info.get("Config") or {}).get("Labels") or {}
         name = str(info.get("Name", "")).lstrip("/")

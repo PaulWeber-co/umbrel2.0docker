@@ -176,3 +176,30 @@ test('the source polls on its own, faster while something plays', async () => {
   await next();
   assert.equal(delays.length, 1, 'stopped: no further polls');
 });
+
+test('an unreachable go-librespot is asked only every 30 s', async () => {
+  const { UNREACHABLE_POLL_MS } = await import('../server/sources/spotify.js');
+  const fake = fakeLibrespot();
+  fake.reply = 'down';
+  const delays = [];
+  let next = null;
+  const source = createSpotifySource({
+    fetchImpl: fake.fetch,
+    log: quiet,
+    setTimer: (fn, ms) => {
+      delays.push(ms);
+      next = fn;
+      return 1;
+    },
+    clearTimer: () => {},
+  });
+  source.start();
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(delays.at(-1), UNREACHABLE_POLL_MS);
+  assert.equal(UNREACHABLE_POLL_MS, 30_000);
+  fake.reply = status();
+  await next();
+  assert.equal(delays.at(-1), 2000, 'back to fast polls once it answers');
+  source.stop();
+});

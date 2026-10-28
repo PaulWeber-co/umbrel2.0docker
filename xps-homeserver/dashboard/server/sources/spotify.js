@@ -21,6 +21,8 @@ import { coverDataUrl, END_DELAY_MS, inactiveState, MAX_COVER_BYTES, PAUSE_TIMEO
 export const DEFAULT_URL = 'http://127.0.0.1:3678';
 export const ACTIVE_POLL_MS = 2000;
 export const IDLE_POLL_MS = 5000;
+// Not reachable (switched off with XPS_SPOTIFY=aus, or starting): ask seldom
+export const UNREACHABLE_POLL_MS = 30_000;
 const SEEK_TOLERANCE_S = 2;
 const COVER_HOST = /(^|\.)(scdn\.co|spotifycdn\.com)$/i;
 
@@ -150,7 +152,7 @@ export function createSpotifySource({
     if (!running) return;
     await poll().catch((error) => log.warn?.(`[spotify] ${error.message}`));
     if (!running) return;
-    timer = setTimer(loop, state.active ? ACTIVE_POLL_MS : IDLE_POLL_MS);
+    timer = setTimer(loop, quiet ? UNREACHABLE_POLL_MS : state.active ? ACTIVE_POLL_MS : IDLE_POLL_MS);
     timer?.unref?.();
   }
 
