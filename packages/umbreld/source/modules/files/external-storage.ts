@@ -498,6 +498,12 @@ export default class ExternalStorage {
 			}
 
 			this.logger.log(`Successfully formatted device ${deviceId} as ${filesystem} with label ${label}`)
+
+			// Mount the new file system. On a full install udev announces it and the
+			// D-Bus listener reports the change; in a container (the Docker image) no
+			// such signal comes and the formatted drive stayed unmounted.
+			await $({reject: false})`udevadm settle`
+			this.#umbreld.eventBus.emit('system:disk:change')
 			return true
 		} finally {
 			releaseClouds()
