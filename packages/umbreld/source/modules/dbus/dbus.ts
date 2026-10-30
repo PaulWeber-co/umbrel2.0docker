@@ -3,7 +3,9 @@
 
 import dbus from '@homebridge/dbus-native'
 import {throttle} from 'es-toolkit'
+import fse from 'fs-extra'
 import type Umbreld from '../../index.js'
+import {CONTAINER_MARKER, watchContainerDisks} from './container-disks.js'
 
 export default class Dbus {
 	#umbreld: Umbreld
@@ -37,6 +39,18 @@ export default class Dbus {
 			// Check if we have a new disk device service from systemd
 			const isDisk = typeof unitName === 'string' && unitName.includes('disk') && unitName.endsWith('.device')
 			if (isDisk) sendThrottledEvent()
+		}
+
+		// In a container systemd keeps no device units: watch /sys/block instead
+		if (await fse.pathExists(CONTAINER_MARKER)) {
+			this.logger.log('Running in a container, polling for USB drives')
+			const stop = watchContainerDisks(sendThrottledEvent, {log: (message) => this.logger.log(message)})
+			this.#removeDiskEventListeners = () => {
+				this.logger.log('Removing disk event listeners')
+				stop()
+				this.#removeDiskEventListeners = undefined
+			}
+			return true
 		}
 
 		// Attach event handler to systemd service events
