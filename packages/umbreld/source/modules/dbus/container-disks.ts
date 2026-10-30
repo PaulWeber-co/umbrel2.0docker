@@ -6,8 +6,9 @@
 // since /dev/sdX is missing. This poller reads /sys/block instead, creates the
 // device files of USB disks and their partitions, removes the ones it made
 // when the drive is gone, and reports each change like the listener does.
-// lsblk, which external storage reads, takes the file system from udev's
-// database, so udev inside is asked to look at each new device file.
+// lsblk, which external storage reads, takes the file system and label from
+// udev's database, so udev inside is asked once to look at each USB device it
+// has no entry for, also one whose device file Docker made at start.
 
 import nodePath from 'node:path'
 
@@ -27,6 +28,8 @@ type Options = {
 	numbersAt?: (path: string) => Promise<{major: number; minor: number} | null>
 	// Has udev probe the new device files, so lsblk knows their file systems
 	probe?: (names: string[]) => Promise<void>
+	// udev's database, one file per device (b<major>:<minor>)
+	udevData?: string
 }
 
 const realProbe = async (names: string[]) => {
@@ -80,8 +83,8 @@ export async function usbBlockNodes(sysBlock = '/sys/block'): Promise<BlockNode[
 	return nodes
 }
 
-// Makes /dev match: a missing or stale file is (re)created, files this poller
-// made for drives that are gone are removed. Returns the names it created.
+// Makes /dev match: a missing or stale file is (re)created, the files of
+// USB drives that are gone are removed. Returns the names it created.
 export async function syncDeviceFiles(
 	nodes: BlockNode[],
 	managed: Set<string>,
@@ -97,6 +100,9 @@ export async function syncDeviceFiles(
 	for (const node of nodes) {
 		const path = nodePath.join(dev, node.name)
 		const numbers = await numbersAt(path)
+		// A USB device's file is ours to remove once the drive is gone, also when
+		// Docker made it at start: else external storage takes the drive for still there
+		managed.add(node.name)
 		// Already right (made by Docker at start, or by us before)
 		if (numbers?.major === node.major && numbers.minor === node.minor) continue
 		await fse.remove(path).catch(() => {})
@@ -118,6 +124,7 @@ export function watchContainerDisks(
 	}: Options & {interval?: number; log?: (message: string) => void} = {},
 ) {
 	const managed = new Set<string>()
+	const probed = new Set<string>()
 	let last: string | undefined
 	let lastError: string | undefined
 	let running = false
@@ -128,8 +135,20 @@ export function watchContainerDisks(
 			const nodes = await usbBlockNodes(options.sysBlock)
 			const key = JSON.stringify(nodes)
 			const created = await syncDeviceFiles(nodes, managed, options)
-			if (created.length) await (options.probe ?? realProbe)(created)
-			if (key !== last || created.length) {
+			// Each device once: new files, and ones udev knows nothing about yet
+			const toProbe: string[] = []
+			for (const node of nodes) {
+				const id = `${node.name}:${node.major}:${node.minor}`
+				const known = await fse.pathExists(
+					nodePath.join(options.udevData ?? '/run/udev/data', `b${node.major}:${node.minor}`),
+				)
+				if (created.includes(node.name) || (!known && !probed.has(id))) toProbe.push(node.name)
+				probed.add(id)
+			}
+			for (const id of probed)
+				if (!nodes.some((node) => id === `${node.name}:${node.major}:${node.minor}`)) probed.delete(id)
+			if (toProbe.length) await (options.probe ?? realProbe)(toProbe)
+			if (key !== last || toProbe.length) {
 				if (last !== undefined) log(`USB drives now: ${nodes.map((node) => node.name).join(', ') || 'none'}`)
 				last = key
 				onChange()

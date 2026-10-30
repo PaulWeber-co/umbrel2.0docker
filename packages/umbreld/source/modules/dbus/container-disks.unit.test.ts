@@ -40,6 +40,7 @@ const options = () => ({
 	mknod: fakeMknod,
 	numbersAt: fakeNumbersAt,
 	probe: async (names: string[]) => void probed.push(names),
+	udevData: nodePath.join(root, 'udev'),
 })
 
 beforeEach(async () => {
@@ -148,4 +149,28 @@ test('a lasting failure is logged once', async () => {
 	await new Promise((resolve) => setTimeout(resolve, 80))
 	stop()
 	expect(logged).toEqual(['Failed to sync USB device files: Operation not permitted'])
+})
+
+test('a device Docker made at start is probed once when udev knows nothing about it', async () => {
+	await addDisk('sda', '8:0', {partitions: [['sda1', '8:1']]})
+	await fse.writeFile(nodePath.join(dev, 'sda'), '8:0')
+	await fse.writeFile(nodePath.join(dev, 'sda1'), '8:1')
+	await fse.outputFile(nodePath.join(root, 'udev', 'b8:0'), '')
+	let changes = 0
+	const stop = watchContainerDisks(() => changes++, {sysBlock, ...options(), interval: 20})
+	await new Promise((resolve) => setTimeout(resolve, 90))
+	stop()
+	expect(probed, 'only sda1, and only once').toEqual([['sda1']])
+	expect(changes).toBe(1)
+})
+
+test('a USB drive present at start is let go when unplugged, though Docker made its files', async () => {
+	await addDisk('sda', '8:0', {partitions: [['sda1', '8:1']]})
+	await fse.writeFile(nodePath.join(dev, 'sda'), '8:0')
+	await fse.writeFile(nodePath.join(dev, 'sda1'), '8:1')
+	const managed = new Set<string>()
+	expect(await syncDeviceFiles(await usbBlockNodes(sysBlock), managed, options())).toEqual([])
+	await fse.remove(nodePath.join(sysBlock, 'sda'))
+	await syncDeviceFiles(await usbBlockNodes(sysBlock), managed, options())
+	expect(await fse.pathExists(nodePath.join(dev, 'sda1'))).toBe(false)
 })
