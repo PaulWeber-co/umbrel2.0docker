@@ -5,6 +5,7 @@ import socket
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from unittest.mock import Mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -24,11 +25,14 @@ class ServiceTests(unittest.TestCase):
         self.server.shutdown(); self.server.server_close(); self.thread.join()
 
     def request(self, method, path, body=None):
-        conn = http.client.HTTPConnection('localhost', timeout=2)
-        conn.sock = socket.socket(socket.AF_UNIX); conn.sock.connect(str(self.sock))
-        conn.request(method, path, body=body, headers={'Content-Type':'application/json'})
-        response = conn.getresponse(); data = json.loads(response.read()); status = response.status; conn.close()
-        return status, data
+        payload=(body or '').encode()
+        sock=socket.socket(socket.AF_UNIX);sock.settimeout(5);sock.connect(str(self.sock))
+        try:
+            packet=(f'{method} {path} HTTP/1.0\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: {len(payload)}\r\n\r\n').encode()+payload
+            sock.sendall(packet)
+            response=http.client.HTTPResponse(sock);response.begin()
+            return response.status,json.loads(response.read())
+        finally:sock.close()
 
     def test_one_durable_job_for_duplicate_click(self):
         first = self.request('POST', '/v1/update', '{}')
@@ -53,3 +57,61 @@ class ServiceTests(unittest.TestCase):
         status, data = self.request('POST', '/v1/update', '{}')
         self.assertEqual(status, 503); self.assertNotIn('secret-token', str(data))
         self.launch.assert_not_called()
+
+    def test_host_cli_uses_the_same_constrained_socket_api(self):
+        from xps_update_cli import send_request
+        result = send_request(str(self.sock), 'GET', '/v1/status')
+        self.assertEqual(result['phase'], 'idle')
+
+    def test_interrupted_or_failed_rollback_requires_operator_review(self):
+        from xps_update_worker import write_status
+        from xps_update_service import IDLE
+        for outcome in ['interrupted', 'failed']:
+            write_status(self.root/'state/status.json', dict(IDLE, phase='finished', progress=85, outcome=outcome))
+            self.assertEqual(self.request('POST','/v1/update','{}')[0],409)
+        self.launch.assert_not_called()
+
+    def test_only_safe_terminal_failure_can_be_acknowledged(self):
+        from xps_update_worker import write_status
+        from xps_update_service import IDLE
+        write_status(self.root/'state/status.json', dict(IDLE, phase='finished', outcome='rolled-back', error='Previous version restored', progress=85))
+        self.assertEqual(self.request('POST','/v1/acknowledge','{}')[0],200)
+        self.assertTrue(self.request('GET','/v1/status')[1]['acknowledged'])
+        write_status(self.root/'state/status.json', dict(IDLE, phase='finished', outcome='interrupted', error='Manual review required', progress=85))
+        self.assertEqual(self.request('POST','/v1/acknowledge','{}')[0],409)
+
+    def test_slow_release_lookup_does_not_block_progress_reads(self):
+        entered=threading.Event(); proceed=threading.Event()
+        def lookup():
+            entered.set();proceed.wait(3)
+            return dict(available=False, version='2.0.1')
+        self.fetch.side_effect=lookup
+        errors=[]
+        def lookup_request():
+            try:self.request('GET','/v1/release')
+            except Exception as error:errors.append(error)
+        thread=threading.Thread(target=lookup_request);thread.start();entered.wait(2)
+        try:
+            start=time.monotonic();self.assertEqual(self.request('GET','/v1/status')[0],200)
+            self.assertLess(time.monotonic()-start,1)
+        finally:
+            proceed.set();thread.join()
+
+    def test_dead_worker_is_reported_as_interrupted(self):
+        from xps_update_service import recover_status, IDLE
+        from xps_update_worker import write_status
+        identifier='45cdf188-ea3e-4e6d-a857-a473a271ca76'
+        root=self.root/'state';write_status(root/'status.json',dict(IDLE,jobId=identifier,phase='switch',progress=60))
+        write_status(root/'jobs'/f'{identifier}.json',dict(started=True))
+        status=recover_status(root, lambda _:False)
+        self.assertEqual(status['outcome'],'interrupted')
+        self.assertEqual(status['phase'],'finished')
+
+    def test_active_oneshot_and_finished_result_are_not_overwritten(self):
+        from xps_update_service import recover_status, IDLE
+        from xps_update_worker import write_status
+        identifier='45cdf188-ea3e-4e6d-a857-a473a271ca76'
+        root=self.root/'state';write_status(root/'status.json',dict(IDLE,jobId=identifier,phase='verify'))
+        self.assertEqual(recover_status(root,lambda _:True)['phase'],'verify')
+        write_status(root/'status.json',dict(IDLE,jobId=identifier,phase='finished',outcome='succeeded'))
+        self.assertEqual(recover_status(root,lambda _:False)['outcome'],'succeeded')

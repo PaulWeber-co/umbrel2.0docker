@@ -2274,6 +2274,8 @@
   "software-update.failed.retry": "Erneut versuchen",
   "software-update.install-now": "Jetzt installieren",
   "software-update.new-version": "Neue {{name}} ist verfügbar zur Installation",
+  "software-update.pending-fork": "umbrelOS {{version}} ist verfügbar. Die geprüfte Version für diese Installation wird noch vorbereitet.",
+  "software-update.continue-previous": "Mit bisheriger Version fortfahren",
   "software-update.on-latest": "Du verwendest die neueste Version von umbrelOS",
   "software-update.see-whats-new": "Sieh dir <linked>die Neuerungen</linked> an",
   "software-update.title": "Softwareaktualisierung",

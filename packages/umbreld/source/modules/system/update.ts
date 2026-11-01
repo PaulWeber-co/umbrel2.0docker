@@ -2,10 +2,24 @@ import {$} from 'execa'
 import type {ProgressStatus} from '../apps/schema.js'
 import {detectDevice, isUmbrelOS} from './system.js'
 import Umbreld from '../../index.js'
-import {isContainerUpdateConfigured, getContainerRelease, getContainerStatus, startContainerUpdate} from './container-update.js'
+import {
+	isContainerUpdateConfigured,
+	getContainerRelease,
+	getContainerStatus,
+	startContainerUpdate,
+} from './container-update.js'
+import type {UpdateProgressStatus} from './container-update.js'
 
 type UpdateStatus = ProgressStatus
-type ReleaseInfo = {version: string; name: string; releaseNotes: string; updateScript?: string; available?: boolean; pendingUpstream?: boolean; upstreamVersion?: string}
+type ReleaseInfo = {
+	version: string
+	name: string
+	releaseNotes: string
+	updateScript?: string
+	available?: boolean
+	pendingUpstream?: boolean
+	upstreamVersion?: string
+}
 
 let updateStatus: UpdateStatus
 resetUpdateStatus()
@@ -23,7 +37,7 @@ function setUpdateStatus(properties: Partial<UpdateStatus>) {
 	updateStatus = {...updateStatus, ...properties}
 }
 
-export async function getUpdateStatus() {
+export async function getUpdateStatus(): Promise<UpdateProgressStatus> {
 	if (isContainerUpdateConfigured()) return getContainerStatus()
 	return updateStatus
 }
@@ -69,7 +83,15 @@ export async function getLatestRelease(umbreld: Umbreld): Promise<ReleaseInfo> {
 		headers: {'User-Agent': `umbrelOS ${umbreld.version}`},
 	})
 	const data = await result.json()
-	return data as {version: string; name: string; releaseNotes: string; updateScript?: string; available?: boolean; pendingUpstream?: boolean; upstreamVersion?: string}
+	return data as {
+		version: string
+		name: string
+		releaseNotes: string
+		updateScript?: string
+		available?: boolean
+		pendingUpstream?: boolean
+		upstreamVersion?: string
+	}
 }
 
 export async function performUpdate(umbreld: Umbreld) {

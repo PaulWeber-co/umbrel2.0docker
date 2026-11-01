@@ -3,7 +3,12 @@ import http from 'node:http'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import {getContainerRelease, getContainerStatus, startContainerUpdate, isContainerUpdateConfigured} from './container-update.js'
+import {
+	getContainerRelease,
+	getContainerStatus,
+	startContainerUpdate,
+	isContainerUpdateConfigured,
+} from './container-update.js'
 
 let server: http.Server | undefined
 let directory: string | undefined
@@ -16,7 +21,10 @@ afterEach(async () => {
 async function serve(body: unknown, status = 200) {
 	directory = await fs.mkdtemp(path.join(os.tmpdir(), 'xps-api-'))
 	const socket = path.join(directory, 's')
-	server = http.createServer((_req, res) => {res.writeHead(status, {'Content-Type': 'application/json'}); res.end(JSON.stringify(body))})
+	server = http.createServer((_req, res) => {
+		res.writeHead(status, {'Content-Type': 'application/json'})
+		res.end(JSON.stringify(body))
+	})
 	await new Promise<void>((resolve) => server!.listen(socket, resolve))
 	vi.stubEnv('XPS_UMBREL_UPDATER_SOCKET', socket)
 }
@@ -25,7 +33,15 @@ test('does not auto-detect a socket without explicit configuration', () => {
 	expect(isContainerUpdateConfigured()).toBe(false)
 })
 test('returns only a well formed approved release', async () => {
-	await serve({available: true, version: '2.0.1', name: 'umbrelOS 2.0.1', releaseNotes: 'Fixes', digest: 'ghcr.io/paulweber-co/xps-homeserver-umbrelos@sha256:'+'a'.repeat(64), upstreamVersion: '2.0.1', pendingUpstream: false})
+	await serve({
+		available: true,
+		version: '2.0.1',
+		name: 'umbrelOS 2.0.1',
+		releaseNotes: 'Fixes',
+		digest: 'ghcr.io/paulweber-co/xps-homeserver-umbrelos@sha256:' + 'a'.repeat(64),
+		upstreamVersion: '2.0.1',
+		pendingUpstream: false,
+	})
 	expect((await getContainerRelease()).available).toBe(true)
 })
 test('accepted job is distinct from completed installation', async () => {
@@ -33,9 +49,21 @@ test('accepted job is distinct from completed installation', async () => {
 	expect((await startContainerUpdate()).jobId).toBe('45cdf188-ea3e-4e6d-a857-a473a271ca76')
 })
 test('rollback remains a visible failure after reconnect', async () => {
-	await serve({jobId: '45cdf188-ea3e-4e6d-a857-a473a271ca76', version: '2.0.1', digest: null, phase: 'finished', progress: 85, outcome: 'rolled-back', error: 'Previous version restored'})
+	await serve({
+		jobId: '45cdf188-ea3e-4e6d-a857-a473a271ca76',
+		version: '2.0.1',
+		digest: null,
+		phase: 'finished',
+		progress: 85,
+		outcome: 'rolled-back',
+		error: 'Previous version restored',
+	})
 	const status = await getContainerStatus()
-	expect(status.running).toBe(false); expect(status.error).toBe('Previous version restored'); expect(status.progress).not.toBe(100)
+	expect(status.running).toBe(false)
+	expect(status.error).toBe('Previous version restored')
+	expect(status.progress).not.toBe(100)
+	expect(status.jobId).toBe('45cdf188-ea3e-4e6d-a857-a473a271ca76')
+	expect(status.targetVersion).toBe('2.0.1')
 })
 test('missing service fails closed', async () => {
 	vi.stubEnv('XPS_UMBREL_UPDATER_SOCKET', '/nonexistent/xps.sock')

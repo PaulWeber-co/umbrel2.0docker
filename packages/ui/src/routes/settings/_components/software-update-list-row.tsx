@@ -44,7 +44,9 @@ export function SoftwareUpdateListRow({isActive, icon}: {isActive: boolean; icon
 			title={currentVersion?.name || `umbrelOS ${LOADING_DASH}`}
 			description={
 				<span className='flex items-center gap-1'>
-					{state === 'at-latest' || state === 'checking' ? (
+					{latestVersion?.pendingUpstream ? (
+						<>{t('software-update.pending-fork', {version: latestVersion.upstreamVersion})}</>
+					) : state === 'at-latest' || state === 'checking' ? (
 						<>
 							<Icon component={RiCheckboxCircleFill} className='text-success' />
 							{t('software-update.on-latest')}
