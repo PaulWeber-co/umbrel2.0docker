@@ -1,0 +1,24 @@
+name: Check upstream Umbrel security releases
+on:
+  schedule:
+    - cron: '23 7 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare official release with maintained fork
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          UPSTREAM=$(gh api repos/getumbrel/umbrel/releases/latest --jq .tag_name)
+          LOCAL=$(node -p 'require("./packages/umbreld/package.json").version')
+          printf 'Fork: %s\nOfficial: %s\n' "$LOCAL" "$UPSTREAM" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${UPSTREAM#v}" != "$LOCAL" ]; then
+            printf 'Upstream integration and review are required before stable publication. No automatic merge or installation.\n' >> "$GITHUB_STEP_SUMMARY"
+            gh workflow run xps-umbrel-image.yml --ref master
+          fi

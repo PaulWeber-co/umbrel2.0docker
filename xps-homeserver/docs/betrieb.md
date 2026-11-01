@@ -338,3 +338,90 @@ verwenden, das löscht das Volume.
 5. Im schlimmsten Fall neu installieren und das Backup zurückspielen; Umbrel,
    Dashboard und Einstellungen sind danach wieder wie vorher. Tailscale neu
    anmelden mit `sudo xps-setup-tailscale`.
+
+## Container-Updates über Umbrel
+
+Die XPS-Container-Installation verwendet den vorhandenen Aktualisieren-Button,
+installiert aber ausschließlich getestete Images dieses Forks. Offizielle
+Rugix-/Mender-Geräteupdates werden auf dem XPS nicht ausgeführt. Der laufende
+Debian-Hostkernel wird weiterhin über Debian aktualisiert.
+
+Der einmalige Bootstrap installiert gezielt `scripts/install-updater.sh`, bevor
+das bridgefähige Containerimage eingesetzt wird. Das Skript startet weder
+Dashboard noch Kiosk oder Umbrel neu. `/run/xps-umbrel-updater/control.sock` ist
+nur für root zugänglich; es gibt keinen öffentlichen Update-Port und keine neue
+Docker-Socket-Freigabe an Umbreld. Der vorhandene privilegierte Umbrel-Container
+bleibt allerdings privilegiert: Der Socket macht daraus keine harte
+Sicherheitsgrenze.
+
+Der Zustand liegt unter `/var/lib/xps-umbrel-updater`. Ein Auftrag läuft als
+separate systemd-Instanz weiter, auch wenn Umbrel oder die Browser-Verbindung
+zwischenzeitlich verschwindet. Status, Sperre und Snapshot bleiben erhalten.
+
+```bash
+sudo python3 /opt/xps-homeserver/xps-homeserver/scripts/xps_update_cli.py check
+sudo python3 /opt/xps-homeserver/xps-homeserver/scripts/xps_update_cli.py status
+sudo python3 /opt/xps-homeserver/xps-homeserver/scripts/xps_update_cli.py update --wait
+```
+
+`sudo update-xps` benutzt für bestehende Container denselben geschützten Weg.
+Ein ungetesteter neuer `branch-master`-Tag allein löst keinen Imagewechsel aus.
+Eine Erstinstallation benötigt ebenfalls ein freigegebenes Digest-Manifest;
+ein verwaistes, nicht leeres Datenvolume wird nicht als Neuinstallation behandelt.
+
+### Sicherung und Fehlerfälle
+
+`/etc/xps-homeserver/updater.json` enthält ausschließlich den absoluten
+`backupRoot` und ist root-eigen mit Modus 0600. Standard ist
+`/var/lib/xps-umbrel-updater/backups`. Vor einem Update ohne Datenmigration
+werden Umbrel-Konfiguration, App-Daten und benannte Docker-Datenvolumes bei
+angehaltenen Schreibern gesichert. Unveränderte Medien, externe Laufwerke und
+wiederaufbaubare Thumbnail-/Index-Caches werden nicht in diesen Snapshot
+einbezogen. Ein Release mit Datenmigration benötigt einen vollständigen
+Snapshot. Die Kapazitätsprüfung reserviert zusätzlich Platz für eine
+Wiederherstellung in ein separates Verzeichnis; bei Platzmangel bleibt die
+aktuelle Installation unverändert.
+
+Archive werden geprüft und per SHA-256 gegen nachträgliche Änderungen
+abgesichert. Ein Rollback stellt den ausgewählten Datenzustand und das alte
+Image wieder her. Snapshots und vorherige Datenverzeichnisse werden nicht
+automatisch gelöscht. Das ältere `rollback-umbrel.sh` tauscht dagegen nur das
+Image aus und ersetzt diese Datenwiederherstellung nicht.
+
+Nach einer erfolgreichen Rückkehr oder einem Fehler vor dem Imagewechsel kann
+die Meldung mit „Mit bisheriger Version fortfahren“ geschlossen werden. Ein
+zusätzlicher lokaler Endpoint `POST /v1/acknowledge` akzeptiert dafür nur `{}`
+und verändert weder Daten noch den Installationsauftrag. Unterbrochene Wechsel
+oder fehlgeschlagene Wiederherstellungen bleiben für neue Installationen
+gesperrt, bis ein Administrator den Zustand und die vorhandenen Sicherungen
+geprüft hat. Fehlerausgaben und Protokolle sind im Hostjournal der jeweiligen
+`xps-umbrel-update@…`-Instanz zu finden; niemals ohne Prüfung einen Job als
+erfolgreich markieren.
+
+### Neue offizielle Versionen freigeben
+
+Der wöchentliche Workflow `xps-umbrel-upstream.yml` vergleicht die offizielle
+Version mit dem Fork und startet bei einer Abweichung einen Kandidatenbuild.
+Er übernimmt keine unbekannten Quelländerungen und installiert nichts. Solange
+die neue Version nicht integriert und getestet wurde, zeigt die Oberfläche
+„Die geprüfte Version für diese Installation wird noch vorbereitet“.
+
+1. Offizielle Änderungen in den Fork integrieren und den Funktionsumfang erhalten.
+2. Kandidatenworkflow durchlaufen lassen: Hosttests, tatsächliche Paketprüfung
+   sowie isolierter Docker-/systemd-Wechsel einschließlich Rückkehr, Anmeldung,
+   MCP, HEIC und exFAT-Testlaufwerk. Fehlschläge erzeugen keinen Freigabenachweis.
+3. Den gebauten Stand manuell prüfen und anschließend
+   `xps-umbrel-release.yml` mit der erfolgreichen Run-ID von `master` starten.
+   Im Repository für das Environment `xps-stable` erforderliche Prüfer einrichten.
+   Die Workflow-Prüfung bindet das Manifest an den erfolgreichen Lauf, Commit,
+   die Version und den Image-Digest; ohne passende Nachweise wird nichts veröffentlicht.
+4. Das stabile Release `xps-VERSION` enthält `container-update.json`. Erst dann
+   bietet der Button diese Version an. Vorabversionen, alte Versionen und fremde
+   Registries werden abgelehnt. Änderungen am Host-Updater selbst werden
+   gesondert als geprüfte Hostdateien installiert.
+
+Der Smoke-Test erzeugt ein eigenes systemd-/Docker-Testsystem und formatiert
+höchstens eine nachweislich selbst angelegte 64-MB-Loopdatei mit exFAT.
+Produktionslaufwerke werden dort nicht eingebunden. Virtuelle Mounttests
+ersetzen nicht die anschließende lesende Kontrolle des echten USB-Sticks auf
+dem XPS.

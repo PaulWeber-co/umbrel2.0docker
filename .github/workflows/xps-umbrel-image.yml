@@ -10,6 +10,8 @@ on:
     paths:
       - 'packages/**'
       - '.github/workflows/xps-umbrel-image.yml'
+      - 'xps-homeserver/scripts/**'
+      - 'xps-homeserver/deploy/**'
   workflow_dispatch:
 
 permissions:
@@ -35,6 +37,7 @@ jobs:
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build and push amd64 container variant
+        id: image
         run: |
           # Image names must be lowercase, GitHub owners need not be
           IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/xps-homeserver-umbrelos"
@@ -47,5 +50,35 @@ jobs:
             --cache-from type=gha,scope=xps-container-amd64 \
             --cache-to type=gha,mode=max,scope=xps-container-amd64 \
             --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.version=$(node -p 'require("./packages/umbreld/package.json").version')" \
+            --metadata-file /tmp/xps-build.json \
             --push \
             .
+          DIGEST=$(jq -r '."containerimage.digest"' /tmp/xps-build.json)
+          echo "image=$IMAGE@$DIGEST" >> "$GITHUB_OUTPUT"
+      - name: Validate host code
+        run: sudo python3 -m unittest discover -s xps-homeserver/scripts/tests
+      - name: Validate actual candidate packages
+        env:
+          XPS_TEST_IMAGE: ${{ steps.image.outputs.image }}
+        run: python3 -m unittest discover -s xps-homeserver/scripts/tests -p test_container_security.py
+      - name: Validate isolated update and recovery lifecycle
+        env:
+          CANDIDATE: ${{ steps.image.outputs.image }}
+        run: bash xps-homeserver/scripts/tests/container-update-smoke.sh "$CANDIDATE"
+      - name: Record successful candidate evidence
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib
+          version=json.loads(pathlib.Path('packages/umbreld/package.json').read_text())['version']
+          pathlib.Path('candidate-validation.json').write_text(json.dumps(dict(
+              image=os.environ['IMAGE'], sourceCommit=os.environ['GITHUB_SHA'], version=version,
+              securityPassed=True, lifecyclePassed=True)))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xps-candidate-validation
+          path: candidate-validation.json
