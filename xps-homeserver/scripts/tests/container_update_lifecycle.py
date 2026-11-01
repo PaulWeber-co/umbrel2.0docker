@@ -82,8 +82,12 @@ def probe_api(expected_version):
 
 def probe_heic():
     image='/source/packages/umbreld/source/modules/files/fixtures/thumbnails/apple-encoded-image.heic'
-    execute(['docker','cp',image,'umbrel:/tmp/xps-test.heic'])
-    execute(['docker','exec','umbrel','convert','/tmp/xps-test.heic','-thumbnail','128x128','/tmp/xps-test.jpg'])
+    # systemd mounts /tmp after container creation; docker cp writes below that
+    # mount into the image layer. Exec stdin writes into the live namespace.
+    subprocess.run(['docker','exec','-i','umbrel','tee','/tmp/xps-test.heic'],
+                   input=Path(image).read_bytes(),stdout=subprocess.DEVNULL,check=True)
+    execute(['docker','exec','umbrel','convert','/tmp/xps-test.heic[0]','-thumbnail','128x128','/tmp/xps-test.jpg'])
+    execute(['docker','exec','umbrel','identify','/tmp/xps-test.jpg'])
     execute(['docker','exec','umbrel','sh','-c','printf invalid > /tmp/xps-invalid.heic'])
     result=subprocess.run(['docker','exec','umbrel','convert','/tmp/xps-invalid.heic','/tmp/xps-invalid.jpg'],capture_output=True)
     assert result.returncode==1,'Malformed HEIC did not fail cleanly'
@@ -244,4 +248,23 @@ def main():
     print('PASS: real successful switch, durable reconnect, app states, snapshot restore, failed candidate rollback and unchanged media',flush=True)
 
 
-if __name__ == '__main__': main()
+if __name__ == '__main__':
+    try: main()
+    except BaseException as error:
+        # Only synthetic accounts exist in this disposable system. Preserve
+        # useful failure evidence before smoke.sh removes its private volume.
+        if isinstance(error,subprocess.CalledProcessError):
+            print((error.stderr or '')[-4000:],file=sys.stderr,flush=True)
+        for command in [
+            ['df','-h','/var/lib/docker'],
+            ['docker','ps','-a','--format','{{.Names}} {{.Status}}'],
+            ['journalctl','--no-pager','-u','xps-umbrel-update@*','-n','100'],
+            ['docker','inspect','--format','{{json .State}}','umbrel'],
+            ['docker','exec','umbrel','journalctl','--no-pager','-u','umbrel','-n','80'],
+        ]:
+            try:
+                result=subprocess.run(command,capture_output=True,text=True,timeout=30)
+                print('DISPOSABLE DIAGNOSTIC:',command,flush=True)
+                print((result.stdout+result.stderr)[-12000:],flush=True)
+            except Exception: pass
+        raise

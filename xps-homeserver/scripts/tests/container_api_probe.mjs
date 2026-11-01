@@ -21,6 +21,14 @@ token = await api.user.login.mutate({password})
 assert.equal(typeof token, 'string')
 const providers = await api.files.cloud.providers.query()
 assert(providers.some((p) => p.id === 'icloud'))
+if (process.env.EXPECTED_VERSION === '2.0.1') {
+	const progress = await api.system.updateStatus.query()
+	assert.equal(progress.containerManaged, true)
+	assert.equal(progress.targetVersion, '2.0.1')
+	assert.equal(progress.running, false)
+	assert.equal(progress.progress, 100)
+	assert.equal(progress.error, false)
+}
 const settings = await api.mcp.getSettings.query()
 const credentials = settings.enabled
 	? await api.mcp.createToken.mutate({label: 'Disposable validation'})

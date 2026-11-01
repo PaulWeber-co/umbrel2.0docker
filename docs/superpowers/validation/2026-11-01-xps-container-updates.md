@@ -46,7 +46,7 @@ Checkout sauber auf `886487bdd1b2db1d38a53c7bf0999982ae77b7ed`.
 Die überarbeiteten Vorprüfungen liefen ohne Anhalten oder Aktualisieren auf dem
 XPS durch. Sicherungsumfang rund **2,48 GB**, einschließlich beschreibbarer
 Downloads, Appdaten und Konfiguration; unveränderte Fotos bleiben außerhalb.
-USB-Laufwerk `Backup` erkannt: exFAT, UUID `EFF4-91B7`. Zwölf installierte Apps
+USB-Laufwerk `Backup` erkannt: exFAT, UUID `EFF4-91B7`. Elf installierte Apps
 und deren aktive/gestoppte Zustände erfasst. Intern weiterhin **null MP3-Dateien**
 im früheren Downtify-Ziel; letzte Speicherprüfung rund 40 GiB frei.
 
@@ -58,6 +58,15 @@ Testhost, ohne Freigabeartefakt. Das ursprüngliche Standardnetz überlappte mit
 dessen eigenem Docker-Subnetz; der korrigierte Testaufbau nutzt ein separates
 Netz und Datenvolume sowie verwertbare Pull-Fehlerausgaben. Ein erneuter Lauf
 muss diese Diagnose bestätigen.
+
+Zweiter CI-Lauf `41348029091`/Kandidat `65cdfe4f`: Build, Host- und sechs
+Image-Prüfungen bestanden. Der tatsächliche Wechsel auf 2.0.1 samt
+Installations-App-Wiederanlauf, doppeltem Start, Statusdienst-Neustart,
+Owner-Anmeldung und MCP bestand. Danach scheiterte der HEIC-Test an einer
+unter dem dynamischen systemd-/tmp-Mount versteckten `docker cp`-Testdatei.
+Dies wurde in einem eigenen Container reproduziert (Datei unsichtbar), durch
+Schreiben über `docker exec` korrigiert und mit SHA-256 plus echtem
+128×128-JPEG nachgewiesen. Kein Decoder-Fehler. Noch keine stabile Freigabe.
 
 Der erweiterte Lifecycle nutzt eine echte installierte App mit verzögertem
 Start, eine gestoppte App, persistente Daten, ein eigenes exFAT-Testlaufwerk,
