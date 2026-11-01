@@ -1,0 +1,78 @@
+name: Publish approved XPS container release
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_run:
+        description: Successful XPS image workflow run ID from master
+        required: true
+      data_compatibility:
+        type: choice
+        options: [no-migration]
+        required: true
+      release_notes:
+        description: Reviewed release notes
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: xps-stable
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+      - name: Validate candidate workflow origin
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.candidate_run }}
+        run: |
+          [[ "$GITHUB_REF" == refs/heads/master ]]
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > /tmp/run.json
+          SHA=$(python3 - <<'PYTHON'
+          import json, os, sys
+          sys.path.insert(0,'xps-homeserver/scripts')
+          from make_update_manifest import candidate_commit
+          print(candidate_commit(json.load(open('/tmp/run.json')),os.environ['GITHUB_REPOSITORY']))
+          PYTHON
+          )
+          git fetch origin master
+          git merge-base --is-ancestor "$SHA" origin/master
+          echo "CANDIDATE_COMMIT=$SHA" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@v4
+        with:
+          name: xps-candidate-validation
+          path: candidate-evidence
+          run-id: ${{ inputs.candidate_run }}
+          github-token: ${{ github.token }}
+      - name: Generate manifest bound to successful runtime evidence
+        env:
+          COMPATIBILITY: ${{ inputs.data_compatibility }}
+          NOTES: ${{ inputs.release_notes }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess, sys
+          sys.path.insert(0, 'xps-homeserver/scripts')
+          from make_update_manifest import make_manifest
+          evidence=json.loads(pathlib.Path('candidate-evidence/candidate-validation.json').read_text())
+          commit=os.environ['CANDIDATE_COMMIT']
+          version=json.loads(subprocess.check_output(['git','show',commit+':packages/umbreld/package.json'],text=True))['version']
+          document=dict(schemaVersion=1, version=version, platform='linux/amd64',
+              image=evidence['image'], sourceCommit=commit, releaseNotes=os.environ['NOTES'],
+              dataCompatibility=os.environ['COMPATIBILITY'])
+          pathlib.Path('container-update.json').write_text(json.dumps(make_manifest(document,evidence),indent=2))
+          PY
+      - name: Publish stable manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(jq -r .version container-update.json)
+          COMMIT=$(jq -r .sourceCommit container-update.json)
+          jq -r .releaseNotes container-update.json > /tmp/release-notes.md
+          gh release create "xps-$VERSION" container-update.json --target "$COMMIT" --title "XPS umbrelOS $VERSION" --notes-file /tmp/release-notes.md

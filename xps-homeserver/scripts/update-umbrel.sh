@@ -9,6 +9,11 @@ set -euo pipefail
 . "$(dirname -- "${BASH_SOURCE[0]}")/lib/umbrel.sh"
 need_root
 
+# Existing installations use the same snapshot-protected path as the button.
+if docker inspect umbrel >/dev/null 2>&1; then
+	exec python3 "$XPS_ROOT/scripts/xps_update_cli.py" update --wait
+fi
+
 if [ ! -r "$ENV_FILE" ]; then
 	echo "$ENV_FILE fehlt. Zuerst setup-xps.sh ausführen." >&2
 	exit 1
@@ -22,8 +27,26 @@ fi
 
 old_image=$(read_image "$ENV_FILE")
 
-log "Lade $repository:$tag."
-if ! docker pull --quiet "$repository:$tag" >/dev/null; then
+# Fresh install only: bootstrap from an approved immutable release.
+# Refuse nonempty orphaned data volumes; recovery is not a fresh installation.
+volume_path=$(docker volume inspect --format '{{.Mountpoint}}' xps-homeserver_umbrel-data 2>/dev/null || true)
+if [ -n "$volume_path" ] && [ -n "$(find "$volume_path" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+	log "Vorhandene Daten ohne Container: Wiederherstellung zuerst prüfen."
+	exit 1
+fi
+new_image=$(python3 - "$XPS_ROOT/scripts" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+from xps_update_release import fetch_release
+from xps_update_runtime import Runtime
+release = fetch_release({}, '0.0.0')
+if not release['available']: raise SystemExit('No approved XPS container release available')
+Runtime({}).pull(release['manifest'])
+print(release['digest'])
+PY
+)
+log "Lade freigegebenes Image $new_image."
+if ! docker pull --quiet "$new_image" >/dev/null; then
 	if [ -n "$old_image" ]; then
 		log "Das Image ließ sich nicht laden; Umbrel läuft unverändert weiter."
 	else
@@ -33,7 +56,6 @@ if ! docker pull --quiet "$repository:$tag" >/dev/null; then
 	log "Oder fehlt das Internet? Dann später erneut: sudo update-xps"
 	exit 1
 fi
-new_image=$(docker image inspect --format '{{range .RepoDigests}}{{println .}}{{end}}' "$repository:$tag" | grep -m1 "^$repository@" || true)
 if [ -z "$new_image" ]; then
 	log "Kein Digest für $repository:$tag gefunden."
 	exit 1

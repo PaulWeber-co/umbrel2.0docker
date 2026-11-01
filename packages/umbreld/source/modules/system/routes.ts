@@ -11,6 +11,7 @@ import {performReset} from './factory-reset.js'
 import {OWNER_USER_ID} from '../user/constants.js'
 import type Umbreld from '../../index.js'
 import {getUpdateStatus, performUpdate, getLatestRelease} from './update.js'
+import {isContainerUpdateConfigured, acknowledgeContainerUpdate} from './container-update.js'
 import {
 	getCpuTemperature,
 	getSystemDiskUsage,
@@ -134,7 +135,15 @@ export default router({
 			previousVersion: await ctx.umbreld.store.get('previousVersion'),
 		}
 	}),
-	status: publicProcedure.query(() => systemStatus),
+	status: publicProcedure.query(async () => {
+		if (isContainerUpdateConfigured() && (systemStatus === 'updating' || systemStatus === 'running')) {
+			const status = await getUpdateStatus()
+			if (status.jobId && (status.running || (status.error && !status.acknowledged))) return 'updating'
+			if (status.acknowledged) systemStatus = 'running'
+			if (!status.running && !status.error) systemStatus = 'running'
+		}
+		return systemStatus
+	}),
 	// Public so discovery clients can identify a device before they can authenticate with it
 	discoveryInfo: publicProcedure.query(async ({ctx}) => {
 		const [id, {device}, onboarded] = await Promise.all([
@@ -158,12 +167,26 @@ export default router({
 		return {id, caCertificate}
 	}),
 	updateStatus: privateProcedure.query(() => getUpdateStatus()),
+	acknowledgeContainerUpdate: privateProcedure.mutation(async () => {
+		if (!isContainerUpdateConfigured()) return false
+		await acknowledgeContainerUpdate()
+		return true
+	}),
 	uptime: privateProcedureWithMembers.query(() => os.uptime()),
 	checkUpdate: privateProcedure.query(async ({ctx}) => {
-		let {version, name, releaseNotes} = await getLatestRelease(ctx.umbreld)
+		let {
+			version,
+			name,
+			releaseNotes,
+			available: hostAvailable,
+			pendingUpstream,
+			upstreamVersion,
+		} = await getLatestRelease(ctx.umbreld)
 		// v prefix is needed in the tag name for legacy reasons, remove it before comparing to local version
-		const available = version.replace('v', '') !== ctx.umbreld.version
-		return {available, version, name, releaseNotes}
+		const available = isContainerUpdateConfigured()
+			? hostAvailable === true
+			: version.replace('v', '') !== ctx.umbreld.version
+		return {available, version, name, releaseNotes, pendingUpstream, upstreamVersion}
 	}),
 	getReleaseChannel: privateProcedure.query(async ({ctx}) => {
 		return (await ctx.umbreld.store.get('settings.releaseChannel')) || 'stable'
@@ -198,7 +221,7 @@ export default router({
 		let success = false
 		try {
 			success = await performUpdate(ctx.umbreld)
-			if (success) {
+			if (success && !isContainerUpdateConfigured()) {
 				await setTimeout(1000)
 				await ctx.umbreld.stop()
 				await reboot()

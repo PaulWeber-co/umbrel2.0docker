@@ -1,8 +1,8 @@
 ARG DEBIAN_VERSION=trixie
 # Debian Docker image tags lag behind snapshot.debian.org, so pin the base image
 # and apt repositories independently.
-ARG DEBIAN_IMAGE_SNAPSHOT_DATE=20260713
-ARG APT_SNAPSHOT_DATE=20260727
+ARG DEBIAN_IMAGE_SNAPSHOT_DATE=20261027
+ARG APT_SNAPSHOT_DATE=20261031
 ARG BASE_VARIANT=""
 
 ARG DOCKER_VERSION=28.5.0
@@ -35,13 +35,10 @@ ARG RCLONE_RELEASE=1.75.1
 ARG RCLONE_SHA256_amd64=982b5aa772841168f8e380f139e9e787b2a105403e32b94da8676a0e1c0a13ab
 ARG RCLONE_SHA256_arm64=03f2504174034b6d004152ed7369251c9a9ec1f7e0836eda420f5c7a5ec0dff9
 
-ARG LIBDE265_VERSION=1.1.1-1
-ARG LIBDE265_SNAPSHOT_DATE=20260831T000000Z
-ARG LIBDE265_SHA256_amd64=9af67dd3a1dce99c936f33865f92407746ca4031b7a8b86ae8c28b9a3445f01c
-ARG LIBDE265_SHA256_arm64=1982300d3b6845a1c96f80a364b7921a69b69abd0c0417dc8554e2d487f488f5
-
-ARG LIBHEIF_VERSION=1.23.4-1
-ARG LIBHEIF_SNAPSHOT_DATE=20260921T000000Z
+ARG LIBDE265_VERSION=1.1.3-1
+ARG LIBDE265_SNAPSHOT_DATE=20260919T000000Z
+ARG LIBDE265_SHA256_amd64=36115188a321806ac797218cb878be15e8df7584fc65b10ea50d52cad065c5f5
+ARG LIBDE265_SHA256_arm64=36c69add16a79fdffd85f284501b8f9ddd7128ccb8e078598818beb3e50109ec
 
 #########################################################################
 # ui build stage
@@ -135,8 +132,17 @@ RUN set -e; \
 # containers. Use Debian's driver-library and Vulkan ICD package contracts so
 # all private compute, video, GLX, EGL, and Vulkan dependencies stay
 # version-matched.
+#
+# Debian's 550.163.01 open kernel module doesn't build against trixie kernels
+# from 6.12.100, which added an argument to pci_resize_resource(). DKMS applies
+# NVIDIA's fix from 590.48.01, as backported in Debian unstable's
+# 550.163.01-4.1 (Debian bug #1143204), until that reaches trixie.
+COPY packages/os/nvidia/pci-resize-resource.patch /tmp/pci-resize-resource.patch
 RUN set -e; \
     if [ "${TARGETARCH}" = "amd64" ] && [ "${NVIDIA_CUDA_SUPPORT}" = "true" ]; then \
+        install -D --mode=644 /tmp/pci-resize-resource.patch \
+            /usr/src/nvidia-current-open-550.163.01/patches/pci-resize-resource.patch; \
+        echo 'PATCH[0]="pci-resize-resource.patch"' > /etc/dkms/nvidia-current-open.conf; \
         apt-get install --yes --no-install-recommends \
             nvidia-open-kernel-dkms \
             nvidia-driver-libs \
@@ -152,7 +158,8 @@ RUN set -e; \
         rm -f \
             /usr/share/vulkan/icd.d/nvidia_icd.json \
             /usr/share/vulkan/implicit_layer.d/nvidia_layers.json; \
-    fi
+    fi; \
+    rm /tmp/pci-resize-resource.patch
 
 # Keep the cross-hardware acceleration contract explicit. These options are
 # provided by Debian's generic amd64 kernel and expose /dev/dri for Vulkan plus
@@ -367,8 +374,6 @@ ARG LIBDE265_VERSION
 ARG LIBDE265_SNAPSHOT_DATE
 ARG LIBDE265_SHA256_amd64
 ARG LIBDE265_SHA256_arm64
-ARG LIBHEIF_VERSION
-ARG LIBHEIF_SNAPSHOT_DATE
 
 # Install acpid
 # We use acpid to implement custom behaviour for power button presses
@@ -468,29 +473,6 @@ RUN LIBDE265_SHA256=$(eval echo \$LIBDE265_SHA256_${TARGETARCH}) && \
     dpkg --install /tmp/libde265-0.deb && \
     test "$(dpkg-query -W -f='${Version}' libde265-0)" = "${LIBDE265_VERSION}" && \
     rm /tmp/libde265-0.deb
-
-# Files and Photos decode untrusted HEIF/AVIF images through ImageMagick.
-# The pinned trixie package lacks libheif's security fixes. Install Debian's
-# 1.23.4 packages with matching plugins and their newer sharpyuv/x265 runtimes.
-# Keep this package set separate from the OS-wide apt snapshot.
-COPY packages/os/libheif-packages.sha256 /tmp/libheif-packages.sha256
-RUN set -eu; \
-    mkdir -p /tmp/libheif; \
-    grep "_${TARGETARCH}\\.deb$" /tmp/libheif-packages.sha256 > /tmp/libheif/packages.sha256; \
-    while read -r checksum package_path; do \
-        package_file="/tmp/libheif/${package_path##*/}"; \
-        curl -fsSL "https://snapshot.debian.org/archive/debian/${LIBHEIF_SNAPSHOT_DATE}/${package_path}" -o "${package_file}"; \
-        echo "${checksum}  ${package_file}" | sha256sum -c -; \
-    done < /tmp/libheif/packages.sha256; \
-    apt-get install --yes --no-install-recommends --no-remove /tmp/libheif/*.deb; \
-    for package in libheif1 libheif-plugin-libde265 libheif-plugin-dav1d libheif-plugin-aomenc libheif-plugin-x265; do \
-        test "$(dpkg-query -W -f='${Version}' "${package}")" = "${LIBHEIF_VERSION}"; \
-    done; \
-    convert -list format > /tmp/libheif/formats; \
-    for format in HEIC HEIF AVIF; do \
-        grep -Eq "^[[:space:]]*${format}[[:space:]]+HEIC[[:space:]]+rw[+]?[[:space:]]" /tmp/libheif/formats; \
-    done; \
-    rm -rf /tmp/libheif /tmp/libheif-packages.sha256
 
 # Install the Realtek RTL8127 10GbE driver on amd64 systems. Build against the
 # kernels in the image rather than the kernel running the Docker builder.
@@ -602,7 +584,9 @@ RUN apt-get install --yes fuse3 bindfs
 
 # Install Watchman from pinned Homebrew bottles.
 COPY --from=watchman-build --chown=root:root /opt/linuxbrew/ /opt/linuxbrew/
-ENV PATH=/opt/linuxbrew/bin:/opt/linuxbrew/sbin:${PATH}
+# Only expose Watchman through the explicit symlinks below. Adding Homebrew's
+# entire bin directory shadows Debian's OpenSSL/CA configuration with build-time
+# bottle paths (and breaks LAN certificate creation).
 RUN ln -sf /opt/linuxbrew/bin/watchman /usr/local/bin/watchman && \
     ln -sf /opt/linuxbrew/bin/watchman /usr/bin/watchman && \
     mkdir -p /usr/local/var/run/watchman && \

@@ -12,8 +12,16 @@ services:
     stop_grace_period: 5m
     tty: true
     restart: unless-stopped
+    environment:
+      XPS_UMBREL_UPDATER_SOCKET: /run/xps-umbrel-updater/control.sock
     volumes:
       - umbrel-data:/data
+      - type: bind
+        source: /run/xps-umbrel-updater
+        target: /run/xps-umbrel-updater
+        read_only: true
+        bind:
+          create_host_path: false
     tmpfs:
       - /run
       - /run/lock

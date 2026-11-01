@@ -147,6 +147,7 @@ step "Hintergrundvideos (Mixkit-Luftaufnahmen, nur was neu ist)"
 	warn "Nicht alle Videos sind da; das Dashboard nimmt die vorhandenen, sonst Farbverläufe. Später nochmal: sudo update-xps"
 
 step "Umbrel"
+bash "$XPS_ROOT/scripts/install-updater.sh"
 if ! "$XPS_ROOT/scripts/update-umbrel.sh"; then
 	if docker inspect umbrel >/dev/null 2>&1; then
 		warn "Umbrel ist noch nicht auf dem neuesten Stand (siehe oben)"

@@ -2,8 +2,24 @@ import {$} from 'execa'
 import type {ProgressStatus} from '../apps/schema.js'
 import {detectDevice, isUmbrelOS} from './system.js'
 import Umbreld from '../../index.js'
+import {
+	isContainerUpdateConfigured,
+	getContainerRelease,
+	getContainerStatus,
+	startContainerUpdate,
+} from './container-update.js'
+import type {UpdateProgressStatus} from './container-update.js'
 
 type UpdateStatus = ProgressStatus
+type ReleaseInfo = {
+	version: string
+	name: string
+	releaseNotes: string
+	updateScript?: string
+	available?: boolean
+	pendingUpstream?: boolean
+	upstreamVersion?: string
+}
 
 let updateStatus: UpdateStatus
 resetUpdateStatus()
@@ -21,11 +37,13 @@ function setUpdateStatus(properties: Partial<UpdateStatus>) {
 	updateStatus = {...updateStatus, ...properties}
 }
 
-export function getUpdateStatus() {
+export async function getUpdateStatus(): Promise<UpdateProgressStatus> {
+	if (isContainerUpdateConfigured()) return getContainerStatus()
 	return updateStatus
 }
 
-export async function getLatestRelease(umbreld: Umbreld) {
+export async function getLatestRelease(umbreld: Umbreld): Promise<ReleaseInfo> {
+	if (isContainerUpdateConfigured()) return getContainerRelease()
 	let deviceId = 'unknown'
 	try {
 		deviceId = (await detectDevice()).deviceId
@@ -65,10 +83,27 @@ export async function getLatestRelease(umbreld: Umbreld) {
 		headers: {'User-Agent': `umbrelOS ${umbreld.version}`},
 	})
 	const data = await result.json()
-	return data as {version: string; name: string; releaseNotes: string; updateScript?: string}
+	return data as {
+		version: string
+		name: string
+		releaseNotes: string
+		updateScript?: string
+		available?: boolean
+		pendingUpstream?: boolean
+		upstreamVersion?: string
+	}
 }
 
 export async function performUpdate(umbreld: Umbreld) {
+	if (isContainerUpdateConfigured()) {
+		try {
+			await startContainerUpdate()
+			return true
+		} catch {
+			umbreld.logger.error('XPS update service could not accept the update')
+			return false
+		}
+	}
 	setUpdateStatus({running: true, progress: 0, description: 'Updating...', error: false})
 
 	try {

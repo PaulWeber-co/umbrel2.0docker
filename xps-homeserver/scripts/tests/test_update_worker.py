@@ -1,0 +1,82 @@
+import json
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import Mock
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from xps_update_worker import run_job, write_status
+from test_update_release import manifest
+
+
+class WorkerTests(unittest.TestCase):
+    def test_atomic_status(self):
+        p = Path(tempfile.mkdtemp())/'status.json'
+        write_status(p, {'phase':'backup'})
+        self.assertEqual(json.loads(p.read_text()), {'phase':'backup'})
+        self.assertEqual(p.stat().st_mode & 0o777, 0o600)
+
+    def runner(self, fail=None):
+        r = Mock(); r.preflight.return_value = None; r.snapshot.return_value = {'id':'snapshot'}
+        if fail: getattr(r, fail).side_effect = RuntimeError('failure')
+        return r
+
+    def test_no_switch_without_backup(self):
+        r = self.runner('snapshot'); result = run_job({'release':manifest()}, {}, r)
+        self.assertEqual(result['outcome'], 'failed'); r.switch.assert_not_called()
+        r.resume.assert_called_once()
+
+    def test_failed_verification_restores_data_and_image(self):
+        r = self.runner('verify'); result = run_job({'release':manifest()}, {}, r)
+        self.assertEqual(result['outcome'], 'rolled-back')
+        r.rollback.assert_called_once_with({'id':'snapshot'})
+
+    def test_failed_rollback_is_never_success(self):
+        r = self.runner('verify'); r.rollback.side_effect = RuntimeError('rollback failed')
+        self.assertEqual(run_job({'release':manifest()}, {}, r)['outcome'], 'failed')
+        r.resume.assert_not_called()
+
+    def test_only_verified_state_is_success(self):
+        r = self.runner(); result = run_job({'release':manifest()}, {}, r)
+        self.assertEqual(result['outcome'], 'succeeded'); r.verify.assert_called_once(); r.rollback.assert_not_called()
+
+    def test_invalid_image_never_calls_runner(self):
+        r = self.runner(); d = manifest(); d['image'] = 'attacker:latest'
+        with self.assertRaises(ValueError): run_job({'release':d}, {}, r)
+        r.preflight.assert_not_called()
+
+    def test_failed_resume_before_switch_is_never_safe(self):
+        r = self.runner('snapshot'); r.resume.side_effect = RuntimeError('resume')
+        result = run_job({'release':manifest()}, {}, r)
+        self.assertFalse(result['safeToContinue'])
+
+    def test_rollback_requires_verified_previous_state(self):
+        r = self.runner('verify'); r.verify_previous.side_effect = RuntimeError('data lost')
+        result = run_job({'release':manifest()}, {}, r)
+        self.assertEqual(result['outcome'], 'failed')
+        self.assertFalse(result['safeToContinue'])
+
+    def test_corrupt_snapshot_never_switches(self):
+        r = self.runner('verify_snapshot')
+        result = run_job({'release':manifest()}, {}, r)
+        r.switch.assert_not_called()
+        self.assertEqual(result['outcome'], 'failed')
+
+    def test_safe_failure_requires_previous_state_check(self):
+        r = self.runner('snapshot')
+        result = run_job({'release':manifest()}, {}, r)
+        r.verify_previous.assert_called_once()
+        self.assertTrue(result['safeToContinue'])
+
+    def test_in_progress_rollback_is_a_valid_active_status(self):
+        from xps_update_service import read_status
+        path=Path(tempfile.mkdtemp())/'status.json';r=self.runner('verify')
+        def recovering(_):
+            status=read_status(path)
+            self.assertEqual(status['phase'],'rollback')
+            self.assertIsNone(status['outcome'])
+            self.assertFalse(status['error'])
+        r.rollback.side_effect=recovering
+        result=run_job({'jobId':'45cdf188-ea3e-4e6d-a857-a473a271ca76','release':manifest()},{'statusFile':str(path)},r)
+        self.assertEqual(result['outcome'],'rolled-back')
+        self.assertTrue(result['error'])
