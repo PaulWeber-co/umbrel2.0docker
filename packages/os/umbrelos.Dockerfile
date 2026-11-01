@@ -584,7 +584,9 @@ RUN apt-get install --yes fuse3 bindfs
 
 # Install Watchman from pinned Homebrew bottles.
 COPY --from=watchman-build --chown=root:root /opt/linuxbrew/ /opt/linuxbrew/
-ENV PATH=/opt/linuxbrew/bin:/opt/linuxbrew/sbin:${PATH}
+# Only expose Watchman through the explicit symlinks below. Adding Homebrew's
+# entire bin directory shadows Debian's OpenSSL/CA configuration with build-time
+# bottle paths (and breaks LAN certificate creation).
 RUN ln -sf /opt/linuxbrew/bin/watchman /usr/local/bin/watchman && \
     ln -sf /opt/linuxbrew/bin/watchman /usr/bin/watchman && \
     mkdir -p /usr/local/var/run/watchman && \

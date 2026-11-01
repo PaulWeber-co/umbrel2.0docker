@@ -26,6 +26,12 @@ class ContainerSecurityTest(unittest.TestCase):
     def test_container_data_initialization_is_retained(self):
         self.assertEqual(self.run_in_container('test -f /etc/systemd/system/umbrel-container-data.service && echo present'), 'present')
 
+    def test_tls_certificate_generation_uses_a_valid_system_configuration(self):
+        self.assertEqual(self.run_in_container('d=$(mktemp -d); openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost -keyout "$d/key" -out "$d/cert" >/dev/null 2>&1 && test -s "$d/cert" && echo valid'), 'valid')
+
+    def test_watchman_remains_available(self):
+        self.assertRegex(self.run_in_container('watchman -v'), r'\d+\.\d+')
+
 
 if __name__ == '__main__':
     unittest.main()
