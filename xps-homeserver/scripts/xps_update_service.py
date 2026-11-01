@@ -28,6 +28,18 @@ def read_status(path):
     if status['jobId'] is not None and str(uuid.UUID(status['jobId'])) != status['jobId']: raise ValueError('Invalid job ID')
     if status['phase'] not in ('idle','finished') and status['jobId'] is None: raise ValueError('Missing job ID')
     if status['phase'] == 'finished' and status['outcome'] is None: raise ValueError('Missing result')
+    if status['phase'] == 'idle' and status != IDLE: raise ValueError('Invalid idle state')
+    if status['phase'] not in ('idle','finished') and (status['outcome'] is not None or status['error'] is not False or status['safeToContinue'] or status['acknowledged']):
+        raise ValueError('Invalid active state')
+    if status['phase'] == 'finished':
+        if status['outcome'] == 'succeeded':
+            if status['progress'] != 100 or status['error'] is not False: raise ValueError('Unverified success')
+        elif not isinstance(status['error'],str) or not status['error']:
+            raise ValueError('Missing failure reason')
+        if status['outcome'] in ('succeeded','rolled-back') and any(status[k] is None for k in ('jobId','version','digest')):
+            raise ValueError('Missing completed release identity')
+        if status['outcome'] == 'interrupted' and status['safeToContinue']: raise ValueError('Unsafe interrupted state')
+        if status['acknowledged'] and not status['safeToContinue']: raise ValueError('Unsafe acknowledgement')
     if status['version'] is not None or status['digest'] is not None:
         from xps_update_release import validate_release
         validate_release(dict(schemaVersion=1,version=status['version'],image=status['digest'],platform='linux/amd64',sourceCommit='a'*40,releaseNotes='',dataCompatibility='no-migration'))

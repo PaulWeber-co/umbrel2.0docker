@@ -140,6 +140,7 @@ def install_lifecycle_apps(volume):
     execute(['docker','exec','umbrel','systemctl','start','umbrel'],timeout=330)
     Runtime({}).wait_healthy()
     wait_for(lambda: {a['id']:a['state'] for a in Runtime({}).app_inventory()}=={'xps-validation-active':'ready','xps-validation-stopped':'stopped'},'Installed fixture apps did not start')
+    wait_for(lambda: execute(['curl','--fail','--silent','http://127.0.0.1:18081'])=='installed-app-healthy','Installed fixture port not published')
 
 
 def assert_installed_apps(volume):

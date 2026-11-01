@@ -56,7 +56,7 @@ class Runtime:
         extra=getattr(self,'outer_storage_targets',[])
         def flatten(rows):
             for row in rows:
-                if row['target'] in ('/data','/home','/var/lib/docker') or row['target'] in extra or row['target'].startswith('/home/umbrel/umbrel/external/'):
+                if row['target'] in ('/data','/home','/var/lib/docker') or row['target'] in extra or row['target'].startswith(('/home/','/var/lib/docker/volumes/')):
                     yield {k:row.get(k) for k in ('target','source','fstype','uuid')}
                 yield from flatten(row.get('children',[]))
         return list(flatten(raw['filesystems']))
@@ -105,7 +105,7 @@ class Runtime:
         if any(a.get('state') not in ('ready','stopped') for a in apps): raise ValueError('Wait for stable installed app states')
         home=Path('umbrel-os/home/umbrel/umbrel')
         if not (source/home/'app-data').is_dir(): raise ValueError('Unknown app data layout')
-        excluded={'home','external','thumbnails','file-index'}
+        excluded={'home','external','network','thumbnails','file-index'}
         if any(p.is_symlink() for p in (source/home).iterdir() if p.name not in excluded):
             raise ValueError('Redirected top-level state requires a dedicated backup policy')
         paths=[str(home/p.name) for p in (source/home).iterdir() if p.name not in excluded and not p.is_symlink()]

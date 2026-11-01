@@ -10,6 +10,13 @@ from xps_update_runtime import Runtime
 from test_update_release import manifest
 
 
+class StorageInventoryTests(unittest.TestCase):
+    def test_nested_network_storage_is_never_hidden(self):
+        row=dict(target='/home/umbrel/umbrel/network/NAS',source='nas:/share',fstype='nfs4',uuid=None)
+        with patch('xps_update_runtime.execute',return_value=json.dumps({'filesystems':[row]})):
+            self.assertEqual(Runtime({}).storage_inventory(),[row])
+
+
 class RuntimeTests(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp()); self.data = self.root/'volume'; self.data.mkdir()

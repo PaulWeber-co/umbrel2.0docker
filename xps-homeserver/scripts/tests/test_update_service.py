@@ -67,14 +67,14 @@ class ServiceTests(unittest.TestCase):
         from xps_update_worker import write_status
         from xps_update_service import IDLE
         for outcome in ['interrupted', 'failed']:
-            write_status(self.root/'state/status.json', dict(IDLE, phase='finished', progress=85, outcome=outcome))
+            write_status(self.root/'state/status.json', dict(IDLE, phase='finished', progress=85, outcome=outcome,error='Manual recovery required'))
             self.assertEqual(self.request('POST','/v1/update','{}')[0],409)
         self.launch.assert_not_called()
 
     def test_only_safe_terminal_failure_can_be_acknowledged(self):
         from xps_update_worker import write_status
         from xps_update_service import IDLE
-        write_status(self.root/'state/status.json', dict(IDLE, phase='finished', outcome='rolled-back', error='Previous version restored', progress=85, safeToContinue=True))
+        write_status(self.root/'state/status.json', dict(IDLE, jobId='45cdf188-ea3e-4e6d-a857-a473a271ca76',version='2.0.1',digest=manifest()['image'],phase='finished', outcome='rolled-back', error='Previous version restored', progress=85, safeToContinue=True))
         self.assertEqual(self.request('POST','/v1/acknowledge','{}')[0],200)
         self.assertTrue(self.request('GET','/v1/status')[1]['acknowledged'])
         write_status(self.root/'state/status.json', dict(IDLE, phase='finished', outcome='interrupted', error='Manual review required', progress=85))
@@ -83,7 +83,7 @@ class ServiceTests(unittest.TestCase):
     def test_progress_never_grants_permission_to_retry_or_acknowledge(self):
         from xps_update_worker import write_status
         from xps_update_service import IDLE
-        write_status(self.root/'state/status.json',dict(IDLE,phase='finished',outcome='failed',progress=30,safeToContinue=False))
+        write_status(self.root/'state/status.json',dict(IDLE,phase='finished',outcome='failed',progress=30,safeToContinue=False,error='Previous app state unavailable'))
         for path in ['/v1/update','/v1/acknowledge']:
             self.assertEqual(self.request('POST',path,'{}')[0],409)
 
@@ -92,7 +92,8 @@ class ServiceTests(unittest.TestCase):
         from xps_update_service import recover_status, IDLE
         root=self.root/'state'
         for saved in [dict(IDLE,jobId='45cdf188-ea3e-4e6d-a857-a473a271ca76',phase='backup'),
-                      {'phase':'finished','outcome':'succeeded'}, dict(IDLE,phase='finished',progress='bad')]:
+                      {'phase':'finished','outcome':'succeeded'}, dict(IDLE,phase='finished',progress='bad'),
+                      dict(IDLE,phase='finished',outcome='succeeded',progress=17)]:
             write_status(root/'status.json',saved)
             status=recover_status(root,lambda _:False)
             self.assertEqual(status['outcome'],'interrupted')
@@ -133,5 +134,5 @@ class ServiceTests(unittest.TestCase):
         root=self.root/'state';write_status(root/'status.json',dict(IDLE,jobId=identifier,phase='verify'))
         write_status(root/'jobs'/f'{identifier}.json',dict(started=True))
         self.assertEqual(recover_status(root,lambda _:True)['phase'],'verify')
-        write_status(root/'status.json',dict(IDLE,jobId=identifier,phase='finished',outcome='succeeded'))
+        write_status(root/'status.json',dict(IDLE,jobId=identifier,version='2.0.1',digest=manifest()['image'],phase='finished',outcome='succeeded',progress=100))
         self.assertEqual(recover_status(root,lambda _:False)['outcome'],'succeeded')

@@ -2,27 +2,68 @@
 
 Arbeitsbranch: `codex-umbrel-container-updates`. Noch keine Produktivinstallation.
 
-- Offizieller 2.0.1-Merge: `e1fcb5d8`; vier Laufzeitprüfungen im ersten lokal
-  gebauten amd64-Kandidaten bestanden. Davor drei erwartete Fehler am alten XPS:
-  Versionsnummer, libde265 und System-CA-Option.
-- Dashboard-Basis: 208 Tests bestanden, drei übersprungen.
-- Linux-Hosttests vor den letzten Ergänzungen: 41 bestanden, vier explizit nur
-  mit Imageziel ausführbare Prüfungen übersprungen.
-- Vollständige Umbreld-Linux-Unittests im ersten Kandidaten: 1.602 bestanden,
-  16 übersprungen; zwei Testsuites scheiterten an Homebrew-OpenSSLs veraltetem
-  Konfigurationspfad. System-OpenSSL plus Watchman wurden als funktionierende
-  Kombination separat nachgewiesen. Der gezielte zusätzliche Regressionstest
-  reproduzierte den Fehler im Image; erneuter vollständiger Lauf steht aus.
-- Gezielte Client-/Update-API-Tests: elf bestanden; Backend-Typecheck bestanden.
-- UI-Regressionsprüfung: vorher zwei Fehler (fehlende Anzeige ohne Releaseabruf),
-  danach drei Tests bestanden; UI-Typecheck bestanden.
-- Host-Update-Prüfungen zuletzt: 34 bestanden. Dazu gehören reale temporäre
-  Archive, Integritätsfehler, Wiederherstellung einzelner Zustandsordner,
-  Erhalt fremder Medien, begrenzte Socketanfragen, langsame Releaseabfragen,
-  Wiederanlaufsperre und Erkennung abgestürzter Worker.
+## Bestandene Prüfungen
 
-Noch nachzuweisen: endgültiges Image mit OpenSSL-Korrektur und neuer UI,
-vollständige abschließende Tests, tatsächlicher isolierter Lifecycle-Lauf über
-einen Registry-Digest, unabhängiges Branchreview, konsistenter Produktivsnapshot
-und Nachprüfung auf dem XPS. Eine CI-Artefaktdatei wird erst nach erfolgreichen
-Laufzeittests erzeugt; diese Notiz ist kein Freigabeartefakt.
+- Offizieller 2.0.1-Merge: `e1fcb5d8`. Alter XPS reproduzierte die erwarteten
+  Abweichungen bei Version, libde265 und System-CA-Option. Der neue lokale
+  amd64-Kandidat besteht alle sechs tatsächlichen Image-Prüfungen, einschließlich
+  OpenSSL-Zertifikaterzeugung und Watchman.
+- Backend nach Review-Korrekturen: 136 Testdateien, **1.618 Tests bestanden**,
+  Linux/Node 22 im Kandidaten mit seinen nativen Produktions-Bindings.
+- UI nach Review-Korrekturen: 117 Testdateien, **890 Tests bestanden**, Linux/Node 22.13.
+- Gezielte Python-Update-Suite: **51 Tests bestanden**. Reale temporäre Archive,
+  Integritätsfehler, Wiederherstellung einzelner Zustandsordner, SQLite-WAL/SHM,
+  Erhalt fremder Medien, begrenzte Socketanfragen, parallele Statusabfragen,
+  sichere Wiederherstellung, widersprüchliche Statusdaten, abgestürzte Worker,
+  vertrauenswürdige Kandidatenherkunft und Kompatibilitätsbindung werden geprüft.
+- Beide Typechecks, sechs Backend-Sockettests und vier UI-Recoverytests bestanden.
+- Dashboard-Basis: 208 Tests bestanden, drei übersprungen.
+- GitHub: Backend-Tests/Format/Typen, UI-Tests/Lint/Typen und Apple-Clients bestanden.
+  Eine neue Testdatei verletzte zunächst Prettier; gezielt korrigiert.
+
+## Unabhängige Prüfung
+
+Ein unabhängiger Reviewer prüfte den gesamten Branch bis `a28fd6ba` mit frischem
+Kontext. Keine kritischen und acht wichtige Befunde. Die Korrekturen wurden
+mit gezielten vorher fehlschlagenden Tests und erneuten vollständigen Suiten
+geprüft; kein zweiter Reviewdurchlauf.
+
+Die Korrekturen erfassen effektive beschreibbare Speicherpfade und App-Daten,
+prüfen Sicherungsbytes vor dem Wechsel und vor der Datenwiederherstellung,
+verlangen geprüfte Wiederherstellung statt Fortschritts-Heuristiken, benutzen
+den tatsächlichen Lebenszyklus installierter Apps und halten den Statusdienst
+bei beschädigten Jobdateien verfügbar. Veröffentlichungen sind an Herkunft,
+master-Abstammung und genau getesteten Kompatibilitätsmodus gebunden.
+
+GitHub-Environment `xps-stable` tatsächlich eingerichtet und per API nachgelesen:
+erforderlicher Reviewer `PaulWeber-co`, erlaubter Branch ausschließlich `master`.
+Nur `no-migration` kann derzeit veröffentlicht werden. Datenmigrationen benötigen
+zuerst eigene vollständige Lifecycle-Nachweise.
+
+## Lesende Prüfung am XPS
+
+Checkout sauber auf `886487bdd1b2db1d38a53c7bf0999982ae77b7ed`.
+Die überarbeiteten Vorprüfungen liefen ohne Anhalten oder Aktualisieren auf dem
+XPS durch. Sicherungsumfang rund **2,48 GB**, einschließlich beschreibbarer
+Downloads, Appdaten und Konfiguration; unveränderte Fotos bleiben außerhalb.
+USB-Laufwerk `Backup` erkannt: exFAT, UUID `EFF4-91B7`. Zwölf installierte Apps
+und deren aktive/gestoppte Zustände erfasst. Intern weiterhin **null MP3-Dateien**
+im früheren Downtify-Ziel; letzte Speicherprüfung rund 40 GiB frei.
+
+## Noch offen
+
+Der erste CI-Kandidat (`41345864378`) bestand Build, Host- und sechs tatsächliche
+Image-Prüfungen. Der Lifecycle scheiterte bereits am Image-Pull im verschachtelten
+Testhost, ohne Freigabeartefakt. Das ursprüngliche Standardnetz überlappte mit
+dessen eigenem Docker-Subnetz; der korrigierte Testaufbau nutzt ein separates
+Netz und Datenvolume sowie verwertbare Pull-Fehlerausgaben. Ein erneuter Lauf
+muss diese Diagnose bestätigen.
+
+Der erweiterte Lifecycle nutzt eine echte installierte App mit verzögertem
+Start, eine gestoppte App, persistente Daten, ein eigenes exFAT-Testlaufwerk,
+fehlende App-/USB-Negativprüfungen und einen absichtlich ungesunden Kandidaten
+mit tatsächlicher Datenwiederherstellung. Dieser Lauf ist noch kein Erfolg.
+
+Noch erforderlich: erfolgreicher Registry-Lifecycle, stabile Freigabe,
+konsistenter Produktivsnapshot, getesteter Wechsel und Nachprüfung auf dem XPS.
+Kein Produktivwechsel allein auf Basis bestandener Unit-Tests.

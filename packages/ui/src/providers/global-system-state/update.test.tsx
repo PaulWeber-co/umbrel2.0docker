@@ -65,10 +65,10 @@ test('does not offer to continue after failed rollback', () => {
 })
 
 test('does not infer recovery safety from low progress', () => {
-    state.status.outcome = 'failed'
-    state.status.progress = 30
-    state.status.safeToContinue = false
-    state.status.error = 'Previous app state unavailable'
-    const html = renderToStaticMarkup(<UpdatingCover onRetry={() => {}} />)
-    expect(html).not.toContain('software-update.continue-previous')
+	state.status.outcome = 'failed'
+	state.status.progress = 30
+	state.status.safeToContinue = false
+	state.status.error = 'Previous app state unavailable'
+	const html = renderToStaticMarkup(<UpdatingCover onRetry={() => {}} />)
+	expect(html).not.toContain('software-update.continue-previous')
 })
