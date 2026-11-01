@@ -220,7 +220,12 @@ def main():
     assert_negative_checks(release)
     # Reset the disposable installation to the old image for a real failed switch.
     compose(BASELINE)
-    wait_for(lambda: all(a['state'] in ('ready','stopped') for a in Runtime({}).app_inventory()),'Baseline apps not ready')
+    # This reset deliberately bypasses the updater. Docker's unmanaged fixture
+    # has no restart policy, so explicitly restore the intended baseline state.
+    execute(['docker','exec','umbrel','docker','start','xps-update-active'])
+    wait_for(lambda: {a['id']:a['state'] for a in Runtime({}).app_inventory()}=={'xps-validation-active':'ready','xps-validation-stopped':'stopped'},'Baseline apps not ready')
+    wait_for(lambda: execute(['curl','--fail','--silent','http://127.0.0.1:18080'])=='xps-app-healthy','Baseline unmanaged port not recovered')
+    assert_apps_and_data(volume);assert_installed_apps(volume);probe_usb(usb)
     config_file = PROJECT_ROOT/'deploy/compose.yaml'; normal = config_file.read_text()
     # Only the candidate version is unhealthy; rollback's baseline retains its real healthcheck.
     old = 'systemctl is-active --quiet docker umbrel && curl --silent --fail --output /dev/null http://localhost'
