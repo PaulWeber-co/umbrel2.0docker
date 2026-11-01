@@ -227,7 +227,7 @@ def main():
     bad = "test $$(node -p 'require(\"/opt/umbreld/package.json\").version') != "+release['version']+' && '+old
     health = 'test: ["CMD-SHELL", '+json.dumps(old)+']'
     assert health in normal
-    config_file.write_text(normal.replace(health,'test: ["CMD-SHELL", '+json.dumps(bad)+']').replace('interval: 30s','interval: 2s').replace('start_period: 5m','start_period: 0s'))
+    config_file.write_text(normal.replace(health,'test: ["CMD-SHELL", '+json.dumps(bad)+']').replace('interval: 30s','interval: 2s'))
     server,thread = fixture_api(release)
     try:
         job = send_request(SOCKET,'POST','/v1/update')['jobId']
