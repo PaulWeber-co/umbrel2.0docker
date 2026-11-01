@@ -74,11 +74,30 @@ class ServiceTests(unittest.TestCase):
     def test_only_safe_terminal_failure_can_be_acknowledged(self):
         from xps_update_worker import write_status
         from xps_update_service import IDLE
-        write_status(self.root/'state/status.json', dict(IDLE, phase='finished', outcome='rolled-back', error='Previous version restored', progress=85))
+        write_status(self.root/'state/status.json', dict(IDLE, phase='finished', outcome='rolled-back', error='Previous version restored', progress=85, safeToContinue=True))
         self.assertEqual(self.request('POST','/v1/acknowledge','{}')[0],200)
         self.assertTrue(self.request('GET','/v1/status')[1]['acknowledged'])
         write_status(self.root/'state/status.json', dict(IDLE, phase='finished', outcome='interrupted', error='Manual review required', progress=85))
         self.assertEqual(self.request('POST','/v1/acknowledge','{}')[0],409)
+
+    def test_progress_never_grants_permission_to_retry_or_acknowledge(self):
+        from xps_update_worker import write_status
+        from xps_update_service import IDLE
+        write_status(self.root/'state/status.json',dict(IDLE,phase='finished',outcome='failed',progress=30,safeToContinue=False))
+        for path in ['/v1/update','/v1/acknowledge']:
+            self.assertEqual(self.request('POST',path,'{}')[0],409)
+
+    def test_missing_job_and_malformed_terminal_status_require_recovery(self):
+        from xps_update_worker import write_status
+        from xps_update_service import recover_status, IDLE
+        root=self.root/'state'
+        for saved in [dict(IDLE,jobId='45cdf188-ea3e-4e6d-a857-a473a271ca76',phase='backup'),
+                      {'phase':'finished','outcome':'succeeded'}, dict(IDLE,phase='finished',progress='bad')]:
+            write_status(root/'status.json',saved)
+            status=recover_status(root,lambda _:False)
+            self.assertEqual(status['outcome'],'interrupted')
+            self.assertFalse(status['safeToContinue'])
+            self.assertEqual(json.loads((root/'status.json').read_text()),status)
 
     def test_slow_release_lookup_does_not_block_progress_reads(self):
         entered=threading.Event(); proceed=threading.Event()
@@ -112,6 +131,7 @@ class ServiceTests(unittest.TestCase):
         from xps_update_worker import write_status
         identifier='45cdf188-ea3e-4e6d-a857-a473a271ca76'
         root=self.root/'state';write_status(root/'status.json',dict(IDLE,jobId=identifier,phase='verify'))
+        write_status(root/'jobs'/f'{identifier}.json',dict(started=True))
         self.assertEqual(recover_status(root,lambda _:True)['phase'],'verify')
         write_status(root/'status.json',dict(IDLE,jobId=identifier,phase='finished',outcome='succeeded'))
         self.assertEqual(recover_status(root,lambda _:False)['outcome'],'succeeded')

@@ -8,6 +8,18 @@ from xps_update_backup import create_snapshot, restore_snapshot
 
 
 class BackupTests(unittest.TestCase):
+    def test_snapshot_is_rechecked_before_installation(self):
+        from xps_update_backup import verify_snapshot
+        snapshot = create_snapshot(self.config)
+        verify_snapshot(snapshot)
+        Path(snapshot['archive']).write_bytes(b'damaged')
+        with self.assertRaises(ValueError): verify_snapshot(snapshot)
+
+    def test_archive_must_match_stopped_source(self):
+        from xps_update_backup import verify_snapshot
+        snapshot = create_snapshot(self.config)
+        (self.data/'state').write_bytes(b'changed')
+        with self.assertRaises(Exception): verify_snapshot(snapshot)
     def setUp(self):
         self.root = Path(tempfile.mkdtemp()); self.data = self.root/'data'; self.data.mkdir()
         (self.data/'state').write_bytes(b'original')
@@ -43,3 +55,10 @@ class BackupTests(unittest.TestCase):
         restore_snapshot(snapshot)
         self.assertEqual((self.data/'state').read_bytes(), b'original')
         self.assertEqual((self.data/'media/photo').read_bytes(), b'unrelated-new-photo')
+
+    def test_absent_sqlite_sidecars_cannot_survive_restore(self):
+        self.config.update(snapshotPaths=['state'],absentPaths=['state-wal','state-shm'])
+        snapshot=create_snapshot(self.config)
+        (self.data/'state-wal').write_bytes(b'new version WAL')
+        restore_snapshot(snapshot)
+        self.assertFalse((self.data/'state-wal').exists())

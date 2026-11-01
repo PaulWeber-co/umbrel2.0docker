@@ -6,6 +6,8 @@ import shutil
 import subprocess
 import sys
 import time
+import tarfile
+import stat
 
 
 def digest(path):
@@ -27,6 +29,38 @@ def source_size(source):
     return size
 
 
+def fsync_directory(path):
+    fd = os.open(path, os.O_RDONLY)
+    try: os.fsync(fd)
+    finally: os.close(fd)
+
+
+def verify_snapshot(snapshot, source=None):
+    archive = Path(snapshot['archive'])
+    if archive.is_symlink() or digest(archive) != snapshot['sha256']:
+        raise ValueError('Snapshot checksum mismatch')
+    root = Path(source or snapshot['source']).resolve(strict=True)
+    # Compare every archived object with the stopped source (or restored staging
+    # tree), including file bytes. Merely listing a tar does not test its payload.
+    with tarfile.open(archive, 'r:') as stream:
+        for member in stream:
+            rel = Path(member.name)
+            if rel.is_absolute() or '..' in rel.parts: raise ValueError('Unsafe archive member')
+            target = root/rel
+            st = target.lstat()
+            if member.isfile() or member.islnk():
+                if not stat.S_ISREG(st.st_mode): raise ValueError('Snapshot file type mismatch')
+                archived = stream.extractfile(member)
+                h = hashlib.sha256()
+                for chunk in iter(lambda: archived.read(4*1024*1024), b''): h.update(chunk)
+                if h.hexdigest() != digest(target): raise ValueError('Snapshot file content mismatch')
+            elif member.issym():
+                if not target.is_symlink() or os.readlink(target) != member.linkname:
+                    raise ValueError('Snapshot link mismatch')
+            elif member.isdir() and not stat.S_ISDIR(st.st_mode):
+                raise ValueError('Snapshot directory mismatch')
+
+
 def create_snapshot(config, runner=subprocess.run, available_bytes=None):
     source = Path(config['dataDirectory']).resolve(strict=True)
     backup = Path(config['backupRoot']).resolve()
@@ -42,17 +76,21 @@ def create_snapshot(config, runner=subprocess.run, available_bytes=None):
         target = source/p
         if not target.exists() or target.is_symlink() or source not in [target.resolve(), *target.resolve().parents]:
             raise ValueError('Snapshot path missing or outside source')
+    absent = config.get('absentPaths', [])
+    if any(not p.endswith(('-wal','-shm')) or p[:-4] not in paths or (source/p).exists() or (source/p).is_symlink() for p in absent):
+        raise ValueError('Invalid absent SQLite sidecar')
     size = sum(source_size(source/p) for p in paths)
     available = shutil.disk_usage(backup).free if available_bytes is None else available_bytes
     if available < max(1024*1024, (size*11+9)//10):
         raise OSError('Insufficient space for complete data snapshot with 10% reserve')
     archive = backup/('snapshot-'+str(time.time_ns())+'.tar')
-    flags = ['--acls', '--xattrs', '--numeric-owner'] if sys.platform == 'linux' else []
+    flags = ['--acls', '--xattrs', '--numeric-owner'] if sys.platform == 'linux' else ['--disable-copyfile']
     runner(['tar', *flags, '-cpf', str(archive), '-C', str(source), '--', *paths], check=True)
     runner(['tar', '-tf', str(archive)], check=True, stdout=subprocess.DEVNULL)
     with archive.open('rb') as stream: os.fsync(stream.fileno())
     os.chmod(archive, 0o600)
-    return dict(archive=str(archive), source=str(source), paths=paths, bytes=size, sha256=digest(archive))
+    fsync_directory(backup)
+    return dict(archive=str(archive), source=str(source), paths=paths, absentPaths=absent, bytes=size, sha256=digest(archive))
 
 
 def restore_snapshot(snapshot, runner=subprocess.run):
@@ -70,9 +108,17 @@ def restore_snapshot(snapshot, runner=subprocess.run):
     flags = ['--acls', '--xattrs', '--numeric-owner'] if sys.platform == 'linux' else []
     try:
         runner(['tar', *flags, '-xpf', str(archive), '-C', str(staging)], check=True)
+        verify_snapshot(snapshot, source=staging)
         paths = snapshot.get('paths', ['.'])
         moved = []
         try:
+            for rel in snapshot.get('absentPaths', []):
+                if not rel.endswith(('-wal','-shm')) or rel[:-4] not in paths:
+                    raise ValueError('Invalid absent SQLite sidecar')
+                current = source/rel
+                if current.exists() or current.is_symlink():
+                    old=current.with_name(current.name+'.before-restore-'+str(time.time_ns()))
+                    current.rename(old); moved.append((current,old,None))
             for rel in paths:
                 current = source/rel; restored = staging/rel
                 if rel == '.': current, restored = source, staging
@@ -83,7 +129,7 @@ def restore_snapshot(snapshot, runner=subprocess.run):
                 restored.rename(current)
         except BaseException:
             for current, old, restored in reversed(moved):
-                if current.exists(): current.rename(restored)
+                if current.exists() and restored is not None: current.rename(restored)
                 if old is not None: old.rename(current)
             raise
         if staging.exists(): shutil.rmtree(staging)

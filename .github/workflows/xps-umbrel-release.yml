@@ -7,7 +7,7 @@ on:
         required: true
       data_compatibility:
         type: choice
-        options: [no-migration, snapshot-required]
+        options: [no-migration]
         required: true
       release_notes:
         description: Reviewed release notes
@@ -26,20 +26,29 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: master
+          fetch-depth: 0
       - name: Validate candidate workflow origin
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ inputs.candidate_run }}
         run: |
+          [[ "$GITHUB_REF" == refs/heads/master ]]
           [[ "$RUN_ID" =~ ^[0-9]+$ ]]
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > /tmp/run.json
-          jq -e --arg repo "$GITHUB_REPOSITORY" '.conclusion == "success" and .head_branch == "master" and .repository.full_name == $repo and .path == ".github/workflows/xps-umbrel-image.yml"' /tmp/run.json
-          SHA=$(jq -r .head_sha /tmp/run.json)
-          git fetch origin "$SHA"
-          git checkout --detach "$SHA"
+          SHA=$(python3 - <<'PYTHON'
+          import json, os, sys
+          sys.path.insert(0,'xps-homeserver/scripts')
+          from make_update_manifest import candidate_commit
+          print(candidate_commit(json.load(open('/tmp/run.json')),os.environ['GITHUB_REPOSITORY']))
+          PYTHON
+          )
+          git fetch origin master
+          git merge-base --is-ancestor "$SHA" origin/master
+          echo "CANDIDATE_COMMIT=$SHA" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v4
         with:
           name: xps-candidate-validation
+          path: candidate-evidence
           run-id: ${{ inputs.candidate_run }}
           github-token: ${{ github.token }}
       - name: Generate manifest bound to successful runtime evidence
@@ -51,9 +60,9 @@ jobs:
           import json, os, pathlib, subprocess, sys
           sys.path.insert(0, 'xps-homeserver/scripts')
           from make_update_manifest import make_manifest
-          evidence=json.loads(pathlib.Path('candidate-validation.json').read_text())
-          commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
-          version=json.loads(pathlib.Path('packages/umbreld/package.json').read_text())['version']
+          evidence=json.loads(pathlib.Path('candidate-evidence/candidate-validation.json').read_text())
+          commit=os.environ['CANDIDATE_COMMIT']
+          version=json.loads(subprocess.check_output(['git','show',commit+':packages/umbreld/package.json'],text=True))['version']
           document=dict(schemaVersion=1, version=version, platform='linux/amd64',
               image=evidence['image'], sourceCommit=commit, releaseNotes=os.environ['NOTES'],
               dataCompatibility=os.environ['COMPATIBILITY'])

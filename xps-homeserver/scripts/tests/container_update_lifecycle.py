@@ -113,13 +113,70 @@ def probe_usb(expected):
         assert actual==checksum, name
 
 
+def install_lifecycle_apps(volume):
+    # Genuine installed apps: Umbrel Compose-down removes their containers on
+    # shutdown, and a delayed pre-start recreates them after web health is ready.
+    execute(['docker','exec','umbrel','systemctl','stop','umbrel'],timeout=330)
+    root=volume/'umbrel-os/home/umbrel/umbrel'
+    for suffix,port,active in [('active',18081,True),('stopped',18082,False)]:
+        app_id='xps-validation-'+suffix
+        app=root/'app-data'/app_id; (app/'data').mkdir(parents=True)
+        manifest=dict(manifestVersion=1,id=app_id,name='Lifecycle '+suffix,tagline='Disposable validation',
+            category='Development',version='1.0.0',port=port,path='',description='Disposable validation app',
+            developer='XPS validation',website='https://example.org',submitter='XPS validation',
+            submission='https://example.org',repo='https://example.org',support='https://example.org',
+            gallery=[],releaseNotes='Fixture',dependencies=[])
+        (app/'umbrel-app.yml').write_text(json.dumps(manifest))
+        compose=dict(services={'server':dict(image='busybox:1.37',container_name=app_id+'_server_1',
+            ports=[f'{port}:8080'],volumes=['${APP_DATA_DIR}/data:/fixture'],
+            command=['sh','-c','mkdir -p /tmp/www; echo installed-app-healthy > /tmp/www/index.html; exec httpd -f -p 8080 -h /tmp/www'])})
+        (app/'docker-compose.yml').write_text(json.dumps(compose))
+        (app/'settings.yml').write_text(json.dumps(dict(autoStart=active)))
+        (app/'data/marker').write_text('persistent-installed-app-data')
+        (app/'hooks').mkdir(); hook=app/'hooks/pre-start'
+        hook.write_text('#!/bin/sh\nsleep 20\n');hook.chmod(0o755)
+    script="const fs=require('fs'),y=require('js-yaml');const p='/home/umbrel/umbrel/umbrel.yaml';const s=y.load(fs.readFileSync(p,'utf8'));s.apps=['xps-validation-active','xps-validation-stopped'];fs.writeFileSync(p,y.dump(s));"
+    execute(['docker','exec','-w','/opt/umbreld','umbrel','node','-e',script])
+    execute(['docker','exec','umbrel','systemctl','start','umbrel'],timeout=330)
+    Runtime({}).wait_healthy()
+    wait_for(lambda: {a['id']:a['state'] for a in Runtime({}).app_inventory()}=={'xps-validation-active':'ready','xps-validation-stopped':'stopped'},'Installed fixture apps did not start')
+
+
+def assert_installed_apps(volume):
+    states={a['id']:a['state'] for a in Runtime({}).app_inventory()}
+    assert states=={'xps-validation-active':'ready','xps-validation-stopped':'stopped'},states
+    assert execute(['curl','--fail','--silent','http://127.0.0.1:18081'])=='installed-app-healthy'
+    for suffix in ('active','stopped'):
+        assert (volume/f'umbrel-os/home/umbrel/umbrel/app-data/xps-validation-{suffix}/data/marker').read_text()=='persistent-installed-app-data'
+
+
+def assert_negative_checks(release):
+    runtime=Runtime({'backupRoot':'/var/lib/xps-umbrel-updater/backups'});runtime.preflight(release)
+    execute(['docker','exec','umbrel','docker','stop','xps-validation-active_server_1'])
+    runtime.managed_running=['xps-validation-active_server_1']
+    wait=runtime.wait_for
+    runtime.wait_for=lambda check,description,timeout=600: wait(check,description,timeout=3)
+    try:
+        runtime.verify(release)
+    except TimeoutError: pass
+    else: raise AssertionError('Lost installed app container was accepted')
+    runtime.client('apps.restart.mutate','xps-validation-active')
+    execute(['docker','exec','umbrel','umount','/mnt/xps-validation-usb'])
+    try: runtime.verify_storage_and_identity()
+    except RuntimeError: pass
+    else: raise AssertionError('Lost USB mount was accepted')
+
+
 def main():
     if Path('/source').is_dir() or PROJECT_ROOT.is_dir():
         # Caller is the disposable host; the source mount is required proof of context.
         assert Path('/source/xps-homeserver').is_dir()
     else: raise RuntimeError('Disposable host context missing')
     candidate = os.environ['CANDIDATE']
-    execute(['docker','pull',candidate])
+    try: execute(['docker','pull',candidate],timeout=1800)
+    except subprocess.CalledProcessError as error:
+        # This disposable fixture contains no real user/registry credentials.
+        raise RuntimeError('Disposable candidate pull failed: '+error.stderr[-2000:]) from error
     labels = json.loads(execute(['docker','image','inspect',candidate]))[0]['Config']['Labels']
     release = validate_release(dict(schemaVersion=1, version=labels['org.opencontainers.image.version'],
         platform='linux/amd64', image=candidate, sourceCommit=labels['org.opencontainers.image.revision'],
@@ -130,7 +187,7 @@ def main():
     compose_file=PROJECT_ROOT/'deploy/compose.yaml'
     compose_file.write_text(compose_file.read_text().replace('- umbrel-data:/data',
         '- umbrel-data:/data\n      - /mnt/xps-validation-usb:/mnt/xps-validation-usb:ro'))
-    execute(['docker','pull',BASELINE]); compose(BASELINE)
+    execute(['docker','pull',BASELINE],timeout=1800); compose(BASELINE)
     probe_api('2.0.0');probe_usb(usb)
     execute(['docker','exec','umbrel','docker','run','-d','--name','xps-update-active','-p','18080:8080','busybox:1.37',
              'sh','-c','mkdir -p /tmp/www; echo xps-app-healthy > /tmp/www/index.html; exec httpd -f -p 8080 -h /tmp/www'])
@@ -141,6 +198,7 @@ def main():
     (fixture/'state.json').write_text('original-state')
     home = volume/'umbrel-os/home/umbrel/umbrel/home';home.mkdir(parents=True,exist_ok=True)
     (home/'unrelated-media').write_text('media-original')
+    install_lifecycle_apps(volume)
     server, thread = fixture_api(release)
     job = send_request(SOCKET,'POST','/v1/update')['jobId']
     assert send_request(SOCKET,'POST','/v1/update')['jobId'] == job
@@ -150,12 +208,14 @@ def main():
     result = await_job(job);assert result['outcome']=='succeeded',result
     assert Runtime({}).current_version() == release['version']
     probe_api(release['version']);probe_heic();probe_usb(usb)
-    assert_apps_and_data(volume)
+    assert_apps_and_data(volume);assert_installed_apps(volume)
     assert (home/'unrelated-media').read_text() == 'media-original'
     execute(['docker','exec','umbrel','sh','-c','test -n "$XPS_UMBREL_UPDATER_SOCKET" || systemctl show umbrel -p Environment | grep XPS_UMBREL_UPDATER_SOCKET'])
     server.shutdown();server.server_close();thread.join()
+    assert_negative_checks(release)
     # Reset the disposable installation to the old image for a real failed switch.
     compose(BASELINE)
+    wait_for(lambda: all(a['state'] in ('ready','stopped') for a in Runtime({}).app_inventory()),'Baseline apps not ready')
     config_file = PROJECT_ROOT/'deploy/compose.yaml'; normal = config_file.read_text()
     # Only the candidate version is unhealthy; rollback's baseline retains its real healthcheck.
     old = 'systemctl is-active --quiet docker umbrel && curl --silent --fail --output /dev/null http://localhost'
@@ -176,7 +236,7 @@ def main():
         assert Runtime({}).current_version()=='2.0.0'
         probe_api('2.0.0')
         probe_usb(usb)
-        assert_apps_and_data(volume)
+        assert_apps_and_data(volume);assert_installed_apps(volume)
         assert (home/'unrelated-media').read_text()=='media-new'
     finally:
         config_file.write_text(normal);server.shutdown();server.server_close();thread.join()

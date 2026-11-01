@@ -76,7 +76,7 @@ jobs:
           version=json.loads(pathlib.Path('packages/umbreld/package.json').read_text())['version']
           pathlib.Path('candidate-validation.json').write_text(json.dumps(dict(
               image=os.environ['IMAGE'], sourceCommit=os.environ['GITHUB_SHA'], version=version,
-              securityPassed=True, lifecyclePassed=True)))
+              securityPassed=True, lifecyclePassed=True, dataCompatibility='no-migration')))
           PY
       - uses: actions/upload-artifact@v4
         with:

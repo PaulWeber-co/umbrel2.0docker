@@ -8,24 +8,48 @@ import socketserver
 import subprocess
 import uuid
 import time
+import math
 
 from xps_update_release import decode_json, fetch_release, validate_release
 from xps_update_worker import write_status, STATE_ROOT
 
-IDLE = dict(jobId=None, version=None, digest=None, phase='idle', progress=0, error=False, outcome=None, acknowledged=False)
+IDLE = dict(jobId=None, version=None, digest=None, phase='idle', progress=0, error=False, outcome=None, acknowledged=False, safeToContinue=False)
+
+
+def read_status(path):
+    status = json.loads(Path(path).read_text())
+    if not isinstance(status, dict) or set(status) != set(IDLE): raise ValueError('Invalid status fields')
+    if status['phase'] not in ('idle','preflight','pull','backup','switch','verify','rollback','finished'): raise ValueError('Invalid phase')
+    progress = status['progress']
+    if type(progress) not in (int,float) or not math.isfinite(progress) or not 0 <= progress <= 100: raise ValueError('Invalid progress')
+    if status['error'] is not False and not isinstance(status['error'], str): raise ValueError('Invalid error')
+    if status['outcome'] not in (None,'succeeded','rolled-back','failed','interrupted'): raise ValueError('Invalid outcome')
+    if any(type(status[k]) is not bool for k in ('acknowledged','safeToContinue')): raise ValueError('Invalid recovery state')
+    if status['jobId'] is not None and str(uuid.UUID(status['jobId'])) != status['jobId']: raise ValueError('Invalid job ID')
+    if status['phase'] not in ('idle','finished') and status['jobId'] is None: raise ValueError('Missing job ID')
+    if status['phase'] == 'finished' and status['outcome'] is None: raise ValueError('Missing result')
+    if status['version'] is not None or status['digest'] is not None:
+        from xps_update_release import validate_release
+        validate_release(dict(schemaVersion=1,version=status['version'],image=status['digest'],platform='linux/amd64',sourceCommit='a'*40,releaseNotes='',dataCompatibility='no-migration'))
+    return status
 
 
 def recover_status(state_root, active):
-    root=Path(state_root);status_file=root/'status.json';status=json.loads(status_file.read_text())
-    if status['phase'] in ('idle','finished'):return status
-    identifier=str(uuid.UUID(status['jobId']))
-    if active(identifier):return status
-    # Read again after querying systemd: the worker may just have written its final result.
-    status=json.loads(status_file.read_text())
-    if status['phase'] in ('idle','finished'):return status
-    job=json.loads((root/'jobs'/f'{identifier}.json').read_text())
-    if not job.get('started') and time.time()-job.get('createdAt',0)<30:return status
-    status.update(phase='finished',outcome='interrupted',error='Update interrupted; manual host review required')
+    root=Path(state_root); status_file=root/'status.json'
+    try:
+        status=read_status(status_file)
+        if status['phase'] in ('idle','finished'): return status
+        identifier=status['jobId']
+        job=json.loads((root/'jobs'/f'{identifier}.json').read_text())
+        if not isinstance(job,dict) or type(job.get('started')) is not bool: raise ValueError('Invalid saved job')
+        if active and active(identifier): return status
+        # Re-read: systemd may report inactive just after the worker finished.
+        status=read_status(status_file)
+        if status['phase'] in ('idle','finished'): return status
+        if not job['started'] and time.time()-float(job.get('createdAt',0)) < 30: return status
+        status.update(phase='finished',outcome='interrupted',safeToContinue=False,acknowledged=False,error='Update interrupted; manual host review required')
+    except (OSError, ValueError, KeyError, TypeError, OverflowError, subprocess.SubprocessError):
+        status=dict(IDLE,phase='finished',outcome='interrupted',error='Invalid saved update state; manual host review required')
     write_status(status_file,status)
     return status
 
@@ -47,7 +71,7 @@ def create_server(socket_path, state_root, fetch, launch, active=None):
 
         def do_GET(self):
             try:
-                if self.path == '/v1/status': return self.reply(200, recover_status(state_root,active) if active else json.loads(status_file.read_text()))
+                if self.path == '/v1/status': return self.reply(200, recover_status(state_root,active) if active else read_status(status_file))
                 if self.path == '/v1/release': return self.reply(200, {k:v for k,v in fetch().items() if k != 'manifest'})
                 self.reply(404, {'error':'Unknown endpoint'})
             except Exception: self.reply(503, {'error':'Updater information unavailable'})
@@ -63,16 +87,16 @@ def create_server(socket_path, state_root, fetch, launch, active=None):
             try:
                 with (state_root/'start.lock').open('a') as lock:
                     fcntl.flock(lock, fcntl.LOCK_EX)
-                    status = recover_status(state_root,active) if active else json.loads(status_file.read_text())
+                    status = recover_status(state_root,active) if active else read_status(status_file)
                     if self.path == '/v1/acknowledge':
-                        safe = status['outcome'] == 'rolled-back' or (status['outcome'] == 'failed' and status['progress'] < 60)
+                        safe = status['safeToContinue'] is True
                         if status['phase'] != 'finished' or not safe:
                             return self.reply(409, {'error':'Host recovery review is still required'})
                         write_status(status_file, dict(status, acknowledged=True))
                         return self.reply(200, {'acknowledged':True})
                     if status['phase'] not in ('idle', 'finished'):
                         return self.reply(202, {'jobId':status['jobId']})
-                    if status['outcome'] == 'interrupted' or (status['outcome'] == 'failed' and status['progress'] >= 60):
+                    if status['outcome'] not in (None,'succeeded') and not status['safeToContinue']:
                         return self.reply(409, {'error':'Previous update requires manual host recovery review'})
                     release = fetch()
                     if not release['available']: return self.reply(409, {'error':'No approved newer release'})
@@ -81,7 +105,7 @@ def create_server(socket_path, state_root, fetch, launch, active=None):
                     write_status(status_file, dict(IDLE, jobId=identifier, version=manifest['version'], digest=manifest['image'], phase='preflight'))
                     try: launch(identifier)
                     except Exception:
-                        write_status(status_file, dict(IDLE, jobId=identifier, phase='finished', error='Could not start update worker', outcome='failed'))
+                        write_status(status_file, dict(IDLE, jobId=identifier, phase='finished', error='Could not start update worker', outcome='failed', safeToContinue=True))
                         raise
                     self.reply(202, {'jobId':identifier})
             except Exception: self.reply(503, {'error':'Could not start approved update'})

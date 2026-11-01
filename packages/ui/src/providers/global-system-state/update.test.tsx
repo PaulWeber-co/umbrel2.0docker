@@ -9,6 +9,7 @@ const state = vi.hoisted(() => ({
 		jobId: 'test',
 		targetVersion: '2.0.1',
 		outcome: 'rolled-back',
+		safeToContinue: true,
 		progress: 85,
 		running: false,
 		error: 'Previous version restored',
@@ -55,9 +56,19 @@ test('uses the durable target name while the container is reconnecting', () => {
 })
 test('does not offer to continue after failed rollback', () => {
 	state.status.outcome = 'failed'
+	state.status.safeToContinue = false
 	state.status.progress = 85
 	state.status.error = 'Manual recovery required'
 	const html = renderToStaticMarkup(<UpdatingCover onRetry={() => {}} />)
 	expect(html).toContain('Manual recovery required')
 	expect(html).not.toContain('software-update.continue-previous')
+})
+
+test('does not infer recovery safety from low progress', () => {
+    state.status.outcome = 'failed'
+    state.status.progress = 30
+    state.status.safeToContinue = false
+    state.status.error = 'Previous app state unavailable'
+    const html = renderToStaticMarkup(<UpdatingCover onRetry={() => {}} />)
+    expect(html).not.toContain('software-update.continue-previous')
 })

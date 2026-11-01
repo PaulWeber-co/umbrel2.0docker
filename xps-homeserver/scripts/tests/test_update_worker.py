@@ -44,3 +44,26 @@ class WorkerTests(unittest.TestCase):
         r = self.runner(); d = manifest(); d['image'] = 'attacker:latest'
         with self.assertRaises(ValueError): run_job({'release':d}, {}, r)
         r.preflight.assert_not_called()
+
+    def test_failed_resume_before_switch_is_never_safe(self):
+        r = self.runner('snapshot'); r.resume.side_effect = RuntimeError('resume')
+        result = run_job({'release':manifest()}, {}, r)
+        self.assertFalse(result['safeToContinue'])
+
+    def test_rollback_requires_verified_previous_state(self):
+        r = self.runner('verify'); r.verify_previous.side_effect = RuntimeError('data lost')
+        result = run_job({'release':manifest()}, {}, r)
+        self.assertEqual(result['outcome'], 'failed')
+        self.assertFalse(result['safeToContinue'])
+
+    def test_corrupt_snapshot_never_switches(self):
+        r = self.runner('verify_snapshot')
+        result = run_job({'release':manifest()}, {}, r)
+        r.switch.assert_not_called()
+        self.assertEqual(result['outcome'], 'failed')
+
+    def test_safe_failure_requires_previous_state_check(self):
+        r = self.runner('snapshot')
+        result = run_job({'release':manifest()}, {}, r)
+        r.verify_previous.assert_called_once()
+        self.assertTrue(result['safeToContinue'])

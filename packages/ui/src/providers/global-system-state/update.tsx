@@ -36,10 +36,7 @@ export function UpdatingCover({onRetry}: {onRetry: () => void}) {
 
 	const {progress, description, running, error} = updateStatusQ.data ?? {}
 	const indeterminate = updateStatusQ.isLoading || !running
-	const safeToContinue =
-		updateStatusQ.data?.containerManaged &&
-		(updateStatusQ.data.outcome === 'rolled-back' ||
-			(updateStatusQ.data.outcome === 'failed' && (progress ?? 100) < 60))
+	const safeToContinue = updateStatusQ.data?.containerManaged && updateStatusQ.data.safeToContinue === true
 
 	return (
 		<BarePage>

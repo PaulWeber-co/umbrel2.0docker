@@ -26,6 +26,7 @@ const statusSchema = z
 		error: z.union([z.literal(false), z.string()]),
 		outcome: z.enum(['succeeded', 'rolled-back', 'failed', 'interrupted']).nullable(),
 		acknowledged: z.boolean().optional().default(false),
+		safeToContinue: z.boolean().optional().default(false),
 	})
 	.strict()
 export type ContainerRelease = z.infer<typeof releaseSchema>
@@ -35,6 +36,7 @@ export type UpdateProgressStatus = ProgressStatus & {
 	targetVersion?: string | null
 	outcome?: string | null
 	acknowledged?: boolean
+	safeToContinue?: boolean
 }
 
 export function isContainerUpdateConfigured() {
@@ -114,6 +116,7 @@ export async function getContainerStatus(): Promise<UpdateProgressStatus> {
 			targetVersion: status.version,
 			outcome: status.outcome,
 			acknowledged: status.acknowledged,
+			safeToContinue: status.safeToContinue,
 			running: status.phase !== 'idle' && status.phase !== 'finished',
 			progress: status.outcome === 'succeeded' ? 100 : status.progress,
 			description: {

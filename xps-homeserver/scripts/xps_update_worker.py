@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import uuid
+import logging
 
 from xps_update_release import validate_release
 
@@ -31,7 +32,7 @@ def write_status(path, status):
 def run_job(job, config, runner):
     release = validate_release(job['release'])
     status = dict(jobId=job.get('jobId'), version=release['version'], digest=release['image'],
-                  phase='preflight', progress=0, error=False, outcome=None)
+                  phase='preflight', progress=0, error=False, outcome=None, safeToContinue=False, acknowledged=False)
     snapshot = None; switched = False; paused = False
     def publish(phase, progress):
         status.update(phase=phase, progress=progress)
@@ -41,23 +42,31 @@ def run_job(job, config, runner):
         publish('pull', 10); runner.pull(release)
         paused = True; runner.pause()
         publish('backup', 30); snapshot = runner.snapshot()
+        runner.verify_snapshot(snapshot)
         publish('switch', 60); switched = True; runner.switch(release)
         publish('verify', 80); runner.verify(release)
-        runner.resume(); paused = False
+        paused = False
         status.update(outcome='succeeded')
-    except Exception:
+    except Exception as error:
+        logging.error('Update failed in stage %s (%s)', status['phase'], type(error).__name__)
         # Error strings deliberately omit subprocess output, environment and credentials.
         status.update(error='Update failed; check the root-only host journal', outcome='failed')
         if switched and snapshot is not None:
             publish('rollback', 85)
             try:
-                runner.rollback(snapshot); status['outcome'] = 'rolled-back'
-            except Exception:
+                runner.rollback(snapshot); runner.verify_previous()
+                status.update(outcome='rolled-back', safeToContinue=True); paused = False
+            except Exception as recovery_error:
+                logging.error('Recovery failed (%s)', type(recovery_error).__name__)
                 status['error'] = 'Rollback failed; manual recovery required; snapshot retained'
                 paused = False  # Do not restart an image against a failed/unknown data restore.
-        if paused:
-            try: runner.resume()
-            except Exception: status.update(error='Could not restore previous app state; manual recovery required', outcome='failed')
+        if not switched:
+            try:
+                if paused: runner.resume()
+                runner.verify_previous(); status['safeToContinue'] = True
+            except Exception as recovery_error:
+                logging.error('Previous state verification failed (%s)', type(recovery_error).__name__)
+                status.update(error='Could not verify previous app state; manual recovery required', outcome='failed')
     publish('finished', 100 if status['outcome'] == 'succeeded' else status['progress'])
     return status
 

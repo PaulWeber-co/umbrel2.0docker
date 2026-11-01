@@ -373,12 +373,17 @@ ein verwaistes, nicht leeres Datenvolume wird nicht als Neuinstallation behandel
 
 `/etc/xps-homeserver/updater.json` enthält ausschließlich den absoluten
 `backupRoot` und ist root-eigen mit Modus 0600. Standard ist
-`/var/lib/xps-umbrel-updater/backups`. Vor einem Update ohne Datenmigration
+`/var/lib/xps-umbrel-updater/backups`. Das systemd-Sandboxprofil erlaubt nur
+Sicherungsziele unter `/var/lib/xps-umbrel-updater`; andere absolute Pfade
+benötigen eine gesonderte geprüfte Hostkonfiguration. Vor einem Update ohne Datenmigration
 werden Umbrel-Konfiguration, App-Daten und benannte Docker-Datenvolumes bei
-angehaltenen Schreibern gesichert. Unveränderte Medien, externe Laufwerke und
+angehaltenen Schreibern gesichert. Effektive beschreibbare Home-Mounts (etwa
+Downloads) werden zusätzlich erfasst. Nicht erfasste externe oder umgeleitete
+beschreibbare App-Daten blockieren das Update vor dem Anhalten. Unveränderte Medien, externe Laufwerke und
 wiederaufbaubare Thumbnail-/Index-Caches werden nicht in diesen Snapshot
 einbezogen. Ein Release mit Datenmigration benötigt einen vollständigen
-Snapshot. Die Kapazitätsprüfung reserviert zusätzlich Platz für eine
+Snapshot und einen dafür separat bestandenen Lifecycle-Test; ihre Veröffentlichung
+ist derzeit gesperrt. Die Kapazitätsprüfung reserviert zusätzlich Platz für eine
 Wiederherstellung in ein separates Verzeichnis; bei Platzmangel bleibt die
 aktuelle Installation unverändert.
 
@@ -388,13 +393,14 @@ Image wieder her. Snapshots und vorherige Datenverzeichnisse werden nicht
 automatisch gelöscht. Das ältere `rollback-umbrel.sh` tauscht dagegen nur das
 Image aus und ersetzt diese Datenwiederherstellung nicht.
 
-Nach einer erfolgreichen Rückkehr oder einem Fehler vor dem Imagewechsel kann
+Nur nach geprüfter Wiederherstellung von Version, Datenidentität, Mounts und
+App-Zuständen kann
 die Meldung mit „Mit bisheriger Version fortfahren“ geschlossen werden. Ein
 zusätzlicher lokaler Endpoint `POST /v1/acknowledge` akzeptiert dafür nur `{}`
 und verändert weder Daten noch den Installationsauftrag. Unterbrochene Wechsel
 oder fehlgeschlagene Wiederherstellungen bleiben für neue Installationen
 gesperrt, bis ein Administrator den Zustand und die vorhandenen Sicherungen
-geprüft hat. Fehlerausgaben und Protokolle sind im Hostjournal der jeweiligen
+geprüft hat. Fehlerphase und Ausnahmeklasse sind ohne möglicherweise geheime Unterprozessausgaben im Hostjournal der jeweiligen
 `xps-umbrel-update@…`-Instanz zu finden; niemals ohne Prüfung einen Job als
 erfolgreich markieren.
 
