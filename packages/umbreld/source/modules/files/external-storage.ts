@@ -55,6 +55,13 @@ export function syntheticOwnershipMountOptions(filesystemType: string, userId: n
 	return `uid=${userId},gid=${groupId},fmask=0007,dmask=0007`
 }
 
+export async function createExternalPartitionTable(devicePath: string, filesystem: 'ext4' | 'exfat') {
+	await $`parted -s ${devicePath} --align optimal mklabel gpt mkpart primary ext4 0% 100%`
+	// The partition GUID is independent of the filesystem written by mkfs.
+	// Windows/macOS need Microsoft Basic Data rather than the Linux GUID.
+	if (filesystem === 'exfat') await $`sgdisk --typecode=1:0700 ${devicePath}`
+}
+
 // Get block devices
 // TODO: This should probably be in a system module once we have a proper one
 export async function getBlockDevices() {
@@ -481,7 +488,7 @@ export default class ExternalStorage {
 
 			// Create new partition table
 			this.logger.log(`Creating new partition table for device ${deviceId}`)
-			await $`parted -s /dev/${deviceId} --align optimal mklabel gpt mkpart primary ext4 0% 100%`
+			await createExternalPartitionTable(`/dev/${deviceId}`, filesystem)
 
 			// Wait for changes
 			this.logger.log(`Waiting for changes for device ${deviceId}`)

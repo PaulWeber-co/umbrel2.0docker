@@ -1,5 +1,7 @@
 """Opt-in runtime checks; never infer security from a displayed version alone."""
 import os
+from pathlib import Path
+import shlex
 import subprocess
 import unittest
 
@@ -28,6 +30,11 @@ class ContainerSecurityTest(unittest.TestCase):
 
     def test_tls_certificate_generation_uses_a_valid_system_configuration(self):
         self.assertEqual(self.run_in_container('d=$(mktemp -d); openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost -keyout "$d/key" -out "$d/cert" >/dev/null 2>&1 && test -s "$d/cert" && echo valid'), 'valid')
+
+    def test_exfat_and_ext4_have_the_correct_gpt_partition_types(self):
+        probe = Path(__file__).with_name('partition_format_probe.mjs').read_text()
+        result = self.run_in_container('cd /opt/umbreld && node --import tsx --input-type=module -e '+shlex.quote(probe))
+        self.assertIn('PASS: real formatter creates Microsoft Basic Data', result)
 
     def test_watchman_remains_available(self):
         self.assertRegex(self.run_in_container('watchman -v'), r'\d+\.\d+')
