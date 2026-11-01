@@ -52,13 +52,14 @@ def run_job(job, config, runner):
         # Error strings deliberately omit subprocess output, environment and credentials.
         status.update(error='Update failed; check the root-only host journal', outcome='failed')
         if switched and snapshot is not None:
+            status.update(error=False, outcome=None)
             publish('rollback', 85)
             try:
                 runner.rollback(snapshot); runner.verify_previous()
-                status.update(outcome='rolled-back', safeToContinue=True); paused = False
+                status.update(outcome='rolled-back', safeToContinue=True, error='Update failed; previous version and app state restored'); paused = False
             except Exception as recovery_error:
                 logging.error('Recovery failed (%s)', type(recovery_error).__name__)
-                status['error'] = 'Rollback failed; manual recovery required; snapshot retained'
+                status.update(outcome='failed', error='Rollback failed; manual recovery required; snapshot retained')
                 paused = False  # Do not restart an image against a failed/unknown data restore.
         if not switched:
             try:

@@ -47,6 +47,13 @@ class Runtime:
         # Full API rows include credentials. Retain only lifecycle/storage fields.
         return [{k:row.get(k) for k in ('id','state','port','path','storage')} for row in rows]
 
+    def installed_ids(self):
+        script="const fs=require('fs'),yaml=require('js-yaml');console.log(JSON.stringify(yaml.load(fs.readFileSync('/home/umbrel/umbrel/umbrel.yaml','utf8')).apps ?? []))"
+        ids=json.loads(execute(['docker','exec','-w','/opt/umbreld','umbrel','node','-e',script]))
+        if not isinstance(ids,list) or any(not isinstance(i,str) for i in ids) or len(set(ids))!=len(ids):
+            raise ValueError('Invalid persisted installed-app inventory')
+        return ids
+
     def container_inventory(self):
         ids=execute(['docker','exec','umbrel','docker','ps','-aq']).split()
         return json.loads(execute(['docker','exec','umbrel','docker','inspect',*ids])) if ids else []
@@ -102,6 +109,8 @@ class Runtime:
         if '@sha256:' not in self.old_image: raise ValueError('Previous image is not digest pinned')
         self.storage=self.storage_inventory()
         apps=self.app_inventory()
+        if {a['id'] for a in apps} != set(self.installed_ids()):
+            raise ValueError('Installed apps have not finished registering')
         if any(a.get('state') not in ('ready','stopped') for a in apps): raise ValueError('Wait for stable installed app states')
         home=Path('umbrel-os/home/umbrel/umbrel')
         if not (source/home/'app-data').is_dir(): raise ValueError('Unknown app data layout')

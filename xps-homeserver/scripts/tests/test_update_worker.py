@@ -67,3 +67,16 @@ class WorkerTests(unittest.TestCase):
         result = run_job({'release':manifest()}, {}, r)
         r.verify_previous.assert_called_once()
         self.assertTrue(result['safeToContinue'])
+
+    def test_in_progress_rollback_is_a_valid_active_status(self):
+        from xps_update_service import read_status
+        path=Path(tempfile.mkdtemp())/'status.json';r=self.runner('verify')
+        def recovering(_):
+            status=read_status(path)
+            self.assertEqual(status['phase'],'rollback')
+            self.assertIsNone(status['outcome'])
+            self.assertFalse(status['error'])
+        r.rollback.side_effect=recovering
+        result=run_job({'jobId':'45cdf188-ea3e-4e6d-a857-a473a271ca76','release':manifest()},{'statusFile':str(path)},r)
+        self.assertEqual(result['outcome'],'rolled-back')
+        self.assertTrue(result['error'])

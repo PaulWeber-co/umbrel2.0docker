@@ -25,7 +25,7 @@ class RuntimeTests(unittest.TestCase):
         (home/'home').mkdir(); (home/'home/photo').write_bytes(b'media')
         self.env = self.root/'umbrel.env'; self.env.write_text('XPS_UMBREL_IMAGE='+manifest()['image']+'\n')
         self.stack = ExitStack(); self.addCleanup(self.stack.close)
-        for method, value in [('app_inventory',[]),('container_inventory',[]),('storage_inventory',[])]:
+        for method, value in [('app_inventory',[]),('container_inventory',[]),('storage_inventory',[]),('installed_ids',[])]:
             self.stack.enter_context(patch.object(Runtime, method, return_value=value, create=True))
         self.info = dict(Config={'Image':manifest()['image']}, Mounts=[dict(Source=str(self.data),Destination='/data',Type='volume', RW=True)])
 
@@ -70,13 +70,17 @@ class RuntimeTests(unittest.TestCase):
         variants=[([{'Name':'/db','State':{'Running':True},'Config':{'Labels':{}},'Mounts':[{'RW':True,'Type':'bind','Source':'/home/umbrel/umbrel/external/USB/database'}]}],[]),
                   ([],[{'id':'db','state':'stopped','storage':{'dataRoot':{'location':'/External/USB/database'}}}])]
         for containers,apps in variants:
-            with self.subTest(apps=apps), patch.object(Runtime,'container_inventory',return_value=containers), patch.object(Runtime,'app_inventory',return_value=apps), patch('xps_update_runtime.ENV_FILE',self.env), patch('xps_update_runtime.execute',return_value=json.dumps([self.info])):
+            with self.subTest(apps=apps), patch.object(Runtime,'installed_ids',return_value=[a['id'] for a in apps]), patch.object(Runtime,'container_inventory',return_value=containers), patch.object(Runtime,'app_inventory',return_value=apps), patch('xps_update_runtime.ENV_FILE',self.env), patch('xps_update_runtime.execute',return_value=json.dumps([self.info])):
                 with self.assertRaises(ValueError): Runtime({'backupRoot':str(self.root/'backup')}).preflight(manifest())
 
     def test_symlink_to_uncovered_app_state_is_rejected(self):
         home=self.data/'umbrel-os/home/umbrel/umbrel'
         (home/'app-data/link').symlink_to('/mnt/external-database',target_is_directory=True)
         with patch('xps_update_runtime.ENV_FILE',self.env),patch('xps_update_runtime.execute',return_value=json.dumps([self.info])):
+            with self.assertRaises(ValueError): Runtime({'backupRoot':str(self.root/'backup')}).preflight(manifest())
+
+    def test_initial_empty_api_list_is_not_mistaken_for_no_installed_apps(self):
+        with patch.object(Runtime,'installed_ids',return_value=['music']),patch('xps_update_runtime.ENV_FILE',self.env),patch('xps_update_runtime.execute',return_value=json.dumps([self.info])):
             with self.assertRaises(ValueError): Runtime({'backupRoot':str(self.root/'backup')}).preflight(manifest())
 
     def test_missing_storage_or_changed_identity_fails_verification(self):

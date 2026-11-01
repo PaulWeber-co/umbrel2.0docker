@@ -11,11 +11,13 @@ Arbeitsbranch: `codex-umbrel-container-updates`. Noch keine Produktivinstallatio
 - Backend nach Review-Korrekturen: 136 Testdateien, **1.618 Tests bestanden**,
   Linux/Node 22 im Kandidaten mit seinen nativen Produktions-Bindings.
 - UI nach Review-Korrekturen: 117 Testdateien, **890 Tests bestanden**, Linux/Node 22.13.
-- Gezielte Python-Update-Suite: **51 Tests bestanden**. Reale temporäre Archive,
+- Gezielte Python-Update-Suite: **53 Tests bestanden**. Reale temporäre Archive,
   Integritätsfehler, Wiederherstellung einzelner Zustandsordner, SQLite-WAL/SHM,
   Erhalt fremder Medien, begrenzte Socketanfragen, parallele Statusabfragen,
   sichere Wiederherstellung, widersprüchliche Statusdaten, abgestürzte Worker,
   vertrauenswürdige Kandidatenherkunft und Kompatibilitätsbindung werden geprüft.
+- Vollständige abschließende Linux-Host-Suite: **73 bestanden**, sechs explizite
+  Image-Prüfungen separat ausgeführt (79 Fälle insgesamt).
 - Beide Typechecks, sechs Backend-Sockettests und vier UI-Recoverytests bestanden.
 - Dashboard-Basis: 208 Tests bestanden, drei übersprungen.
 - GitHub: Backend-Tests/Format/Typen, UI-Tests/Lint/Typen und Apple-Clients bestanden.
