@@ -1,0 +1,166 @@
+{
+  "validatedAt": "2026-11-02",
+  "sourceCommit": "4faf23b8a2e9b08fd4ebf978bd31f278a7f36612",
+  "image": "ghcr.io/paulweber-co/xps-homeserver-umbrelos@sha256:21d8de0f13743c286bf071660d6c5dca9e0e3eaa90b31a26dc2428ec24ea8181",
+  "candidateRun": 41357291865,
+  "publisherRun": 41405661095,
+  "system": {
+    "version": "2.0.1",
+    "status": "running"
+  },
+  "updateStatus": {
+    "containerManaged": true,
+    "jobId": "a313ab3d-7411-42c8-ae68-2c079e9c9e9a",
+    "targetVersion": "2.0.1",
+    "outcome": "succeeded",
+    "acknowledged": false,
+    "safeToContinue": false,
+    "running": false,
+    "progress": 100,
+    "description": "Update finished",
+    "error": false
+  },
+  "checkUpdate": {
+    "available": false,
+    "version": "2.0.1",
+    "name": "umbrelOS 2.0.1",
+    "releaseNotes": "",
+    "pendingUpstream": false,
+    "upstreamVersion": "2.0.1"
+  },
+  "apps": [
+    {
+      "id": "adguard-home",
+      "state": "ready",
+      "version": "1.0.0-b.1"
+    },
+    {
+      "id": "cloudflared",
+      "state": "stopped",
+      "version": "2026.10.4"
+    },
+    {
+      "id": "downtify",
+      "state": "ready",
+      "version": "3.8.1"
+    },
+    {
+      "id": "hermes-agent",
+      "state": "ready",
+      "version": "0.22.5-patch.1"
+    },
+    {
+      "id": "jellyfin",
+      "state": "ready",
+      "version": "12.4"
+    },
+    {
+      "id": "murmur",
+      "state": "ready",
+      "version": "0.10.0"
+    },
+    {
+      "id": "n8n",
+      "state": "ready",
+      "version": "2.45.7"
+    },
+    {
+      "id": "obsidian",
+      "state": "stopped",
+      "version": "1.8.10-patch.1"
+    },
+    {
+      "id": "opencode",
+      "state": "stopped",
+      "version": "1.19.5"
+    },
+    {
+      "id": "paperclip",
+      "state": "ready",
+      "version": "2026.1023.0"
+    },
+    {
+      "id": "tailscale",
+      "state": "ready",
+      "version": "v1.104.4"
+    }
+  ],
+  "snapshot": {
+    "metadata": "/var/lib/xps-umbrel-updater/backups/snapshot-1793604699537575109.json",
+    "archive": "/var/lib/xps-umbrel-updater/backups/snapshot-1793604699537575109.tar",
+    "bytes": 2476117558,
+    "archiveBytes": 2511861760,
+    "sha256": "e17c6bc7c30fd6b7780262d80c378f4cb87c17129c934e8aae3c55f993adface",
+    "checksumValid": true,
+    "oldImage": "ghcr.io/paulweber-co/xps-homeserver-umbrelos@sha256:da71b430226e3e2fb4cba5b19d86c66a52ea5ad6990bb179f353225885dabe82",
+    "oldVersion": "2.0.0",
+    "apps": [
+      {
+        "id": "adguard-home",
+        "state": "ready"
+      },
+      {
+        "id": "cloudflared",
+        "state": "stopped"
+      },
+      {
+        "id": "downtify",
+        "state": "ready"
+      },
+      {
+        "id": "hermes-agent",
+        "state": "ready"
+      },
+      {
+        "id": "jellyfin",
+        "state": "ready"
+      },
+      {
+        "id": "murmur",
+        "state": "ready"
+      },
+      {
+        "id": "n8n",
+        "state": "ready"
+      },
+      {
+        "id": "obsidian",
+        "state": "stopped"
+      },
+      {
+        "id": "opencode",
+        "state": "stopped"
+      },
+      {
+        "id": "paperclip",
+        "state": "ready"
+      },
+      {
+        "id": "tailscale",
+        "state": "ready"
+      }
+    ]
+  },
+  "securityRuntime": {
+    "tests": 7,
+    "passed": 7
+  },
+  "music": {
+    "usbMp3": 3495,
+    "internalMp3": 0,
+    "mainPlaylistEntries": 3495,
+    "missingReferences": 0
+  },
+  "network": {
+    "umbrelLocal": 200,
+    "xpsLocal": 200,
+    "tailscaleXps": "Running / online / no health issues",
+    "macTailscale": "Local service unavailable; remote path not tested"
+  },
+  "freeSpaceAfter": "29 GiB",
+  "icloudFolders": [
+    "Paul iCloud",
+    "Jane iCloud"
+  ],
+  "appleAccountsConfigured": false
+}
