@@ -298,3 +298,35 @@ its full history and the user pushes it.
 None blocking. Decisions taken in the brainstorm: language English with German
 UI, approach A (one image, profiles), name Reframe, license MIT, Spotify out,
 AirPlay in, Knuddl out, no bundled video.
+
+## As built (2026-11-05)
+
+The spec above was the plan. These parts were built differently, on purpose:
+
+- **Profiles.** The dashboard is the default service of `compose.yaml` (no
+  `web` profile). `kiosk`, `airplay` and `services` are profiles and combine.
+- **Server and kiosk are two containers**, sharing a network namespace and two
+  volumes, instead of one container that does both. The server stays
+  unprivileged; only the kiosk is privileged. The agent and the dashboard
+  exchange small JSON files (`host-state.json`, `status.json`), not a Unix
+  socket.
+- **Kiosk user.** The kiosk runs as root inside its container with Chromium's
+  `--no-sandbox`, because seatd, DRM and the console need root there. It only
+  loads `127.0.0.1`. This is documented in SECURITY.md. Not verified on hardware.
+- **Photo backup tile dropped.** It read Umbrel's folder layout and was tied to
+  one setup. The Immich photo tile stays.
+- **Services tile** has its own collector container (profile `services`), a
+  port of the old Docker collector without the Umbrel-specific parts.
+- **Setup page.** No "open until first save" rule: the PIN (Settings → Access)
+  and, on Umbrel, Umbrel's login protect changes.
+- **Spotify** is gone as planned; AirPlay is a profile (and part of the
+  Display app).
+- **Backgrounds.** No clips are shipped. The fallback is drifting colour in the
+  tones of the scene; `reframe-media` prepares your own clips.
+- **Two Umbrel apps** instead of one: `reframe-dashboard` (web only) and
+  `reframe-display` (kiosk, brightness, AirPlay), because a community app
+  cannot make privileged mode optional.
+- **Demo piece.** Beethoven's Moonlight Sonata with a public-domain painting as
+  its cover, instead of a made-up track.
+- **History.** 35 commits from an empty repository, authored with the GitHub
+  no-reply address, checked by a release gate that CI repeats.
