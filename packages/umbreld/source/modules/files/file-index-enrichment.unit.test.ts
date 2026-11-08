@@ -68,6 +68,7 @@ test('auto-orients before applying short-edge sizing without upscaling', async (
 		detached: true,
 		timeout: THUMBNAIL_GENERATION_TIMEOUT_MS,
 		killSignal: 'SIGKILL',
+		env: {MAGICK_TEMPORARY_PATH: expect.any(String), TMPDIR: expect.any(String)},
 	})
 	const arguments_ = vi.mocked(execa).mock.calls[0][1] as string[]
 	expect(arguments_.slice(arguments_.indexOf('/home/photo.jpg[0]'))).toStrictEqual([
@@ -184,12 +185,34 @@ test.each([
 
 test('kills the complete ImageMagick process group after a timeout', async () => {
 	const timeout = Object.assign(new Error('conversion timed out'), {timedOut: true})
-	const conversion = Object.assign(Promise.reject(timeout), {pid: 4321})
-	vi.mocked(execa).mockReturnValue(conversion as never)
+	vi.mocked(execa).mockImplementation((() => Object.assign(Promise.reject(timeout), {pid: 4321})) as never)
 	const kill = vi.spyOn(process, 'kill').mockReturnValue(true)
 
 	await expect(generateThumbnailFile('/home/video.mp4', '/data/thumbnail.webp')).rejects.toThrow('conversion timed out')
 	expect(kill).toHaveBeenCalledWith(-4321, 'SIGKILL')
+})
+
+test('removes the media scratch directory even after a timed-out conversion', async () => {
+	let scratch = ''
+	vi.mocked(execa).mockImplementation(((
+		_command: string,
+		_arguments: string[],
+		options: {env: {MAGICK_TEMPORARY_PATH: string}},
+	) => {
+		scratch = options.env.MAGICK_TEMPORARY_PATH
+		// What a killed ImageMagick leaves behind: its pixel cache
+		return Object.assign(
+			writeFile(nodePath.join(scratch, 'magick-pixel-cache'), 'x').then(() => {
+				throw Object.assign(new Error('conversion timed out'), {timedOut: true})
+			}),
+			{pid: 4321},
+		)
+	}) as never)
+	vi.spyOn(process, 'kill').mockReturnValue(true)
+
+	await expect(generateThumbnailFile('/home/huge.jpg', '/data/thumbnail.webp')).rejects.toThrow('conversion timed out')
+	expect(scratch).not.toBe('')
+	await expect(lstat(scratch)).rejects.toMatchObject({code: 'ENOENT'})
 })
 
 test('rejects a FIFO thumbnail source without blocking its hash lane', async () => {
@@ -253,6 +276,7 @@ test('extracts oriented photo metadata, capture offset, GPS, and Apple live iden
 		detached: true,
 		timeout: THUMBNAIL_GENERATION_TIMEOUT_MS,
 		killSignal: 'SIGKILL',
+		env: {MAGICK_TEMPORARY_PATH: expect.any(String), TMPDIR: expect.any(String)},
 	})
 	const arguments_ = vi.mocked(execa).mock.calls[0]![1] as string[]
 	expect(arguments_).toEqual(
@@ -511,6 +535,7 @@ test('combines descriptor-backed FFprobe structure with ExifTool video semantics
 		detached: true,
 		timeout: THUMBNAIL_GENERATION_TIMEOUT_MS,
 		killSignal: 'SIGKILL',
+		env: {MAGICK_TEMPORARY_PATH: expect.any(String), TMPDIR: expect.any(String)},
 		stdio: ['ignore', 'pipe', 'pipe', 42],
 	})
 	const ffprobeArguments = vi.mocked(execa).mock.calls[0][1] as string[]
@@ -524,6 +549,7 @@ test('combines descriptor-backed FFprobe structure with ExifTool video semantics
 		detached: true,
 		timeout: THUMBNAIL_GENERATION_TIMEOUT_MS,
 		killSignal: 'SIGKILL',
+		env: {MAGICK_TEMPORARY_PATH: expect.any(String), TMPDIR: expect.any(String)},
 		stdio: ['ignore', 'pipe', 'pipe', 42],
 	})
 	const exifToolArguments = vi.mocked(execa).mock.calls[1]![1] as string[]

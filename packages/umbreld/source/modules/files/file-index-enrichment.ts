@@ -1,5 +1,5 @@
-import {constants as fsConstants} from 'node:fs'
-import {mkdir, open, opendir} from 'node:fs/promises'
+import {constants as fsConstants, mkdtempSync} from 'node:fs'
+import {mkdir, open, opendir, rm} from 'node:fs/promises'
 import {availableParallelism as nodeAvailableParallelism} from 'node:os'
 import nodePath from 'node:path'
 import {createHash, randomUUID} from 'node:crypto'
@@ -86,6 +86,11 @@ const THUMBNAIL_MEMORY_LIMIT_BYTES = 256 * 1024 * 1024
 const THUMBNAIL_MAP_LIMIT_BYTES = 512 * 1024 * 1024
 const THUMBNAIL_DISK_LIMIT_BYTES = 1024 * 1024 * 1024
 const THUMBNAIL_THREAD_LIMIT = 1
+// Scratch space for media tools. A timed-out ImageMagick is SIGKILLed and cannot
+// remove its pixel cache, and /tmp is RAM-backed on Debian 13, so leftovers there
+// pile up as memory. /var/tmp is on disk; each run gets its own directory that is
+// removed whatever happens to the tool.
+const MEDIA_SCRATCH_ROOT = '/var/tmp/umbreld-media'
 
 export type ContentFingerprint = {
 	inode: string
@@ -2874,18 +2879,49 @@ function imageMagickMediaProcessInput(systemPath: string, sourceFileDescriptor?:
 	return `${coder ? `${coder}:` : ''}${input}`
 }
 
-async function runBoundedMediaProcess(command: string, arguments_: string[], sourceFileDescriptor?: number) {
-	const process = execa(command, arguments_, {
-		detached: true,
-		timeout: THUMBNAIL_GENERATION_TIMEOUT_MS,
-		killSignal: 'SIGKILL',
-		...(sourceFileDescriptor === undefined ? {} : {stdio: ['ignore', 'pipe', 'pipe', sourceFileDescriptor]}),
-	})
-	try {
-		return await process
-	} catch (error) {
-		if ((error as {timedOut?: boolean}).timedOut && process.pid !== undefined) killProcessGroup(process.pid)
+let mediaScratchRootReady: Promise<void> | undefined
+
+// Leftovers from an earlier umbreld process (crash, power loss) are cleared once
+// before the first run; afterwards every run cleans up after itself. Only run
+// directories older than any live run can be are touched.
+function prepareMediaScratchRoot() {
+	mediaScratchRootReady ??= (async () => {
+		await mkdir(MEDIA_SCRATCH_ROOT, {recursive: true, mode: 0o700})
+		const staleBefore = Date.now() - TEMPORARY_ARTIFACT_GRACE_MS
+		for await (const entry of await opendir(MEDIA_SCRATCH_ROOT)) {
+			if (!entry.isDirectory() || !entry.name.startsWith('run-')) continue
+			const directory = nodePath.join(MEDIA_SCRATCH_ROOT, entry.name)
+			const stats = await fse.stat(directory).catch(() => undefined)
+			if (stats && stats.mtimeMs < staleBefore) await rm(directory, {recursive: true, force: true})
+		}
+	})().catch((error) => {
+		mediaScratchRootReady = undefined
 		throw error
+	})
+	return mediaScratchRootReady
+}
+
+async function runBoundedMediaProcess(command: string, arguments_: string[], sourceFileDescriptor?: number) {
+	await prepareMediaScratchRoot()
+	// Synchronous on purpose: callers start several tools at once and rely on them
+	// starting in call order.
+	const scratch = mkdtempSync(nodePath.join(MEDIA_SCRATCH_ROOT, 'run-'))
+	try {
+		const process = execa(command, arguments_, {
+			detached: true,
+			timeout: THUMBNAIL_GENERATION_TIMEOUT_MS,
+			killSignal: 'SIGKILL',
+			env: {MAGICK_TEMPORARY_PATH: scratch, TMPDIR: scratch},
+			...(sourceFileDescriptor === undefined ? {} : {stdio: ['ignore', 'pipe', 'pipe', sourceFileDescriptor]}),
+		})
+		try {
+			return await process
+		} catch (error) {
+			if ((error as {timedOut?: boolean}).timedOut && process.pid !== undefined) killProcessGroup(process.pid)
+			throw error
+		}
+	} finally {
+		await rm(scratch, {recursive: true, force: true})
 	}
 }
 
